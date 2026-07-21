@@ -97,10 +97,10 @@ export default function MentionsLegalesPage() {
                   label="Adresse e-mail"
                   value={
                     <a
-                      href="mailto:contact@auto9nimes.com"
+                      href="mailto:contact.nicolas.auto9@gmail.com"
                       className="break-all transition hover:text-[#7DB7FF]"
                     >
-                      contact@auto9nimes.com
+                      contact.nicolas.auto9@gmail.com
                     </a>
                   }
                 />
