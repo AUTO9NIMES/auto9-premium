@@ -1,5 +1,5 @@
 const phoneNumber = "33659762992";
-const email = "contact@auto9nimes.com";
+const email = "contact.nicolas.auto9@gmail.com";
 
 const whatsappMessage = encodeURIComponent(
   "Bonjour AUTO 9, je souhaite réserver une prestation de nettoyage automobile. Voici les infos :\n\nNom :\nVéhicule :\nPrestation souhaitée :\nAdresse / secteur :\nDisponibilités :\n\nMerci."

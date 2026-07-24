@@ -84,10 +84,10 @@ export default function PolitiqueConfidentialitePage() {
                   label="Adresse e-mail"
                   value={
                     <a
-                      href="mailto:contact@auto9nimes.com"
+                      href="mailto:contact.nicolas.auto9@gmail.com"
                       className="break-all transition hover:text-[#7DB7FF]"
                     >
-                      contact@auto9nimes.com
+                      contact.nicolas.auto9@gmail.com
                     </a>
                   }
                 />
@@ -408,10 +408,10 @@ export default function PolitiqueConfidentialitePage() {
                 </p>
 
                 <a
-                  href="mailto:contact@auto9nimes.com"
+                  href="mailto:contact.nicolas.auto9@gmail.com"
                   className="mt-3 inline-flex break-all text-lg font-black text-[#7DB7FF] transition hover:text-white"
                 >
-                  contact@auto9nimes.com
+                  contact.nicolas.auto9@gmail.com
                 </a>
 
                 <p className="mt-4 text-sm leading-7 text-white/55">
@@ -516,7 +516,7 @@ export default function PolitiqueConfidentialitePage() {
 
               <div className="mt-7 flex flex-col gap-3 sm:flex-row">
                 <a
-                  href="mailto:contact@auto9nimes.com"
+                  href="mailto:contact.nicolas.auto9@gmail.com"
                   className="flex items-center justify-center rounded-full bg-[#0057FF] px-7 py-4 text-xs font-black uppercase tracking-[0.2em] text-white transition hover:scale-[1.02] hover:bg-[#1768FF]"
                 >
                   Envoyer un e-mail

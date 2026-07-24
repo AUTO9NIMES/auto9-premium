@@ -105,7 +105,7 @@ export default function MentionsLegalesPage() {
                   }
                 />
 
-                <InfoRow label="Site internet" value="auto9nimes.com" />
+                <InfoRow label="Site internet" value="www.auto9nimes.com" />
 
                 <InfoRow
                   label="TVA"
@@ -273,7 +273,7 @@ export default function MentionsLegalesPage() {
                 </a>
 
                 <a
-                  href="mailto:contact@auto9nimes.com"
+                  href="mailto:contact.nicolas.auto9@gmail.com"
                   className="flex items-center justify-center rounded-full border border-white/15 px-7 py-4 text-xs font-black uppercase tracking-[0.2em] text-white/75 transition hover:border-[#7DB7FF] hover:text-[#7DB7FF]"
                 >
                   Envoyer un e-mail
