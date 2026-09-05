@@ -44,8 +44,8 @@ const FEATURED_PHOTO_ORDER = [
 ] as const;
 
 /*
- * Tu pourras ajouter ici les noms des doublons à masquer,
- * sans avoir besoin de supprimer les fichiers du dossier.
+ * Photos à masquer sans supprimer les fichiers
+ * du dossier public/realisations.
  */
 const HIDDEN_PHOTOS: string[] = [
   // Exemple :
@@ -53,8 +53,20 @@ const HIDDEN_PHOTOS: string[] = [
   // "img_4726 2.jpeg",
 ];
 
-const FEATURED_VIDEO_ORDER = [
+/*
+ * Vidéos à masquer sans supprimer les fichiers
+ * du dossier public/realisations.
+ *
+ * La POV Triumph est volontairement masquée.
+ */
+const HIDDEN_VIDEOS: string[] = [
   "triumph-spitfire-pov.mp4",
+];
+
+/*
+ * Ordre des vidéos visibles.
+ */
+const FEATURED_VIDEO_ORDER = [
   "uzes-dream-car-festival.mp4",
 ] as const;
 
@@ -62,13 +74,6 @@ const VIDEO_CONTENT: Record<
   string,
   Omit<GalleryVideo, "src">
 > = {
-  "triumph-spitfire-pov.mp4": {
-    eyebrow: "Triumph Spitfire",
-    title: "Une immersion dans la minutie.",
-    description:
-      "Une vidéo immersive qui montre le soin, les gestes et le temps passé sur chaque détail.",
-  },
-
   "uzes-dream-car-festival.mp4": {
     eyebrow: "Uzès Dream Car Festival",
     title: "AUTO 9 au contact des passionnés.",
@@ -129,23 +134,30 @@ function getBaseFileName(filePath: string) {
     .toLowerCase();
 }
 
-function createPublicSrc(relativePath: string) {
+function createPublicSrc(
+  relativePath: string,
+) {
   const encodedPath = relativePath
     .split("/")
-    .map((part) => encodeURIComponent(part))
+    .map((part) =>
+      encodeURIComponent(part),
+    )
     .join("/");
 
   return `/realisations/${encodedPath}`;
 }
 
-function humanizeFileName(filePath: string) {
+function humanizeFileName(
+  filePath: string,
+) {
   const extension =
     path.posix.extname(filePath);
 
-  const fileName = path.posix.basename(
-    filePath,
-    extension,
-  );
+  const fileName =
+    path.posix.basename(
+      filePath,
+      extension,
+    );
 
   return fileName
     .replace(/^img[_\-\s]*/i, "")
@@ -154,17 +166,22 @@ function humanizeFileName(filePath: string) {
     .trim()
     .replace(
       /\b\p{L}/gu,
-      (letter) => letter.toUpperCase(),
+      (letter) =>
+        letter.toUpperCase(),
     );
 }
 
-function createPhotoAlt(filePath: string) {
+function createPhotoAlt(
+  filePath: string,
+) {
   const humanizedName =
     humanizeFileName(filePath);
 
   if (
     !humanizedName ||
-    /^\d+(?:\s+\d+)?$/.test(humanizedName)
+    /^\d+(?:\s+\d+)?$/.test(
+      humanizedName,
+    )
   ) {
     return "Réalisation de nettoyage automobile AUTO 9 à Nîmes";
   }
@@ -201,7 +218,9 @@ function sortWithFeaturedFiles(
     featuredOrder.indexOf(firstName);
 
   const secondFeaturedIndex =
-    featuredOrder.indexOf(secondName);
+    featuredOrder.indexOf(
+      secondName,
+    );
 
   const firstIsFeatured =
     firstFeaturedIndex !== -1;
@@ -248,7 +267,9 @@ function createVideo(
 
   if (knownContent) {
     return {
-      src: createPublicSrc(filePath),
+      src: createPublicSrc(
+        filePath,
+      ),
       ...knownContent,
     };
   }
@@ -258,24 +279,38 @@ function createVideo(
     "Réalisation AUTO 9";
 
   return {
-    src: createPublicSrc(filePath),
+    src: createPublicSrc(
+      filePath,
+    ),
     eyebrow: humanizedName,
-    title: "Une réalisation AUTO 9 en vidéo.",
+    title:
+      "Une réalisation AUTO 9 en vidéo.",
     description:
       "Découvrez les différentes étapes de la préparation et le niveau de finition apporté au véhicule.",
   };
 }
 
 export function Realisations() {
-  const allFiles = getFilesRecursively(
-    REALISATIONS_DIRECTORY,
-  );
+  const allFiles =
+    getFilesRecursively(
+      REALISATIONS_DIRECTORY,
+    );
 
-  const hiddenPhotoNames = new Set(
-    HIDDEN_PHOTOS.map((fileName) =>
-      fileName.toLowerCase(),
-    ),
-  );
+  const hiddenPhotoNames =
+    new Set(
+      HIDDEN_PHOTOS.map(
+        (fileName) =>
+          fileName.toLowerCase(),
+      ),
+    );
+
+  const hiddenVideoNames =
+    new Set(
+      HIDDEN_VIDEOS.map(
+        (fileName) =>
+          fileName.toLowerCase(),
+      ),
+    );
 
   const imageFiles = allFiles
     .filter((filePath) =>
@@ -286,15 +321,21 @@ export function Realisations() {
     .filter(
       (filePath) =>
         !hiddenPhotoNames.has(
-          getBaseFileName(filePath),
+          getBaseFileName(
+            filePath,
+          ),
         ),
     )
-    .sort((firstPath, secondPath) =>
-      sortWithFeaturedFiles(
+    .sort(
+      (
         firstPath,
         secondPath,
-        FEATURED_PHOTO_ORDER,
-      ),
+      ) =>
+        sortWithFeaturedFiles(
+          firstPath,
+          secondPath,
+          FEATURED_PHOTO_ORDER,
+        ),
     );
 
   const videoFiles = allFiles
@@ -303,25 +344,47 @@ export function Realisations() {
         getExtension(filePath),
       ),
     )
-    .sort((firstPath, secondPath) =>
-      sortWithFeaturedFiles(
+    .filter(
+      (filePath) =>
+        !hiddenVideoNames.has(
+          getBaseFileName(
+            filePath,
+          ),
+        ),
+    )
+    .sort(
+      (
         firstPath,
         secondPath,
-        FEATURED_VIDEO_ORDER,
-      ),
+      ) =>
+        sortWithFeaturedFiles(
+          firstPath,
+          secondPath,
+          FEATURED_VIDEO_ORDER,
+        ),
     );
 
   const photos: GalleryPhoto[] =
     imageFiles.map(
-      (filePath, index) => ({
-        src: createPublicSrc(filePath),
-        alt: createPhotoAlt(filePath),
-        size: getPhotoSize(index),
+      (
+        filePath,
+        index,
+      ) => ({
+        src: createPublicSrc(
+          filePath,
+        ),
+        alt: createPhotoAlt(
+          filePath,
+        ),
+        size:
+          getPhotoSize(index),
       }),
     );
 
   const videos: GalleryVideo[] =
-    videoFiles.map(createVideo);
+    videoFiles.map(
+      createVideo,
+    );
 
   return (
     <RealisationsClient
