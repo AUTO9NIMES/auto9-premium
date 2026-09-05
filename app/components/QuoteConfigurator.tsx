@@ -746,25 +746,9 @@ export function QuoteConfigurator() {
         </div>
 
         <main
-  ref={stepContentRef}
-  className="relative overflow-hidden rounded-[1.6rem] border border-white/10 bg-[linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.018))] p-4 shadow-2xl backdrop-blur-sm sm:p-6 lg:p-10 xl:p-12"
->
-  <a
-    href="/"
-    className="relative z-[9999] mb-4 block rounded-xl bg-red-500 p-4 text-center font-black text-white"
-  >
-    TEST CLIC IPHONE
-  </a>
-
-  <button
-  type="button"
-  onClick={() => alert("REACT OK")}
-  className="relative z-[9999] mb-4 block w-full rounded-xl bg-green-500 p-4 text-center font-black text-white"
->
-  TEST REACT
-</button>
-
-
+          ref={stepContentRef}
+          className="relative overflow-hidden rounded-[1.6rem] border border-white/10 bg-[linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.018))] p-4 shadow-2xl backdrop-blur-sm sm:p-6 lg:p-10 xl:p-12"
+        >
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(125,183,255,.65),transparent)]" />
 
           <div key={step} className="auto9-step-enter relative">
@@ -1755,4 +1739,3 @@ function SummaryLine({
     </div>
   );
 }
-
