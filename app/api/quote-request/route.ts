@@ -2,6 +2,8 @@ import { put } from "@vercel/blob";
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 
+import { persistWebsiteLead } from "../../lib/crm-intake";
+
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
@@ -190,6 +192,35 @@ export async function POST(request: Request) {
           status: 400,
         },
       );
+    }
+
+    try {
+      await persistWebsiteLead({
+        customerName: payload.customerName,
+        customerPhone: payload.customerPhone,
+        customerCity: payload.customerCity,
+        servicePlace: payload.servicePlace,
+        servicePlaceLabel: payload.servicePlaceLabel,
+        availabilityDateTime: payload.availabilityDateTime,
+        formattedAvailabilityDateTime: payload.formattedAvailabilityDateTime,
+        serviceId: payload.serviceId,
+        serviceName: payload.serviceName,
+        vehicleId: payload.vehicleId,
+        vehicleName: payload.vehicleName,
+        basePrice: payload.basePrice,
+        selectedOptions: payload.selectedOptions,
+        selectedPremiumAddons: payload.selectedPremiumAddons,
+        totalPrice: payload.totalPrice,
+        estimatedTime: payload.estimatedTime,
+        hasQuoteAddon: payload.hasQuoteAddon,
+        customerComment: payload.customerComment,
+        mainPhotoIndex: payload.mainPhotoIndex,
+        reservationMessage: payload.reservationMessage,
+        source: "website_quote_request",
+        sourcePage: "/devis",
+      });
+    } catch (databaseError) {
+      console.warn("CRM persistence skipped for quote request:", databaseError);
     }
 
     const photos = formData
