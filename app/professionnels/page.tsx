@@ -1,6 +1,8 @@
+"use client";
+
+import { FormEvent, useState } from "react";
 import { Footer } from "../components/Footer";
 import { Partners } from "../components/Partners";
-import { ProContactForm } from "../components/ProContactForm";
 
 const targets = [
   "Garages indépendants",
@@ -41,7 +43,7 @@ const services = [
   },
   {
     name: "Livraison client",
-    price: "Sur devis",
+    price: "100 €",
     text: "Préparation esthétique avant remise des clés pour une livraison plus premium.",
     details: [
       "Finition intérieure",
@@ -73,6 +75,89 @@ const steps = [
 ];
 
 export default function ProfessionnelsPage() {
+  const [form, setForm] = useState({
+    garage: "",
+    date: "",
+    time: "",
+    vehicle: "",
+    plate: "",
+    service: "",
+  });
+
+  const [sending, setSending] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
+
+  const ready =
+    form.garage.trim().length > 1 &&
+    form.date.trim().length > 0 &&
+    form.time.trim().length > 0 &&
+    form.vehicle.trim().length > 1 &&
+    form.service.trim().length > 0;
+
+  function handleChange(
+    event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) {
+    setForm((current) => ({
+      ...current,
+      [event.target.name]: event.target.value,
+    }));
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!ready || sending) return;
+
+    setSending(true);
+    setError("");
+    setSuccess(false);
+
+    try {
+      const response = await fetch("/api/pro-booking", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          garage: form.garage.trim(),
+          date: form.date,
+          time: form.time,
+          vehicle: form.vehicle.trim(),
+          plate: form.plate.trim(),
+          service: form.service,
+        }),
+      });
+
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok || !result?.success) {
+        throw new Error(
+          result?.error || "Impossible d’envoyer la réservation pour le moment."
+        );
+      }
+
+      setSuccess(true);
+
+      setForm({
+        garage: "",
+        date: "",
+        time: "",
+        vehicle: "",
+        plate: "",
+        service: "",
+      });
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Une erreur est survenue pendant l’envoi."
+      );
+    } finally {
+      setSending(false);
+    }
+  }
+
   return (
     <main className="min-h-screen bg-[#050608] text-white">
       <div className="border-b border-white/10 px-6 py-6 md:px-12">
@@ -117,10 +202,10 @@ export default function ProfessionnelsPage() {
               </p>
 
               <a
-                href="#demande-partenariat"
-                className="mt-7 inline-flex rounded-full bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] text-[#050608] shadow-[0_18px_45px_rgba(184,199,209,.18)] px-7 py-4 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
+                href="#reservation"
+                className="mt-7 inline-flex rounded-full bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] px-7 py-4 text-xs font-black uppercase tracking-[0.25em] text-[#050608] shadow-[0_18px_45px_rgba(184,199,209,.18)] transition hover:scale-105"
               >
-                Demander un partenariat →
+                Réserver une préparation →
               </a>
             </div>
           </div>
@@ -258,7 +343,184 @@ export default function ProfessionnelsPage() {
             </div>
           </div>
 
-          <ProContactForm />
+          <section
+            id="reservation"
+            className="mt-24 rounded-[2rem] border border-[#B8C7D1]/20 bg-[linear-gradient(145deg,rgba(255,255,255,.06),rgba(184,199,209,.04))] p-7 md:p-10"
+          >
+            <div className="max-w-3xl">
+              <p className="text-xs font-black uppercase tracking-[0.55em] text-[#B8C7D1]">
+                Réservation professionnels
+              </p>
+
+              <h2 className="mt-5 text-4xl font-black uppercase tracking-[-0.05em] md:text-6xl">
+                Réserver une préparation
+              </h2>
+
+              <p className="mt-5 max-w-2xl leading-relaxed text-white/50">
+                Votre véhicule à préparer en quelques secondes. Sélectionnez
+                votre créneau souhaité et AUTO 9 vous confirme rapidement la
+                réservation.
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="mt-10 grid gap-6">
+              <div className="grid gap-6 md:grid-cols-2">
+                <div>
+                  <label className="mb-3 block text-xs font-black uppercase tracking-[0.25em] text-white/60">
+                    Nom du garage *
+                  </label>
+
+                  <input
+                    required
+                    type="text"
+                    name="garage"
+                    value={form.garage}
+                    onChange={handleChange}
+                    placeholder="Ex : Twiice Auto Nîmes"
+                    className="w-full rounded-2xl border border-white/10 bg-black/30 px-5 py-4 text-white outline-none transition placeholder:text-white/20 focus:border-[#B8C7D1]/50"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-3 block text-xs font-black uppercase tracking-[0.25em] text-white/60">
+                    Véhicule / Modèle *
+                  </label>
+
+                  <input
+                    required
+                    type="text"
+                    name="vehicle"
+                    value={form.vehicle}
+                    onChange={handleChange}
+                    placeholder="Ex : Peugeot 3008"
+                    className="w-full rounded-2xl border border-white/10 bg-black/30 px-5 py-4 text-white outline-none transition placeholder:text-white/20 focus:border-[#B8C7D1]/50"
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-6 md:grid-cols-2">
+                <div>
+                  <label className="mb-3 block text-xs font-black uppercase tracking-[0.25em] text-white/60">
+                    Date souhaitée *
+                  </label>
+
+                  <input
+                    required
+                    type="date"
+                    name="date"
+                    value={form.date}
+                    onChange={handleChange}
+                    className="w-full rounded-2xl border border-white/10 bg-black/30 px-5 py-4 text-white outline-none transition focus:border-[#B8C7D1]/50"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-3 block text-xs font-black uppercase tracking-[0.25em] text-white/60">
+                    Heure souhaitée *
+                  </label>
+
+                  <input
+                    required
+                    type="time"
+                    name="time"
+                    value={form.time}
+                    onChange={handleChange}
+                    className="w-full rounded-2xl border border-white/10 bg-black/30 px-5 py-4 text-white outline-none transition focus:border-[#B8C7D1]/50"
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-6 md:grid-cols-2">
+                <div>
+                  <label className="mb-3 block text-xs font-black uppercase tracking-[0.25em] text-white/60">
+                    Immatriculation
+                  </label>
+
+                  <input
+                    type="text"
+                    name="plate"
+                    value={form.plate}
+                    onChange={handleChange}
+                    placeholder="Ex : AB-123-CD"
+                    className="w-full rounded-2xl border border-white/10 bg-black/30 px-5 py-4 uppercase text-white outline-none transition placeholder:text-white/20 focus:border-[#B8C7D1]/50"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-3 block text-xs font-black uppercase tracking-[0.25em] text-white/60">
+                    Prestation *
+                  </label>
+
+                  <select
+                    required
+                    name="service"
+                    value={form.service}
+                    onChange={handleChange}
+                    className="w-full rounded-2xl border border-white/10 bg-black/30 px-5 py-4 text-white outline-none transition focus:border-[#B8C7D1]/50"
+                  >
+                    <option value="" className="bg-[#111]">
+                      Choisir une prestation
+                    </option>
+
+                    <option value="Intérieur + Extérieur" className="bg-[#111]">
+                      Intérieur + Extérieur
+                    </option>
+
+                    <option value="Intérieur" className="bg-[#111]">
+                      Intérieur
+                    </option>
+
+                    <option value="Extérieur" className="bg-[#111]">
+                      Extérieur
+                    </option>
+
+                    <option
+                      value="Formule Livraison — 100 €"
+                      className="bg-[#111]"
+                    >
+                      Formule Livraison — 100 €
+                    </option>
+
+                    <option value="Autre" className="bg-[#111]">
+                      Autre
+                    </option>
+                  </select>
+                </div>
+              </div>
+
+              {error && (
+                <p className="rounded-xl border border-red-400/25 bg-red-400/10 p-4 text-sm font-bold text-red-200">
+                  {error}
+                </p>
+              )}
+
+              {success && (
+                <p className="rounded-xl border border-emerald-400/25 bg-emerald-400/10 p-4 text-sm font-bold text-emerald-200">
+                  Réservation envoyée ✓ AUTO 9 vous confirme rapidement le
+                  créneau.
+                </p>
+              )}
+
+              <div className="flex flex-col justify-between gap-5 border-t border-white/10 pt-6 sm:flex-row sm:items-center">
+                <p className="max-w-xl text-xs leading-relaxed text-white/40">
+                  Réservation destinée aux garages et professionnels partenaires
+                  AUTO 9.
+                </p>
+
+                <button
+                  type="submit"
+                  disabled={!ready || sending}
+                  className="rounded-full bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] px-8 py-5 text-xs font-black uppercase tracking-[0.3em] text-[#050608] shadow-[0_18px_45px_rgba(184,199,209,.18)] transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-35"
+                >
+                  {sending
+                    ? "Envoi..."
+                    : success
+                    ? "Réservation envoyée ✓"
+                    : "Réserver la préparation →"}
+                </button>
+              </div>
+            </form>
+          </section>
         </div>
       </section>
 

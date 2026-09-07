@@ -769,9 +769,6 @@ export function QuoteConfigurator() {
                         onClick={() => {
                           setSelectedVehicle(vehicle.id);
 
-                          window.setTimeout(() => {
-                            goToStep(2);
-                          }, 180);
                         }}
                         className={`auto9-card-enter group relative overflow-hidden rounded-2xl border p-3 text-left transition duration-300 hover:-translate-y-1 lg:p-6 ${
                           active

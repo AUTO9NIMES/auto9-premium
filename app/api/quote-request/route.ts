@@ -74,7 +74,9 @@ function safeFileName(fileName: string) {
     .toLowerCase();
 }
 
-function validatePayload(payload: QuotePayload) {
+function validatePayload(
+  payload: QuotePayload
+) {
   if (!payload.customerName?.trim()) {
     return "Le nom du client est obligatoire.";
   }
@@ -83,105 +85,136 @@ function validatePayload(payload: QuotePayload) {
     return "Le numéro de téléphone est obligatoire.";
   }
 
-  if (!payload.availabilityDateTime?.trim()) {
+  if (
+    !payload.availabilityDateTime?.trim()
+  ) {
     return "Le créneau souhaité est obligatoire.";
   }
 
-  if (!payload.serviceName?.trim() || !payload.vehicleName?.trim()) {
+  if (
+    !payload.serviceName?.trim() ||
+    !payload.vehicleName?.trim()
+  ) {
     return "La prestation sélectionnée est incomplète.";
   }
 
-  if (!Number.isFinite(payload.totalPrice)) {
+  if (
+    !Number.isFinite(
+      payload.totalPrice
+    )
+  ) {
     return "Le prix estimé est invalide.";
   }
 
   return null;
 }
 
-export async function POST(request: Request) {
+export async function POST(
+  request: Request
+) {
   try {
-    const resendApiKey = process.env.RESEND_API_KEY;
-    const destinationEmail = process.env.AUTO9_REQUEST_EMAIL;
-    const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
+    /* ===================================================== */
+    /* ENVIRONNEMENT                                         */
+    /* ===================================================== */
 
-    /*
-     * Adresse de test officielle Resend.
-     * Les demandes sont tout de même reçues sur AUTO9_REQUEST_EMAIL.
-     *
-     * Plus tard, quand le domaine auto9nimes.com sera vérifié dans Resend,
-     * on pourra remplacer cette adresse par une adresse AUTO 9.
-     */
-    const senderEmail = "AUTO 9 <onboarding@resend.dev>";
+    const resendApiKey =
+      process.env.RESEND_API_KEY;
+
+    const destinationEmail =
+      process.env.AUTO9_REQUEST_EMAIL;
+
+    const senderEmail =
+      process.env.RESEND_FROM_EMAIL ||
+      "AUTO 9 <onboarding@resend.dev>";
 
     if (!resendApiKey) {
-      console.error("RESEND_API_KEY manquante.");
+      console.error(
+        "RESEND_API_KEY manquante."
+      );
 
       return NextResponse.json(
         {
-          error: "La clé Resend n’est pas configurée.",
+          error:
+            "La clé Resend n’est pas configurée.",
         },
         {
           status: 500,
-        },
+        }
       );
     }
 
     if (!destinationEmail) {
-      console.error("AUTO9_REQUEST_EMAIL manquante.");
+      console.error(
+        "AUTO9_REQUEST_EMAIL manquante."
+      );
 
       return NextResponse.json(
         {
-          error: "L’adresse de réception AUTO 9 n’est pas configurée.",
+          error:
+            "L’adresse de réception AUTO 9 n’est pas configurée.",
         },
         {
           status: 500,
-        },
+        }
       );
     }
 
-    if (!blobToken) {
-      console.error("BLOB_READ_WRITE_TOKEN manquant.");
+    /*
+     * IMPORTANT :
+     *
+     * Aucun contrôle BLOB_READ_WRITE_TOKEN.
+     *
+     * Le Blob Store AUTO 9 est connecté au projet
+     * avec OIDC.
+     *
+     * Vercel fournit automatiquement
+     * BLOB_STORE_ID + VERCEL_OIDC_TOKEN.
+     */
 
+    /* ===================================================== */
+    /* FORMDATA                                              */
+    /* ===================================================== */
+
+    const formData =
+      await request.formData();
+
+    const rawPayload =
+      formData.get("payload");
+
+    if (
+      typeof rawPayload !== "string"
+    ) {
       return NextResponse.json(
         {
-          error: "Le stockage des photos n’est pas configuré.",
-        },
-        {
-          status: 500,
-        },
-      );
-    }
-
-    const formData = await request.formData();
-    const rawPayload = formData.get("payload");
-
-    if (typeof rawPayload !== "string") {
-      return NextResponse.json(
-        {
-          error: "Les informations de la demande sont manquantes.",
+          error:
+            "Les informations de la demande sont manquantes.",
         },
         {
           status: 400,
-        },
+        }
       );
     }
 
     let payload: QuotePayload;
 
     try {
-      payload = JSON.parse(rawPayload) as QuotePayload;
+      payload = JSON.parse(
+        rawPayload
+      ) as QuotePayload;
     } catch {
       return NextResponse.json(
         {
-          error: "Les informations de la demande sont invalides.",
+          error:
+            "Les informations de la demande sont invalides.",
         },
         {
           status: 400,
-        },
+        }
       );
     }
 
-    const payloadError = validatePayload(payload);
+    const payloadError =
+      validatePayload(payload);
 
     if (payloadError) {
       return NextResponse.json(
@@ -190,7 +223,7 @@ export async function POST(request: Request) {
         },
         {
           status: 400,
-        },
+        }
       );
     }
 
@@ -223,127 +256,215 @@ export async function POST(request: Request) {
       console.warn("CRM persistence skipped for quote request:", databaseError);
     }
 
+    /* ===================================================== */
+    /* PHOTOS                                                */
+    /* ===================================================== */
+
     const photos = formData
       .getAll("photos")
       .filter(
         (entry): entry is File =>
-          entry instanceof File && entry.size > 0,
+          entry instanceof File &&
+          entry.size > 0
       );
 
-    if (photos.length > MAX_PHOTOS) {
+    if (
+      photos.length >
+      MAX_PHOTOS
+    ) {
       return NextResponse.json(
         {
-          error: `Vous pouvez envoyer au maximum ${MAX_PHOTOS} photos.`,
+          error:
+            `Vous pouvez envoyer au maximum ${MAX_PHOTOS} photos.`,
         },
         {
           status: 400,
-        },
+        }
       );
     }
 
     for (const photo of photos) {
-      if (!ALLOWED_IMAGE_TYPES.has(photo.type)) {
+      if (
+        !ALLOWED_IMAGE_TYPES.has(
+          photo.type
+        )
+      ) {
         return NextResponse.json(
           {
-            error: `Le format du fichier « ${photo.name} » n’est pas accepté.`,
+            error:
+              `Le format du fichier « ${photo.name} » n’est pas accepté.`,
           },
           {
             status: 400,
-          },
+          }
         );
       }
 
-      if (photo.size > MAX_FILE_SIZE) {
+      if (
+        photo.size >
+        MAX_FILE_SIZE
+      ) {
         return NextResponse.json(
           {
-            error: `La photo « ${photo.name} » dépasse 10 Mo.`,
+            error:
+              `La photo « ${photo.name} » dépasse 10 Mo.`,
           },
           {
             status: 400,
-          },
+          }
         );
       }
     }
 
-    const requestId = `${Date.now()}-${crypto
-      .randomUUID()
-      .slice(0, 8)}`;
+    /* ===================================================== */
+    /* IDENTIFIANT                                           */
+    /* ===================================================== */
 
-    const uploadedPhotos = await Promise.all(
-      photos.map(async (photo, index) => {
-        const blob = await put(
-          `quote-requests/${requestId}/${index + 1}-${safeFileName(
-            photo.name,
-          )}`,
-          photo,
-          {
-            access: "public",
-            addRandomSuffix: true,
-            contentType: photo.type,
+    const requestId =
+      `${Date.now()}-${crypto
+        .randomUUID()
+        .slice(0, 8)}`;
 
-            /*
-             * On force explicitement la clé Blob.
-             * Cela empêche Vercel d’essayer d’utiliser l’OIDC en local.
-             */
-            token: blobToken,
-          },
-        );
+    /* ===================================================== */
+    /* UPLOAD PHOTOS VERCEL BLOB — OIDC                      */
+    /* ===================================================== */
 
-        return {
-          name: photo.name,
-          url: blob.url,
-          isMain: index === payload.mainPhotoIndex,
-        };
-      }),
-    );
+    const uploadedPhotos =
+      await Promise.all(
+        photos.map(
+          async (
+            photo,
+            index
+          ) => {
+            const blob =
+              await put(
+                `quote-requests/${requestId}/${
+                  index + 1
+                }-${safeFileName(
+                  photo.name
+                )}`,
+                photo,
+                {
+                  access:
+                    "public",
 
-    const optionRows = payload.selectedOptions.length
-      ? payload.selectedOptions
-          .map((option) => `<li>${escapeHtml(option)}</li>`)
-          .join("")
-      : "<li>Aucune option</li>";
+                  addRandomSuffix:
+                    true,
 
-    const premiumRows = payload.selectedPremiumAddons.length
-      ? payload.selectedPremiumAddons
-          .map(
-            (addon) =>
-              `<li>${escapeHtml(addon.name)} — ${
-                addon.price === null
-                  ? "Sur devis"
-                  : `+${addon.price} €`
-              }</li>`,
-          )
-          .join("")
-      : "<li>Aucun complément premium</li>";
+                  contentType:
+                    photo.type,
+                }
+              );
 
-    const photoRows = uploadedPhotos.length
-      ? uploadedPhotos
-          .map(
-            (photo, index) => `
-              <li style="margin-bottom: 12px;">
-                <a
-                  href="${escapeHtml(photo.url)}"
-                  target="_blank"
-                  rel="noreferrer"
+            return {
+              name:
+                photo.name,
+
+              url:
+                blob.url,
+
+              isMain:
+                index ===
+                payload.mainPhotoIndex,
+            };
+          }
+        )
+      );
+
+    /* ===================================================== */
+    /* OPTIONS                                               */
+    /* ===================================================== */
+
+    const optionRows =
+      payload.selectedOptions.length
+        ? payload.selectedOptions
+            .map(
+              (option) =>
+                `<li>${escapeHtml(
+                  option
+                )}</li>`
+            )
+            .join("")
+        : "<li>Aucune option</li>";
+
+    const premiumRows =
+      payload
+        .selectedPremiumAddons
+        .length
+        ? payload
+            .selectedPremiumAddons
+            .map(
+              (addon) =>
+                `<li>${escapeHtml(
+                  addon.name
+                )} — ${
+                  addon.price ===
+                  null
+                    ? "Sur devis"
+                    : `+${addon.price} €`
+                }</li>`
+            )
+            .join("")
+        : "<li>Aucun complément premium</li>";
+
+    const photoRows =
+      uploadedPhotos.length
+        ? uploadedPhotos
+            .map(
+              (
+                photo,
+                index
+              ) => `
+                <li
+                  style="
+                    margin-bottom:12px;
+                  "
                 >
-                  Photo ${index + 1}${
-                    photo.isMain ? " — photo principale" : ""
-                  } : ${escapeHtml(photo.name)}
-                </a>
-              </li>
-            `,
-          )
-          .join("")
-      : "<li>Aucune photo envoyée</li>";
+                  <a
+                    href="${escapeHtml(
+                      photo.url
+                    )}"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Photo ${
+                      index + 1
+                    }${
+                      photo.isMain
+                        ? " — photo principale"
+                        : ""
+                    } :
+                    ${escapeHtml(
+                      photo.name
+                    )}
+                  </a>
+                </li>
+              `
+            )
+            .join("")
+        : "<li>Aucune photo envoyée</li>";
 
-    const resend = new Resend(resendApiKey);
+    /* ===================================================== */
+    /* RESEND                                                */
+    /* ===================================================== */
 
-    const subject = `Nouvelle demande AUTO 9 — ${payload.customerName} — ${payload.vehicleName}`;
+    const resend =
+      new Resend(resendApiKey);
 
-    const { data: emailData, error: emailError } =
+    const subject =
+      `Nouvelle demande AUTO 9 — ${payload.customerName} — ${payload.vehicleName}`;
+
+    const {
+      data: emailData,
+      error: emailError,
+    } =
       await resend.emails.send({
-        from: senderEmail,
-        to: [destinationEmail],
+        from:
+          senderEmail,
+
+        to:
+          [destinationEmail],
+
         subject,
 
         text: `${payload.reservationMessage}
@@ -351,7 +472,12 @@ export async function POST(request: Request) {
 Photos :
 ${
   uploadedPhotos.length
-    ? uploadedPhotos.map((photo) => photo.url).join("\n")
+    ? uploadedPhotos
+        .map(
+          (photo) =>
+            photo.url
+        )
+        .join("\n")
     : "Aucune photo envoyée"
 }
 
@@ -360,28 +486,30 @@ Référence de la demande : ${requestId}`,
         html: `
           <div
             style="
-              max-width: 720px;
-              margin: 0 auto;
-              font-family: Arial, Helvetica, sans-serif;
-              color: #111827;
-              background: #ffffff;
+              max-width:720px;
+              margin:0 auto;
+              font-family:Arial,Helvetica,sans-serif;
+              color:#111827;
+              background:#ffffff;
             "
           >
+
             <div
               style="
-                padding: 28px;
-                color: #ffffff;
-                background: #050608;
-                border-radius: 20px 20px 0 0;
+                padding:28px;
+                color:#ffffff;
+                background:#050608;
+                border-radius:20px 20px 0 0;
               "
             >
+
               <div
                 style="
-                  color: #7db7ff;
-                  font-size: 12px;
-                  font-weight: 700;
-                  letter-spacing: 3px;
-                  text-transform: uppercase;
+                  color:#7db7ff;
+                  font-size:12px;
+                  font-weight:700;
+                  letter-spacing:3px;
+                  text-transform:uppercase;
                 "
               >
                 AUTO 9
@@ -389,83 +517,121 @@ Référence de la demande : ${requestId}`,
 
               <h1
                 style="
-                  margin: 12px 0 0;
-                  font-size: 28px;
+                  margin:12px 0 0;
+                  font-size:28px;
                 "
               >
                 Nouvelle demande de prestation
               </h1>
+
             </div>
 
             <div
               style="
-                padding: 28px;
-                border: 1px solid #e5e7eb;
-                border-top: 0;
-                border-radius: 0 0 20px 20px;
+                padding:28px;
+                border:1px solid #e5e7eb;
+                border-top:0;
+                border-radius:0 0 20px 20px;
               "
             >
-              <h2 style="margin-top: 0;">
+
+              <h2
+                style="
+                  margin-top:0;
+                "
+              >
                 Informations du client
               </h2>
 
               <p>
                 <strong>Nom :</strong>
-                ${escapeHtml(payload.customerName)}
+                ${escapeHtml(
+                  payload.customerName
+                )}
               </p>
 
               <p>
                 <strong>Téléphone :</strong>
-                <a href="tel:${escapeHtml(payload.customerPhone)}">
-                  ${escapeHtml(payload.customerPhone)}
+
+                <a
+                  href="tel:${escapeHtml(
+                    payload.customerPhone
+                  )}"
+                >
+                  ${escapeHtml(
+                    payload.customerPhone
+                  )}
                 </a>
               </p>
 
               <p>
                 <strong>Ville :</strong>
+
                 ${escapeHtml(
-                  payload.customerCity || "Non renseignée",
+                  payload.customerCity ||
+                    "Non renseignée"
                 )}
               </p>
 
               <p>
-                <strong>Lieu d’intervention :</strong>
+                <strong>
+                  Lieu d’intervention :
+                </strong>
+
                 ${escapeHtml(
-                  payload.servicePlaceLabel || "Non renseigné",
+                  payload.servicePlaceLabel ||
+                    "Non renseigné"
                 )}
               </p>
 
               <p>
-                <strong>Créneau souhaité :</strong>
+                <strong>
+                  Créneau souhaité :
+                </strong>
+
                 ${escapeHtml(
                   payload.formattedAvailabilityDateTime ||
-                    payload.availabilityDateTime,
+                    payload.availabilityDateTime
                 )}
               </p>
 
               <hr
                 style="
-                  margin: 26px 0;
-                  border: 0;
-                  border-top: 1px solid #e5e7eb;
+                  margin:26px 0;
+                  border:0;
+                  border-top:1px solid #e5e7eb;
                 "
               />
 
-              <h2>Prestation demandée</h2>
+              <h2>
+                Prestation demandée
+              </h2>
 
               <p>
                 <strong>Formule :</strong>
-                ${escapeHtml(payload.serviceName)}
+
+                ${escapeHtml(
+                  payload.serviceName
+                )}
               </p>
 
               <p>
                 <strong>Véhicule :</strong>
-                ${escapeHtml(payload.vehicleName)}
+
+                ${escapeHtml(
+                  payload.vehicleName
+                )}
               </p>
 
               <p>
-                <strong>Prix estimé :</strong>
-                ${escapeHtml(payload.totalPrice)} €
+                <strong>
+                  Prix estimé :
+                </strong>
+
+                ${escapeHtml(
+                  payload.totalPrice
+                )} €
+
                 ${
                   payload.hasQuoteAddon
                     ? " + complément sur devis"
@@ -474,38 +640,54 @@ Référence de la demande : ${requestId}`,
               </p>
 
               <p>
-                <strong>Temps estimé :</strong>
-                ${escapeHtml(payload.estimatedTime)}
+                <strong>
+                  Temps estimé :
+                </strong>
+
+                ${escapeHtml(
+                  payload.estimatedTime
+                )}
               </p>
 
-              <h3>Options sélectionnées</h3>
+              <h3>
+                Options sélectionnées
+              </h3>
 
               <ul>
                 ${optionRows}
               </ul>
 
-              <h3>Compléments premium</h3>
+              <h3>
+                Compléments premium
+              </h3>
 
               <ul>
                 ${premiumRows}
               </ul>
 
-              <h3>Commentaire du client</h3>
+              <h3>
+                Commentaire du client
+              </h3>
 
               <div
                 style="
-                  padding: 16px;
-                  white-space: pre-wrap;
-                  background: #f3f4f6;
-                  border-radius: 12px;
+                  padding:16px;
+                  white-space:pre-wrap;
+                  background:#f3f4f6;
+                  border-radius:12px;
                 "
               >
                 ${escapeHtml(
-                  payload.customerComment || "Aucun commentaire",
+                  payload.customerComment ||
+                    "Aucun commentaire"
                 )}
               </div>
 
-              <h3 style="margin-top: 26px;">
+              <h3
+                style="
+                  margin-top:26px;
+                "
+              >
                 Photos du véhicule
               </h3>
 
@@ -515,21 +697,28 @@ Référence de la demande : ${requestId}`,
 
               <p
                 style="
-                  margin-top: 30px;
-                  color: #6b7280;
-                  font-size: 12px;
+                  margin-top:30px;
+                  color:#6b7280;
+                  font-size:12px;
                 "
               >
                 Référence de la demande :
-                ${escapeHtml(requestId)}
+                ${escapeHtml(
+                  requestId
+                )}
               </p>
+
             </div>
+
           </div>
         `,
       });
 
     if (emailError) {
-      console.error("Erreur Resend :", emailError);
+      console.error(
+        "Erreur Resend :",
+        emailError
+      );
 
       return NextResponse.json(
         {
@@ -539,24 +728,43 @@ Référence de la demande : ${requestId}`,
         },
         {
           status: 502,
-        },
+        }
       );
     }
 
-    console.log("Demande AUTO 9 envoyée :", {
-      requestId,
-      emailId: emailData?.id,
-      numberOfPhotos: uploadedPhotos.length,
-    });
+    console.log(
+      "Demande AUTO 9 envoyée :",
+      {
+        requestId,
+
+        emailId:
+          emailData?.id,
+
+        numberOfPhotos:
+          uploadedPhotos.length,
+      }
+    );
 
     return NextResponse.json({
-      success: true,
+      success:
+        true,
+
       requestId,
-      emailId: emailData?.id,
-      photoUrls: uploadedPhotos.map((photo) => photo.url),
+
+      emailId:
+        emailData?.id,
+
+      photoUrls:
+        uploadedPhotos.map(
+          (photo) =>
+            photo.url
+        ),
     });
   } catch (error) {
-    console.error("Erreur quote-request :", error);
+    console.error(
+      "Erreur quote-request :",
+      error
+    );
 
     const message =
       error instanceof Error
@@ -569,7 +777,7 @@ Référence de la demande : ${requestId}`,
       },
       {
         status: 500,
-      },
+      }
     );
   }
 }
