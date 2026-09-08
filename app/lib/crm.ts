@@ -13,6 +13,7 @@ export type LeadLifecycleStatus =
   | "CLOSED_LOST";
 
 export type JobStatus =
+  | "QUOTE_ACCEPTED"
   | "SCHEDULED"
   | "CONFIRMED"
   | "IN_PROGRESS"
@@ -66,6 +67,7 @@ export type Lead = {
   id?: string;
   business_id: string;
   customer_id: string;
+  vehicle_id?: string | null;
   source: string;
   source_page?: string | null;
   lifecycle_status: LeadLifecycleStatus;
@@ -132,6 +134,12 @@ export type ActivityLog = {
   event_type: string;
   event_data?: Record<string, unknown> | null;
   created_at?: string;
+};
+
+export type AcceptQuoteAndCreateJobResult = {
+  quote: Quote;
+  lead: Lead;
+  job: Job;
 };
 
 function normalizeEmail(value?: string | null): string | null {
@@ -304,6 +312,77 @@ export async function createJob(input: Job) {
   const businessId = await getCurrentBusinessId();
 
   return (await supabaseRest<Job>("jobs", "POST", { ...input, business_id: businessId }, "select=*")) as Job | null;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object";
+}
+
+function validateAcceptedQuoteResult(
+  value: unknown,
+  businessId: string,
+  quoteId: string,
+): AcceptQuoteAndCreateJobResult {
+  if (!isRecord(value) || !isRecord(value.quote) || !isRecord(value.lead) || !isRecord(value.job)) {
+    throw new Error("Supabase returned an invalid quote acceptance result.");
+  }
+
+  const quote = value.quote;
+  const lead = value.lead;
+  const job = value.job;
+
+  if (
+    quote.id !== quoteId ||
+    quote.business_id !== businessId ||
+    quote.status !== "ACCEPTED" ||
+    typeof quote.lead_id !== "string" ||
+    lead.id !== quote.lead_id ||
+    lead.business_id !== businessId ||
+    lead.lifecycle_status !== "BOOKED" ||
+    typeof lead.customer_id !== "string" ||
+    typeof job.id !== "string" ||
+    job.business_id !== businessId ||
+    job.customer_id !== lead.customer_id ||
+    job.lead_id !== lead.id ||
+    job.quote_id !== quote.id
+  ) {
+    throw new Error("Supabase returned an inconsistent quote acceptance result.");
+  }
+
+  return {
+    quote: quote as Quote,
+    lead: lead as Lead,
+    job: job as Job,
+  };
+}
+
+export async function acceptQuoteAndCreateJob(input: {
+  quoteId: string;
+  source?: string;
+}): Promise<AcceptQuoteAndCreateJobResult> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const quoteId = input.quoteId.trim();
+
+  if (!quoteId) {
+    throw new Error("quoteId is required.");
+  }
+
+  const businessContext = await resolveCurrentBusinessContext();
+  const businessId = businessContext.businessId;
+  const result = await supabaseRest<unknown>(
+    "rpc/accept_quote_and_create_job",
+    "POST",
+    {
+      p_business_id: businessId,
+      p_quote_id: quoteId,
+      p_source: input.source?.trim() || "internal",
+    },
+  );
+
+  return validateAcceptedQuoteResult(result, businessId, quoteId);
 }
 
 export async function logActivity(input: ActivityLog) {

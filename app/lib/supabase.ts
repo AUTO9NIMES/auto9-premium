@@ -17,11 +17,14 @@ export async function supabaseRest<T>(
   }
 
   const url = new URL(`${supabaseUrl}/rest/v1/${path}`);
+  const isRpcCall = path.startsWith("rpc/");
   const effectiveQuery = query
     ? query.includes("select=")
       ? query
       : `${query}&select=*`
-    : "select=*";
+    : isRpcCall
+      ? ""
+      : "select=*";
 
   url.search = effectiveQuery;
 

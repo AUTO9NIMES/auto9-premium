@@ -75,6 +75,7 @@ export async function persistWebsiteLead(draft: WebsiteLeadDraft) {
   const lead = await createLead({
     business_id: businessId,
     customer_id: customer.id,
+    vehicle_id: vehicle?.id || null,
     source: draft.source || "website",
     source_page: draft.sourcePage || "/devis",
     lifecycle_status: "NEW" as LeadLifecycleStatus,
