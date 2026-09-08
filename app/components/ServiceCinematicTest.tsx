@@ -51,24 +51,15 @@ export function ServiceCinematicTest() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [active, setActive] = useState<CinematicConfig | null>(null);
   const [videoReady, setVideoReady] = useState(false);
+  const [videoError, setVideoError] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [titleVisible, setTitleVisible] = useState(false);
 
   function closeCinematic() {
-    if (active) {
-      try {
-        window.sessionStorage.setItem(
-          `auto9-cinematic-seen-${active.key}`,
-          "1",
-        );
-      } catch {
-        // Session storage may be unavailable in strict privacy modes.
-      }
-    }
-
     videoRef.current?.pause();
     setActive(null);
     setVideoReady(false);
+    setVideoError(false);
     setPlaying(false);
     setTitleVisible(false);
   }
@@ -84,16 +75,6 @@ export function ServiceCinematicTest() {
       const serviceKey = serviceFromButton(button);
       if (!serviceKey) return;
 
-      try {
-        if (
-          window.sessionStorage.getItem(`auto9-cinematic-seen-${serviceKey}`)
-        ) {
-          return;
-        }
-      } catch {
-        // Continue without session persistence.
-      }
-
       const reduceMotion = window.matchMedia(
         "(prefers-reduced-motion: reduce)",
       ).matches;
@@ -102,16 +83,13 @@ export function ServiceCinematicTest() {
 
       setActive(cinematics[serviceKey]);
       setVideoReady(false);
+      setVideoError(false);
       setPlaying(false);
-      setTitleVisible(false);
-
-      window.requestAnimationFrame(() => {
-        window.requestAnimationFrame(() => setTitleVisible(true));
-      });
+      setTitleVisible(true);
     }
 
-    document.addEventListener("click", handleClick);
-    return () => document.removeEventListener("click", handleClick);
+    document.addEventListener("click", handleClick, true);
+    return () => document.removeEventListener("click", handleClick, true);
   }, []);
 
   useEffect(() => {
@@ -133,12 +111,13 @@ export function ServiceCinematicTest() {
   }, [active]);
 
   useEffect(() => {
-    if (!active || !videoReady) return;
+    if (!active || !videoReady || videoError) return;
 
     const playTimer = window.setTimeout(() => {
       setPlaying(true);
       void videoRef.current?.play().catch(() => {
-        closeCinematic();
+        setVideoError(true);
+        setPlaying(false);
       });
     }, 520);
 
@@ -150,7 +129,7 @@ export function ServiceCinematicTest() {
       window.clearTimeout(playTimer);
       window.clearTimeout(titleTimer);
     };
-  }, [active, videoReady]);
+  }, [active, videoReady, videoError]);
 
   if (!active) return null;
 
@@ -170,7 +149,12 @@ export function ServiceCinematicTest() {
         preload="auto"
         onCanPlay={() => setVideoReady(true)}
         onEnded={closeCinematic}
-        onError={closeCinematic}
+        onError={() => {
+          setVideoError(true);
+          setVideoReady(false);
+          setPlaying(false);
+          setTitleVisible(true);
+        }}
         className={`absolute inset-0 h-full w-full object-contain transition duration-700 md:object-cover ${
           playing ? "scale-100 opacity-100" : "scale-[1.015] opacity-0"
         }`}
@@ -204,16 +188,22 @@ export function ServiceCinematicTest() {
         </div>
       </div>
 
-      {!videoReady && (
+      {!videoReady && !videoError && (
         <div className="pointer-events-none absolute inset-0 z-[5] grid place-items-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-[#4D8DFF]" />
+          <div className="mt-40 h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-[#4D8DFF]" />
+        </div>
+      )}
+
+      {videoError && (
+        <div className="absolute inset-x-4 bottom-24 z-20 mx-auto max-w-xl rounded-2xl border border-amber-300/20 bg-black/80 p-4 text-center text-sm text-white/75 backdrop-blur-md sm:bottom-28">
+          La vidéo test n’a pas pu se charger depuis Runway. Le déclenchement du plein écran fonctionne bien ; il faudra simplement héberger les fichiers directement sur AUTO 9 pour la version stable.
         </div>
       )}
 
       <button
         type="button"
         onClick={closeCinematic}
-        className="absolute bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-20 rounded-full border border-white/15 bg-black/45 px-4 py-2.5 text-[10px] font-black uppercase tracking-[0.16em] text-white/70 backdrop-blur-md transition hover:border-[#4D8DFF]/60 hover:bg-black/70 hover:text-white sm:bottom-6 sm:right-6 sm:px-5 sm:py-3 sm:text-xs"
+        className="absolute bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-30 rounded-full border border-white/15 bg-black/45 px-4 py-2.5 text-[10px] font-black uppercase tracking-[0.16em] text-white/70 backdrop-blur-md transition hover:border-[#4D8DFF]/60 hover:bg-black/70 hover:text-white sm:bottom-6 sm:right-6 sm:px-5 sm:py-3 sm:text-xs"
       >
         Passer l’animation
       </button>
