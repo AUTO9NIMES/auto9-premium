@@ -5,7 +5,7 @@ export function Showcase() {
 
       <div className="relative mx-auto max-w-7xl">
         <div className="grid gap-12 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
-          <div>
+          <div data-motion-reveal>
             <p className="text-xs font-black uppercase tracking-[0.55em] text-[#B8C7D1]">
               L’expérience AUTO 9
             </p>
@@ -61,12 +61,12 @@ export function Showcase() {
             </div>
           </div>
 
-          <div className="relative">
+          <div className="relative" data-motion-reveal data-motion-delay="120">
             <div className="absolute -inset-5 rounded-[2.5rem] bg-[#B8C7D1]/5 blur-[60px]" />
 
             <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.025] p-3 shadow-[0_0_80px_rgba(184,199,209,.12)]">
               <div className="relative h-[360px] overflow-hidden rounded-[1.5rem] md:h-[460px] lg:h-[500px]">
-                <img
+                <img data-motion-image
                   src="/hero-audi.jpg"
                   alt="Nettoyage automobile premium AUTO 9"
                   loading="lazy"

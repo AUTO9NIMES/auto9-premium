@@ -46,7 +46,7 @@ export function Reviews() {
             Avis clients
           </p>
 
-          <h2 className="mt-4 text-[38px] font-black leading-[0.96] tracking-[-0.05em] sm:text-[48px] lg:text-[64px]">
+          <h2 data-motion-reveal className="mt-4 text-[38px] font-black leading-[0.96] tracking-[-0.05em] sm:text-[48px] lg:text-[64px]">
             Ils nous font{" "}
             <span className="bg-[linear-gradient(135deg,#dcecff,#6aa8ff)] bg-clip-text text-transparent">
               confiance.

@@ -19,7 +19,7 @@ export function Reservation() {
                 Réservation
               </p>
 
-              <h2 className="mt-7 max-w-[760px] text-[44px] font-black uppercase leading-[0.98] tracking-[-0.055em] sm:text-[58px] lg:text-[72px]">
+              <h2 data-motion-reveal className="mt-7 max-w-[760px] text-[44px] font-black uppercase leading-[0.98] tracking-[-0.055em] sm:text-[58px] lg:text-[72px]">
                 Prêt à
                 <br />
                 retrouver

@@ -18,7 +18,7 @@ export function RealisationsPreview() {
 
         <div className="mt-6 grid gap-10 lg:grid-cols-[1fr_.75fr] lg:items-center">
           <div>
-            <h2 className="max-w-4xl text-5xl font-black uppercase tracking-[-0.05em] md:text-7xl">
+            <h2 data-motion-reveal className="max-w-4xl text-5xl font-black uppercase tracking-[-0.05em] md:text-7xl">
               AUTO 9 au cœur de la passion auto.
             </h2>
 
