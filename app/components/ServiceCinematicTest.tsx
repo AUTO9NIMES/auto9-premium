@@ -47,13 +47,32 @@ function serviceFromButton(button: HTMLButtonElement): ServiceKey | null {
   return null;
 }
 
+function isServiceKey(value: string | null): value is ServiceKey {
+  return value === "duo" || value === "interieur" || value === "exterieur";
+}
+
 export function ServiceCinematicTest() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const autoStartedRef = useRef(false);
   const [active, setActive] = useState<CinematicConfig | null>(null);
   const [videoReady, setVideoReady] = useState(false);
   const [videoError, setVideoError] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [titleVisible, setTitleVisible] = useState(false);
+
+  function startCinematic(serviceKey: ServiceKey) {
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+
+    if (reduceMotion) return;
+
+    setActive(cinematics[serviceKey]);
+    setVideoReady(false);
+    setVideoError(false);
+    setPlaying(false);
+    setTitleVisible(true);
+  }
 
   function closeCinematic() {
     videoRef.current?.pause();
@@ -63,6 +82,18 @@ export function ServiceCinematicTest() {
     setPlaying(false);
     setTitleVisible(false);
   }
+
+  useEffect(() => {
+    if (autoStartedRef.current) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const service = params.get("service");
+
+    if (!isServiceKey(service)) return;
+
+    autoStartedRef.current = true;
+    startCinematic(service);
+  }, []);
 
   useEffect(() => {
     function handleClick(event: MouseEvent) {
@@ -75,17 +106,7 @@ export function ServiceCinematicTest() {
       const serviceKey = serviceFromButton(button);
       if (!serviceKey) return;
 
-      const reduceMotion = window.matchMedia(
-        "(prefers-reduced-motion: reduce)",
-      ).matches;
-
-      if (reduceMotion) return;
-
-      setActive(cinematics[serviceKey]);
-      setVideoReady(false);
-      setVideoError(false);
-      setPlaying(false);
-      setTitleVisible(true);
+      startCinematic(serviceKey);
     }
 
     document.addEventListener("click", handleClick, true);
