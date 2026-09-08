@@ -55,13 +55,13 @@ export default function Home() {
         <Stats />
         <Partners />
         <Showcase />
-        <Services />
       </div>
 
       {/* ===================================================== */}
       {/* SECTIONS COMMUNES MOBILE + DESKTOP                    */}
       {/* ===================================================== */}
 
+      <Services />
       <Transformations />
       <RealisationsPreview />
       <Reviews />
