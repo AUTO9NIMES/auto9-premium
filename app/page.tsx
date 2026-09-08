@@ -10,10 +10,13 @@ import { RealisationsPreview } from "./components/RealisationsPreview";
 import { Reviews } from "./components/Reviews";
 import { Reservation } from "./components/Reservation";
 import { Footer } from "./components/Footer";
+import { HomeMotion } from "./components/HomeMotion";
+import motion from "./home-motion.module.css";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-[#050608] text-white">
+    <main id="auto9-home" className={`${motion.home} min-h-screen bg-[#050608] text-white`}>
+      <HomeMotion />
       {/* ===================================================== */}
       {/* VERSION MOBILE — NOUVEAU DESIGN                       */}
       {/* ===================================================== */}

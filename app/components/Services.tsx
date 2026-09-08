@@ -109,15 +109,15 @@ export function Services() {
   return (
     <section id="services" className={styles.section} aria-labelledby="services-title">
       <div className={styles.container}>
-        <header className={styles.heading}>
+        <header className={styles.heading} data-motion-reveal>
           <p className={styles.eyebrow}>Nos prestations</p>
           <h2 id="services-title">Choisissez votre <span>niveau de soin.</span></h2>
           <p className={styles.intro}>Trois formules claires, pensées pour rendre à votre véhicule un aspect propre, soigné et valorisant.</p>
         </header>
 
         <div className={styles.grid}>
-          {services.map((service) => (
-            <article key={service.name} className={`${styles.card} ${service.name === "Formule Duo" ? styles.featured : ""}`}>
+          {services.map((service, index) => (
+            <article data-motion-reveal data-motion-delay={index * 90} key={service.name} className={`${styles.card} ${service.name === "Formule Duo" ? styles.featured : ""}`}>
               <div className={styles.overview}>
                 <div className={styles.photo}>
                   {/* Existing editorial photos retain their original files. */}
@@ -147,13 +147,13 @@ export function Services() {
           ))}
         </div>
 
-        <header className={styles.premiumHeading}>
+        <header className={styles.premiumHeading} data-motion-reveal>
           <div><p className={styles.eyebrow}>Expertise & rénovation</p><h2>Pour aller plus loin.</h2></div>
           <p className={styles.intro}>Des prestations ciblées pour restaurer, corriger et valoriser les éléments qui méritent une attention particulière.</p>
         </header>
         <div className={styles.grid}>
-          {premiumServices.map((service) => (
-            <article key={service.name} className={`${styles.card} ${styles.premium}`}>
+          {premiumServices.map((service, index) => (
+            <article data-motion-reveal data-motion-delay={index * 90} key={service.name} className={`${styles.card} ${styles.premium}`}>
               <div className={styles.overview}>
                 <div className={styles.photo}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -20,7 +20,7 @@ export function MobileHomeRefresh() {
 
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_82%_30%,rgba(0,87,255,.10),transparent_42%)]" />
 
-        <div className="relative z-10">
+        <div className="relative z-10" data-motion-intro>
           <p className="pt-20 text-[11px] font-black uppercase tracking-[0.38em] text-[#9fc7ff]">
             Detailing premium à domicile · Nîmes
           </p>
