@@ -136,10 +136,29 @@ export type ActivityLog = {
   created_at?: string;
 };
 
+export type Appointment = {
+  id?: string;
+  business_id: string;
+  customer_id: string;
+  lead_id?: string | null;
+  quote_id?: string | null;
+  job_id: string;
+  vehicle_id?: string | null;
+  status: "REQUESTED" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
+  requested_at: string;
+  confirmed_at?: string | null;
+  completed_at?: string | null;
+  cancelled_at?: string | null;
+  notes?: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
 export type AcceptQuoteAndCreateJobResult = {
   quote: Quote;
   lead: Lead;
   job: Job;
+  appointment: Appointment | null;
 };
 
 function normalizeEmail(value?: string | null): string | null {
@@ -330,6 +349,7 @@ function validateAcceptedQuoteResult(
   const quote = value.quote;
   const lead = value.lead;
   const job = value.job;
+  const appointment = value.appointment === undefined ? null : value.appointment;
 
   if (
     quote.id !== quoteId ||
@@ -344,7 +364,18 @@ function validateAcceptedQuoteResult(
     job.business_id !== businessId ||
     job.customer_id !== lead.customer_id ||
     job.lead_id !== lead.id ||
-    job.quote_id !== quote.id
+    job.quote_id !== quote.id ||
+    (appointment !== null && !isRecord(appointment)) ||
+    (isRecord(appointment) &&
+      (appointment.business_id !== businessId ||
+        appointment.customer_id !== lead.customer_id ||
+        appointment.lead_id !== lead.id ||
+        appointment.quote_id !== quote.id ||
+        appointment.job_id !== job.id ||
+        appointment.status !== "REQUESTED" &&
+          appointment.status !== "CONFIRMED" &&
+          appointment.status !== "COMPLETED" &&
+          appointment.status !== "CANCELLED"))
   ) {
     throw new Error("Supabase returned an inconsistent quote acceptance result.");
   }
@@ -353,6 +384,7 @@ function validateAcceptedQuoteResult(
     quote: quote as Quote,
     lead: lead as Lead,
     job: job as Job,
+    appointment: (appointment as Appointment | null) || null,
   };
 }
 
