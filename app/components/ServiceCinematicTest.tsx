@@ -54,33 +54,84 @@ function isServiceKey(value: string | null): value is ServiceKey {
 export function ServiceCinematicTest() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const autoStartedRef = useRef(false);
+  const titleTimerRef = useRef<number | null>(null);
+
   const [active, setActive] = useState<CinematicConfig | null>(null);
   const [videoReady, setVideoReady] = useState(false);
   const [videoError, setVideoError] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [needsTap, setNeedsTap] = useState(false);
   const [titleVisible, setTitleVisible] = useState(false);
 
+  function clearTitleTimer() {
+    if (titleTimerRef.current !== null) {
+      window.clearTimeout(titleTimerRef.current);
+      titleTimerRef.current = null;
+    }
+  }
+
+  function scheduleTitleFade() {
+    clearTitleTimer();
+    titleTimerRef.current = window.setTimeout(() => {
+      setTitleVisible(false);
+    }, 850);
+  }
+
   function startCinematic(serviceKey: ServiceKey) {
-    const reduceMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-
-    if (reduceMotion) return;
-
+    // Do not completely suppress the cinematic when the phone has
+    // "Reduce Motion" enabled: that was preventing the mobile test from
+    // appearing at all on some devices.
     setActive(cinematics[serviceKey]);
     setVideoReady(false);
     setVideoError(false);
     setPlaying(false);
+    setNeedsTap(false);
     setTitleVisible(true);
   }
 
   function closeCinematic() {
+    clearTitleTimer();
     videoRef.current?.pause();
     setActive(null);
     setVideoReady(false);
     setVideoError(false);
     setPlaying(false);
+    setNeedsTap(false);
     setTitleVisible(false);
+  }
+
+  function configureVideoForMobile(video: HTMLVideoElement) {
+    video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
+    video.setAttribute("muted", "");
+    video.setAttribute("playsinline", "");
+    video.setAttribute("webkit-playsinline", "true");
+  }
+
+  async function attemptPlay(fromUserGesture = false) {
+    const video = videoRef.current;
+    if (!video || videoError) return;
+
+    configureVideoForMobile(video);
+
+    try {
+      await video.play();
+      setPlaying(true);
+      setVideoReady(true);
+      setNeedsTap(false);
+      scheduleTitleFade();
+    } catch {
+      setPlaying(false);
+      if (fromUserGesture) {
+        setVideoError(true);
+      } else {
+        // iOS/Safari can still refuse programmatic autoplay depending on the
+        // user's browser/media policy. Keep the premium overlay visible and
+        // offer a single-tap start instead of failing silently.
+        setNeedsTap(true);
+      }
+    }
   }
 
   useEffect(() => {
@@ -119,6 +170,15 @@ export function ServiceCinematicTest() {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
+    const kickstart = window.setTimeout(() => {
+      const video = videoRef.current;
+      if (!video) return;
+
+      configureVideoForMobile(video);
+      video.load();
+      void attemptPlay();
+    }, 80);
+
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") closeCinematic();
     }
@@ -126,31 +186,15 @@ export function ServiceCinematicTest() {
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
+      window.clearTimeout(kickstart);
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [active]);
 
   useEffect(() => {
-    if (!active || !videoReady || videoError) return;
-
-    const playTimer = window.setTimeout(() => {
-      setPlaying(true);
-      void videoRef.current?.play().catch(() => {
-        setVideoError(true);
-        setPlaying(false);
-      });
-    }, 520);
-
-    const titleTimer = window.setTimeout(() => {
-      setTitleVisible(false);
-    }, 1120);
-
-    return () => {
-      window.clearTimeout(playTimer);
-      window.clearTimeout(titleTimer);
-    };
-  }, [active, videoReady, videoError]);
+    return () => clearTitleTimer();
+  }, []);
 
   if (!active) return null;
 
@@ -163,21 +207,40 @@ export function ServiceCinematicTest() {
     >
       <video
         key={active.src}
-        ref={videoRef}
+        ref={(node) => {
+          videoRef.current = node;
+          if (node) configureVideoForMobile(node);
+        }}
         src={active.src}
+        autoPlay
         muted
         playsInline
         preload="auto"
-        onCanPlay={() => setVideoReady(true)}
+        controls={false}
+        disablePictureInPicture
+        onLoadedMetadata={() => {
+          setVideoReady(true);
+          void attemptPlay();
+        }}
+        onCanPlay={() => {
+          setVideoReady(true);
+          void attemptPlay();
+        }}
+        onPlaying={() => {
+          setPlaying(true);
+          setNeedsTap(false);
+          scheduleTitleFade();
+        }}
         onEnded={closeCinematic}
         onError={() => {
           setVideoError(true);
           setVideoReady(false);
           setPlaying(false);
+          setNeedsTap(false);
           setTitleVisible(true);
         }}
-        className={`absolute inset-0 h-full w-full object-contain transition duration-700 md:object-cover ${
-          playing ? "scale-100 opacity-100" : "scale-[1.015] opacity-0"
+        className={`absolute inset-0 h-full w-full object-contain transition duration-500 md:object-cover ${
+          playing ? "scale-100 opacity-100" : "scale-[1.01] opacity-0"
         }`}
       />
 
@@ -209,15 +272,27 @@ export function ServiceCinematicTest() {
         </div>
       </div>
 
-      {!videoReady && !videoError && (
+      {!videoReady && !videoError && !needsTap && (
         <div className="pointer-events-none absolute inset-0 z-[5] grid place-items-center">
           <div className="mt-40 h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-[#4D8DFF]" />
         </div>
       )}
 
+      {needsTap && !videoError && (
+        <div className="absolute inset-0 z-20 grid place-items-center px-6">
+          <button
+            type="button"
+            onClick={() => void attemptPlay(true)}
+            className="mt-40 rounded-full border border-[#4D8DFF]/55 bg-black/65 px-6 py-3 text-xs font-black uppercase tracking-[0.18em] text-white shadow-[0_0_30px_rgba(0,87,255,.22)] backdrop-blur-md transition active:scale-95"
+          >
+            Toucher pour lancer
+          </button>
+        </div>
+      )}
+
       {videoError && (
         <div className="absolute inset-x-4 bottom-24 z-20 mx-auto max-w-xl rounded-2xl border border-amber-300/20 bg-black/80 p-4 text-center text-sm text-white/75 backdrop-blur-md sm:bottom-28">
-          La vidéo test n’a pas pu se charger depuis Runway. Le déclenchement du plein écran fonctionne bien ; il faudra simplement héberger les fichiers directement sur AUTO 9 pour la version stable.
+          La vidéo test n’a pas pu se charger sur ce navigateur. Pour la version finale, les fichiers seront hébergés directement par AUTO 9 afin d’éviter ce blocage.
         </div>
       )}
 
