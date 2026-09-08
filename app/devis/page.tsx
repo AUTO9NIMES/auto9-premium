@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { QuoteConfigurator } from "../components/QuoteConfigurator";
+import { ServiceCinematicTest } from "../components/ServiceCinematicTest";
 
 export default function DevisPage() {
   return (
@@ -18,6 +19,8 @@ export default function DevisPage() {
       >
         <QuoteConfigurator />
       </Suspense>
+
+      <ServiceCinematicTest />
     </main>
   );
 }
