@@ -1,260 +1,227 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./Services.module.css";
 
-const services = [
-  {
-    name: "Formule Duo",
-    tag: "Best seller",
-    price: "169 €",
-    text: "Intérieur + extérieur, avec nettoyage moteur offert.",
-    href: "/devis?service=duo",
-    image: "/services/duo-card.png",
-    highlights: [
-      { icon: "sparkles", title: "Intérieur", subtitle: "complet" },
-      { icon: "car", title: "Extérieur", subtitle: "complet" },
-      { icon: "engine", title: "Nettoyage moteur", subtitle: "OFFERT" },
-    ],
-    details: [
-      "Aspiration complète de l’habitacle",
-      "Nettoyage des plastiques et du tableau de bord",
-      "Nettoyage des vitres intérieures",
-      "Nettoyage des tapis",
-      "Parfum d’ambiance",
-      "Pré-lavage de la carrosserie",
-      "Démoustiquage",
-      "Décontamination ferreuse",
-      "Lavage microfibre",
-      "Nettoyage des jantes",
-      "Séchage complet",
-      "Brillant pneus",
-      "Nettoyage moteur offert",
-    ],
-  },
-  {
-    name: "Intérieur",
-    tag: "Confort",
-    price: "89 €",
-    text: "Un habitacle propre, sain et soigné jusque dans les détails.",
-    href: "/devis?service=interieur",
-    image: "/services/interieur-card.jpg",
-    highlights: [
-      { icon: "seat", title: "Sièges", subtitle: "& tapis" },
-      { icon: "air", title: "Dépoussiérage", subtitle: "complet" },
-      { icon: "shield", title: "Finitions", subtitle: "soignées" },
-    ],
-    details: [
-      "Aspiration complète",
-      "Nettoyage des plastiques",
-      "Nettoyage du tableau de bord",
-      "Nettoyage des vitres intérieures",
-      "Nettoyage des tapis",
-      "Parfum d’ambiance",
-    ],
-  },
-  {
-    name: "Extérieur",
-    tag: "Brillance",
-    price: "89 €",
-    text: "Une carrosserie propre, brillante et des finitions soignées.",
-    href: "/devis?service=exterieur",
-    image: "/services/exterieur-card.jpg",
-    highlights: [
-      { icon: "wash", title: "Lavage", subtitle: "haute pression" },
-      { icon: "sparkles", title: "Finition", subtitle: "brillante" },
-      { icon: "wheel", title: "Jantes", subtitle: "nettoyées" },
-    ],
-    details: [
-      "Pré-lavage",
-      "Démoustiquage",
-      "Décontamination ferreuse",
-      "Lavage microfibre",
-      "Nettoyage des jantes",
-      "Séchage complet",
-      "Brillant pneus",
-    ],
-  },
-];
+type Service = {
+  id: string;
+  name: string;
+  eyebrow: string;
+  price: string;
+  href: string;
+  cta: string;
+  video: string;
+  start: number;
+  end: number;
+  text: string;
+  details: string[];
+};
 
-const premiumServices = [
+const DUO_VIDEO = "https://d2jqrm6oza8nb6.cloudfront.net/datasets/a7e6eaba-3b71-4599-9eb8-7aad932642f1.mov?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiZTVmOGZiMjk3ZWI3ZDBjMiIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTEwNjA4OX0.ze-8xk61CcMGT0esvNmAFOVn_twCOhGbP5InFqjXx-c";
+
+const services: Service[] = [
   {
-    tag: "Restauration",
-    name: "Rénovation optiques",
-    priceLabel: "À partir de",
-    price: "69 €",
-    text: "Restauration des optiques ternis, jaunis ou opaques pour retrouver transparence et éclat.",
+    id: "duo",
+    name: "Formule DUO",
+    eyebrow: "Best seller",
+    price: "À partir de 169 €",
+    href: "/devis?service=duo",
+    cta: "Choisir la formule DUO",
+    video: DUO_VIDEO,
+    start: 0,
+    end: 19.2,
+    text: "Le soin complet intérieur + extérieur pour retrouver une voiture nette, brillante et agréable à vivre.",
+    details: ["Aspiration et nettoyage intérieur complet", "Pré-lavage et lavage extérieur", "Jantes, vitres et finitions", "Nettoyage moteur offert"],
+  },
+  {
+    id: "interieur",
+    name: "Lavage intérieur",
+    eyebrow: "Confort",
+    price: "À partir de 89 €",
+    href: "/devis?service=interieur",
+    cta: "Choisir l’intérieur",
+    video: DUO_VIDEO,
+    start: 6.0,
+    end: 13.2,
+    text: "Un habitacle propre, sain et soigné jusque dans les détails, avec une finition premium.",
+    details: ["Aspiration complète", "Plastiques et tableau de bord", "Vitres intérieures", "Tapis et finitions"],
+  },
+  {
+    id: "exterieur",
+    name: "Lavage extérieur",
+    eyebrow: "Brillance",
+    price: "À partir de 89 €",
+    href: "/devis?service=exterieur",
+    cta: "Choisir l’extérieur",
+    video: "https://d2jqrm6oza8nb6.cloudfront.net/datasets/2480bd3e-c2ef-4987-9e29-42acb8069308.mp4?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiOTU2MTBiZmUyNmEzZjYyZSIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTEzMTY0Nn0.6NnhFDLwuHJAp4LAnwmgruJlPpaAgYMJN3aGsdhMhsM",
+    start: 0,
+    end: 7.8,
+    text: "Une carrosserie propre et brillante grâce à un protocole de lavage précis et des finitions soignées.",
+    details: ["Pré-lavage mousse", "Lavage microfibre", "Décontamination ferreuse", "Jantes, séchage et brillant pneus"],
+  },
+  {
+    id: "phares",
+    name: "Rénovation phares",
+    eyebrow: "Restauration",
+    price: "À partir de 69 €",
     href: "/demande-speciale?type=phares",
-    image: "/services/phares-card.jpg",
+    cta: "Demander cette prestation",
+    video: "https://d2jqrm6oza8nb6.cloudfront.net/datasets/5066f38b-598e-4ca5-8db0-e004d62a3006.mov?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiMDgzNzM5NzdiOTE3YTQ1ZCIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTExMzcxOX0.AMH1SiQGiiDvkQz0LBwuV31821nWkXOp4HIVbQaVouA",
+    start: 0,
+    end: 4.9,
+    text: "Restauration des optiques ternis ou opaques pour retrouver transparence, éclat et une finition protégée.",
+    details: ["Préparation de l’optique", "Correction progressive", "Polissage de finition", "Protection finale"],
   },
   {
-    tag: "Correction",
+    id: "polissage",
     name: "Polissage carrosserie",
-    priceLabel: "Tarif",
+    eyebrow: "Correction",
     price: "Sur devis",
-    text: "Correction des défauts visuels et restauration de la profondeur et de la brillance de la carrosserie.",
     href: "/demande-speciale?type=polissage",
-    image: "/services/polissage-card.jpg",
+    cta: "Demander un devis",
+    video: "https://d2jqrm6oza8nb6.cloudfront.net/datasets/b1dd8971-1f8e-43ce-834e-1d49ecbca853.mov?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiY2Q5YzZjOTBjOGE3NTg2ZCIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTE0NTQ4OH0.-MRyk-BpCs4QjqwyfthY0U3PgUyaGjvGhIolYiSDSvM",
+    start: 0,
+    end: 6.8,
+    text: "Correction des défauts visuels pour retrouver profondeur, netteté des reflets et brillance de la peinture.",
+    details: ["Inspection de la peinture", "Correction mécanique", "Finition brillante", "Protection adaptée sur demande"],
   },
   {
-    tag: "Esthétique",
-    name: "Réparation de jantes",
-    priceLabel: "Tarif",
+    id: "jantes",
+    name: "Rénovation jantes",
+    eyebrow: "Esthétique",
     price: "Sur devis",
-    text: "Remise en état esthétique des jantes selon leur état, leurs défauts et la finition recherchée.",
     href: "/demande-speciale?type=jantes",
-    image: "/services/jantes-card.jpg",
+    cta: "Demander un devis",
+    video: "https://d2jqrm6oza8nb6.cloudfront.net/datasets/66680976-2afb-4cdf-923f-6d8ffc040697.mov?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiMzUyN2Q3MjA0YTg2Mzg3NCIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTE1MzgyNH0.Qmq6GkgxP-tDTjwxmLNaNw92x27ConIjL9sK5y8FpKg",
+    start: 0,
+    end: 6.8,
+    text: "Remise en état esthétique des jantes selon leurs défauts pour retrouver une finition nette et homogène.",
+    details: ["Préparation de la zone", "Correction des défauts", "Mise en peinture ciblée", "Finition et contrôle visuel"],
   },
 ];
 
 export function Services() {
+  const [activeId, setActiveId] = useState("duo");
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const active = useMemo(() => services.find((service) => service.id === activeId) ?? services[0], [activeId]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const restart = () => {
+      if (Math.abs(video.currentTime - active.start) > 0.2) video.currentTime = active.start;
+      void video.play().catch(() => undefined);
+    };
+
+    if (video.readyState >= 1) restart();
+    else video.addEventListener("loadedmetadata", restart, { once: true });
+
+    return () => video.removeEventListener("loadedmetadata", restart);
+  }, [active]);
+
+  const loopSegment = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.currentTime >= active.end) {
+      video.currentTime = active.start;
+      void video.play().catch(() => undefined);
+    }
+  };
+
+  const selectService = (service: Service) => setActiveId(service.id);
+
   return (
     <section id="services" className={styles.section} aria-labelledby="services-title">
       <div className={styles.container}>
         <header className={styles.heading} data-motion-reveal>
           <p className={styles.eyebrow}>Nos prestations</p>
           <h2 id="services-title">Choisissez votre <span>niveau de soin.</span></h2>
-          <p className={styles.intro}>Trois formules claires, pensées pour rendre à votre véhicule un aspect propre, soigné et valorisant.</p>
+          <p className={styles.intro}>Survolez une prestation pour voir le soin en action. Sur mobile, touchez simplement le service qui vous intéresse.</p>
         </header>
 
-        <div className={styles.grid}>
-          {services.map((service, index) => (
-            <article data-motion-reveal data-motion-delay={index * 90} key={service.name} className={`${styles.card} ${service.name === "Formule Duo" ? styles.featured : ""}`}>
-              <div className={styles.overview}>
-                <div className={styles.photo}>
-                  {/* Existing editorial photos retain their original files. */}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={service.image} alt={service.name} loading="lazy" />
-                </div>
-                <div className={styles.copy}>
-                  <span className={styles.tag}>{service.tag}</span>
-                  <h3>{service.name}</h3>
-                  <p className={styles.description}>{service.text}</p>
-                  <div className={styles.price}><span>À partir de</span><strong>{service.price}</strong></div>
-                </div>
+        <div className={styles.experience}>
+          <div className={styles.sideList}>
+            {services.slice(0, 3).map((service) => (
+              <ServiceButton key={service.id} service={service} active={activeId === service.id} onSelect={selectService} />
+            ))}
+          </div>
+
+          <div className={styles.stageWrap}>
+            <div className={styles.stage} aria-live="polite">
+              <video
+                ref={videoRef}
+                key={active.video}
+                className={styles.video}
+                src={active.video}
+                muted
+                autoPlay
+                playsInline
+                preload="metadata"
+                onTimeUpdate={loopSegment}
+              />
+              <div className={styles.stageShade} />
+              <div className={styles.stageBadge}><span /> AUTO 9 EXPERIENCE</div>
+              <div className={styles.stageTitle}>
+                <span>{active.eyebrow}</span>
+                <strong>{active.name}</strong>
               </div>
-              <Link href={service.href} className={styles.action}>Choisir cette formule <span aria-hidden="true">→</span></Link>
-              <details className={styles.details}>
-                <summary>Voir le détail des prestations <span aria-hidden="true">+</span></summary>
-                <div className={styles.expanded}>
-                  <div className={styles.highlights}>
-                    {service.highlights.map((item) => (
-                      <div key={item.title}><ServiceIcon type={item.icon} /><span>{item.title} <strong>{item.subtitle}</strong></span></div>
-                    ))}
-                  </div>
-                  <ul>{service.details.map((detail) => <li key={detail}>{detail}</li>)}</ul>
-                </div>
-              </details>
-            </article>
+            </div>
+          </div>
+
+          <div className={styles.sideList}>
+            {services.slice(3).map((service) => (
+              <ServiceButton key={service.id} service={service} active={activeId === service.id} onSelect={selectService} />
+            ))}
+          </div>
+        </div>
+
+        <div className={styles.mobileSelector} aria-label="Choisir une prestation">
+          {services.map((service) => (
+            <button
+              key={service.id}
+              type="button"
+              className={activeId === service.id ? styles.mobileActive : ""}
+              onClick={() => selectService(service)}
+            >
+              {service.name}
+            </button>
           ))}
         </div>
 
-        <header className={styles.premiumHeading} data-motion-reveal>
-          <div><p className={styles.eyebrow}>Expertise & rénovation</p><h2>Pour aller plus loin.</h2></div>
-          <p className={styles.intro}>Des prestations ciblées pour restaurer, corriger et valoriser les éléments qui méritent une attention particulière.</p>
-        </header>
-        <div className={styles.grid}>
-          {premiumServices.map((service, index) => (
-            <article data-motion-reveal data-motion-delay={index * 90} key={service.name} className={`${styles.card} ${styles.premium}`}>
-              <div className={styles.overview}>
-                <div className={styles.photo}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={service.image} alt={service.name} loading="lazy" />
-                </div>
-                <div className={styles.copy}>
-                  <span className={styles.tag}>{service.tag}</span>
-                  <h3>{service.name}</h3>
-                  <p className={styles.description}>{service.text}</p>
-                  <div className={styles.price}><span>{service.priceLabel}</span><strong>{service.price}</strong></div>
-                </div>
-              </div>
-              <Link href={service.href} className={styles.action}>Demander cette prestation <span aria-hidden="true">→</span></Link>
-            </article>
-          ))}
-        </div>
+        <article className={styles.detailPanel} key={active.id}>
+          <div className={styles.detailCopy}>
+            <p className={styles.detailEyebrow}>{active.eyebrow}</p>
+            <h3>{active.name}</h3>
+            <p>{active.text}</p>
+          </div>
+          <div className={styles.detailMeta}>
+            <strong>{active.price}</strong>
+            <ul>
+              {active.details.map((detail) => <li key={detail}>{detail}</li>)}
+            </ul>
+            <Link href={active.href} className={styles.action}>{active.cta}<span aria-hidden="true">→</span></Link>
+          </div>
+        </article>
       </div>
     </section>
   );
 }
 
-function ServiceIcon({ type }: { type: string }) {
-  const common = {
-    width: 20,
-    height: 20,
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: 1.7,
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-  };
-
-  if (type === "sparkles") {
-    return (
-      <svg {...common}>
-        <path d="m12 3 1.3 3.7L17 8l-3.7 1.3L12 13l-1.3-3.7L7 8l3.7-1.3L12 3Z" />
-        <path d="m18.5 13.5.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2Z" />
-        <path d="m5 13 .9 2.6L8.5 16l-2.6.9L5 19.5l-.9-2.6L1.5 16l2.6-.4L5 13Z" />
-      </svg>
-    );
-  }
-
-  if (type === "car") {
-    return (
-      <svg {...common}>
-        <path d="M5 16h14l-1.4-6.1A2 2 0 0 0 15.7 8H8.3a2 2 0 0 0-1.9 1.9L5 16Z" />
-        <path d="M4 16v3M20 16v3M7 19h10M7.5 13h.01M16.5 13h.01" />
-      </svg>
-    );
-  }
-
-  if (type === "engine") {
-    return (
-      <svg {...common}>
-        <path d="M7 8h8l2 2h3v7h-3l-2 2H7l-2-2H3v-7h2l2-2Z" />
-        <path d="M9 5v3M13 5v3M9 13h4" />
-      </svg>
-    );
-  }
-
-  if (type === "seat") {
-    return (
-      <svg {...common}>
-        <path d="M8 4v8a3 3 0 0 0 3 3h5v5" />
-        <path d="M8 7h5v5H8M5 20h12" />
-      </svg>
-    );
-  }
-
-  if (type === "air") {
-    return (
-      <svg {...common}>
-        <path d="M4 8h9a2 2 0 1 0-2-2M3 12h14a2 2 0 1 1-2 2M4 16h7" />
-      </svg>
-    );
-  }
-
-  if (type === "shield") {
-    return (
-      <svg {...common}>
-        <path d="M12 3 5 6v5c0 4.6 2.9 8 7 10 4.1-2 7-5.4 7-10V6l-7-3Z" />
-        <path d="m9.5 12 1.7 1.7 3.5-3.7" />
-      </svg>
-    );
-  }
-
-  if (type === "wash") {
-    return (
-      <svg {...common}>
-        <path d="M7 5h10M8 8h8M5 12c1.2 0 2 .8 2 2s-.8 2-2 2-2-.8-2-2 .8-2 2-2Zm14 0c1.2 0 2 .8 2 2s-.8 2-2 2-2-.8-2-2 .8-2 2-2Z" />
-        <path d="M9 14h6M8 19h8" />
-      </svg>
-    );
-  }
-
+function ServiceButton({ service, active, onSelect }: { service: Service; active: boolean; onSelect: (service: Service) => void }) {
   return (
-    <svg {...common}>
-      <circle cx="12" cy="12" r="7" />
-      <circle cx="12" cy="12" r="2.2" />
-      <path d="M12 5v5M18 9l-4 2M18 15l-4-2M12 19v-5M6 15l4-2M6 9l4 2" />
-    </svg>
+    <button
+      type="button"
+      className={`${styles.serviceButton} ${active ? styles.active : ""}`}
+      onMouseEnter={() => onSelect(service)}
+      onFocus={() => onSelect(service)}
+      onClick={() => onSelect(service)}
+      aria-pressed={active}
+    >
+      <span className={styles.serviceIndex}>0{services.findIndex((item) => item.id === service.id) + 1}</span>
+      <span className={styles.serviceText}><small>{service.eyebrow}</small><strong>{service.name}</strong><em>{service.price}</em></span>
+      <span className={styles.serviceArrow} aria-hidden="true">↗</span>
+    </button>
   );
 }
