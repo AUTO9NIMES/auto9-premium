@@ -1,8 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./Services.module.css";
+
+const DUO_VIDEO = "https://d2jqrm6oza8nb6.cloudfront.net/datasets/f69de447-243a-45e0-be1a-564f1557f1d4.mov?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiYWJmYTg0NjdhODQ0MjAwYiIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTA3ODYzMX0.JZg_T7SezMYNO1oIAmZ66RHoGi5gaJoPX1pMsDDAGDI";
+const EXTERIOR_VIDEO = "https://d2jqrm6oza8nb6.cloudfront.net/datasets/2480bd3e-c2ef-4987-9e29-42acb8069308.mp4?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiOTU2MTBiZmUyNmEzZjYyZSIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTEzMTY0Nn0.6NnhFDLwuHJAp4LAnwmgruJlPpaAgYMJN3aGsdhMhsM";
 
 const services = [
   {
@@ -12,6 +16,8 @@ const services = [
     text: "Intérieur + extérieur, avec nettoyage moteur offert.",
     href: "/devis?service=duo",
     image: "/services/duo-card.png",
+    video: DUO_VIDEO,
+    videoStart: 0,
     highlights: [
       { icon: "sparkles", title: "Intérieur", subtitle: "complet" },
       { icon: "car", title: "Extérieur", subtitle: "complet" },
@@ -40,6 +46,8 @@ const services = [
     text: "Un habitacle propre, sain et soigné jusque dans les détails.",
     href: "/devis?service=interieur",
     image: "/services/interieur-card.jpg",
+    video: DUO_VIDEO,
+    videoStart: 5.25,
     highlights: [
       { icon: "seat", title: "Sièges", subtitle: "& tapis" },
       { icon: "air", title: "Dépoussiérage", subtitle: "complet" },
@@ -61,6 +69,8 @@ const services = [
     text: "Une carrosserie propre, brillante et des finitions soignées.",
     href: "/devis?service=exterieur",
     image: "/services/exterieur-card.jpg",
+    video: EXTERIOR_VIDEO,
+    videoStart: 0,
     highlights: [
       { icon: "wash", title: "Lavage", subtitle: "haute pression" },
       { icon: "sparkles", title: "Finition", subtitle: "brillante" },
@@ -114,9 +124,14 @@ const premiumServices = [
   },
 ];
 
+type MainService = (typeof services)[number];
+
 export function Services() {
+  const router = useRouter();
   const [activePremiumId, setActivePremiumId] = useState("phares");
+  const [cinematic, setCinematic] = useState<MainService | null>(null);
   const premiumVideoRef = useRef<HTMLVideoElement>(null);
+  const cinematicVideoRef = useRef<HTMLVideoElement>(null);
   const activePremium = useMemo(
     () => premiumServices.find((service) => service.id === activePremiumId) ?? premiumServices[0],
     [activePremiumId],
@@ -134,12 +149,41 @@ export function Services() {
     return () => video.removeEventListener("loadedmetadata", play);
   }, [activePremium]);
 
+  useEffect(() => {
+    if (!cinematic) return;
+    const video = cinematicVideoRef.current;
+    if (!video) return;
+
+    const play = () => {
+      video.currentTime = cinematic.videoStart;
+      void video.play().catch(() => undefined);
+    };
+
+    if (video.readyState >= 1) play();
+    else video.addEventListener("loadedmetadata", play, { once: true });
+
+    const fallback = window.setTimeout(() => router.push(cinematic.href), 5500);
+    return () => {
+      window.clearTimeout(fallback);
+      video.removeEventListener("loadedmetadata", play);
+    };
+  }, [cinematic, router]);
+
   const loopPremium = () => {
     const video = premiumVideoRef.current;
     if (!video) return;
     if (video.currentTime >= activePremium.end) {
       video.currentTime = 0;
       void video.play().catch(() => undefined);
+    }
+  };
+
+  const progressCinematic = () => {
+    const video = cinematicVideoRef.current;
+    if (!video || !cinematic) return;
+    if (video.currentTime >= cinematic.videoStart + 4) {
+      video.pause();
+      router.push(cinematic.href);
     }
   };
 
@@ -167,7 +211,9 @@ export function Services() {
                   <div className={styles.price}><span>À partir de</span><strong>{service.price}</strong></div>
                 </div>
               </div>
-              <Link href={service.href} className={styles.action}>Choisir cette formule <span aria-hidden="true">→</span></Link>
+              <button type="button" className={styles.action} onClick={() => setCinematic(service)}>
+                Choisir cette prestation <span aria-hidden="true">→</span>
+              </button>
               <details className={styles.details}>
                 <summary>Voir le détail des prestations <span aria-hidden="true">+</span></summary>
                 <div className={styles.expanded}>
@@ -238,6 +284,35 @@ export function Services() {
           </div>
         </div>
       </div>
+
+      {cinematic && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${cinematic.name} en action`}
+          style={{ position: "fixed", inset: 0, zIndex: 1100, display: "grid", placeItems: "center", padding: 18, background: "rgba(1,3,7,.92)", backdropFilter: "blur(14px)" }}
+        >
+          <div style={{ position: "relative", width: "min(1080px, 96vw)", aspectRatio: "16 / 9", maxHeight: "84vh", overflow: "hidden", borderRadius: 24, border: "1px solid rgba(102,158,240,.42)", background: "#05080d", boxShadow: "0 30px 100px rgba(0,0,0,.72), 0 0 55px rgba(38,113,240,.18)" }}>
+            <video
+              ref={cinematicVideoRef}
+              key={`${cinematic.name}-${cinematic.videoStart}`}
+              src={cinematic.video}
+              muted
+              autoPlay
+              playsInline
+              preload="auto"
+              onTimeUpdate={progressCinematic}
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+            />
+            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,.04) 35%, rgba(2,5,10,.88) 100%)", pointerEvents: "none" }} />
+            <div style={{ position: "absolute", left: "clamp(20px, 4vw, 42px)", right: 24, bottom: "clamp(22px, 4vw, 38px)", zIndex: 2, display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 7 }}>
+              <span style={{ color: "#88b9ff", fontSize: 11, fontWeight: 800, letterSpacing: ".18em", textTransform: "uppercase" }}>{cinematic.tag}</span>
+              <strong style={{ color: "#fff", fontSize: "clamp(38px, 7vw, 76px)", lineHeight: .94, letterSpacing: "-.055em", textShadow: "0 8px 28px #000" }}>{cinematic.name}</strong>
+              <span style={{ marginTop: 8, display: "inline-flex", alignItems: "center", minHeight: 44, padding: "9px 16px", border: "1px solid rgba(126,180,255,.58)", borderRadius: 999, background: "linear-gradient(135deg, rgba(6,14,24,.92), rgba(17,51,97,.94))", color: "#fff", fontSize: "clamp(17px, 2.4vw, 24px)", fontWeight: 850, boxShadow: "0 0 22px rgba(54,124,255,.42), 0 0 48px rgba(33,98,224,.24)" }}>À partir de {cinematic.price}</span>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
