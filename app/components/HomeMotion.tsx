@@ -96,29 +96,31 @@ export function HomeMotion() {
         if (hero.offsetHeight === 0) continue;
 
         const rect = hero.getBoundingClientRect();
-        const travel = Math.max(280, hero.offsetHeight * 0.58);
-        const progress = clamp01(-rect.top / travel);
+        const fadeDelay = hero.offsetHeight * (compact.matches ? 0.1 : 0.16);
+        const travel = Math.max(340, hero.offsetHeight * (compact.matches ? 0.68 : 0.78));
+        const scrolledPastDelay = Math.max(0, -rect.top - fadeDelay);
+        const progress = clamp01(scrolledPastDelay / travel);
         const fade = 1 - progress;
 
         hero
           .querySelectorAll<HTMLElement>("[data-hero-fade]")
           .forEach((element) => {
             element.style.opacity = String(fade);
-            element.style.transform = `translate3d(0, ${-progress * (compact.matches ? 20 : 42)}px, 0)`;
-            element.style.filter = `blur(${progress * (compact.matches ? 3 : 6)}px)`;
+            element.style.transform = `translate3d(0, ${-progress * (compact.matches ? 18 : 36)}px, 0)`;
+            element.style.filter = `blur(${progress * (compact.matches ? 2.5 : 5)}px)`;
             element.style.pointerEvents = progress > 0.92 ? "none" : "";
           });
 
         hero
           .querySelectorAll<HTMLElement>("[data-hero-media]")
           .forEach((element) => {
-            element.style.transform = `translate3d(0, ${progress * (compact.matches ? 10 : 22)}px, 0) scale(${1 + progress * 0.025})`;
+            element.style.transform = `translate3d(0, ${progress * (compact.matches ? 9 : 18)}px, 0) scale(${1 + progress * 0.02})`;
           });
 
         hero
           .querySelectorAll<HTMLElement>("[data-hero-veil]")
           .forEach((element) => {
-            element.style.opacity = String(progress * 0.62);
+            element.style.opacity = String(progress * 0.58);
           });
       }
     };

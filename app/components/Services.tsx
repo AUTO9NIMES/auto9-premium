@@ -1,5 +1,12 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./Services.module.css";
+
+const DUO_VIDEO = "https://d2jqrm6oza8nb6.cloudfront.net/datasets/f69de447-243a-45e0-be1a-564f1557f1d4.mov?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiYWJmYTg0NjdhODQ0MjAwYiIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTA3ODYzMX0.JZg_T7SezMYNO1oIAmZ66RHoGi5gaJoPX1pMsDDAGDI";
+const EXTERIOR_VIDEO = "https://d2jqrm6oza8nb6.cloudfront.net/datasets/2480bd3e-c2ef-4987-9e29-42acb8069308.mp4?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiOTU2MTBiZmUyNmEzZjYyZSIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTEzMTY0Nn0.6NnhFDLwuHJAp4LAnwmgruJlPpaAgYMJN3aGsdhMhsM";
 
 const services = [
   {
@@ -9,6 +16,8 @@ const services = [
     text: "Intérieur + extérieur, avec nettoyage moteur offert.",
     href: "/devis?service=duo",
     image: "/services/duo-card.png",
+    video: DUO_VIDEO,
+    videoStart: 0,
     highlights: [
       { icon: "sparkles", title: "Intérieur", subtitle: "complet" },
       { icon: "car", title: "Extérieur", subtitle: "complet" },
@@ -37,6 +46,8 @@ const services = [
     text: "Un habitacle propre, sain et soigné jusque dans les détails.",
     href: "/devis?service=interieur",
     image: "/services/interieur-card.jpg",
+    video: DUO_VIDEO,
+    videoStart: 5.25,
     highlights: [
       { icon: "seat", title: "Sièges", subtitle: "& tapis" },
       { icon: "air", title: "Dépoussiérage", subtitle: "complet" },
@@ -58,6 +69,8 @@ const services = [
     text: "Une carrosserie propre, brillante et des finitions soignées.",
     href: "/devis?service=exterieur",
     image: "/services/exterieur-card.jpg",
+    video: EXTERIOR_VIDEO,
+    videoStart: 0,
     highlights: [
       { icon: "wash", title: "Lavage", subtitle: "haute pression" },
       { icon: "sparkles", title: "Finition", subtitle: "brillante" },
@@ -77,35 +90,103 @@ const services = [
 
 const premiumServices = [
   {
+    id: "phares",
     tag: "Restauration",
-    name: "Rénovation optiques",
-    priceLabel: "À partir de",
-    price: "69 €",
-    text: "Restauration des optiques ternis, jaunis ou opaques pour retrouver transparence et éclat.",
+    name: "Rénovation phares",
+    price: "À partir de 69 €",
+    text: "Restauration des optiques ternis ou opaques pour retrouver transparence, éclat et une finition protégée.",
     href: "/demande-speciale?type=phares",
-    image: "/services/phares-card.jpg",
+    cta: "Demander cette prestation",
+    video: "https://d2jqrm6oza8nb6.cloudfront.net/datasets/5066f38b-598e-4ca5-8db0-e004d62a3006.mov?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiMDgzNzM5NzdiOTE3YTQ1ZCIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTExMzcxOX0.AMH1SiQGiiDvkQz0LBwuV31821nWkXOp4HIVbQaVouA",
+    end: 4.9,
   },
   {
+    id: "polissage",
     tag: "Correction",
     name: "Polissage carrosserie",
-    priceLabel: "Tarif",
     price: "Sur devis",
-    text: "Correction des défauts visuels et restauration de la profondeur et de la brillance de la carrosserie.",
+    text: "Correction des défauts visuels pour retrouver profondeur, netteté des reflets et brillance de la peinture.",
     href: "/demande-speciale?type=polissage",
-    image: "/services/polissage-card.jpg",
+    cta: "Demander un devis",
+    video: "https://d2jqrm6oza8nb6.cloudfront.net/datasets/b1dd8971-1f8e-43ce-834e-1d49ecbca853.mov?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiY2Q5YzZjOTBjOGE3NTg2ZCIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTE0NTQ4OH0.-MRyk-BpCs4QjqwyfthY0U3PgUyaGjvGhIolYiSDSvM",
+    end: 6.8,
   },
   {
+    id: "jantes",
     tag: "Esthétique",
-    name: "Réparation de jantes",
-    priceLabel: "Tarif",
+    name: "Rénovation jantes",
     price: "Sur devis",
-    text: "Remise en état esthétique des jantes selon leur état, leurs défauts et la finition recherchée.",
+    text: "Remise en état esthétique des jantes selon leurs défauts pour retrouver une finition nette et homogène.",
     href: "/demande-speciale?type=jantes",
-    image: "/services/jantes-card.jpg",
+    cta: "Demander un devis",
+    video: "https://d2jqrm6oza8nb6.cloudfront.net/datasets/66680976-2afb-4cdf-923f-6d8ffc040697.mov?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiMzUyN2Q3MjA0YTg2Mzg3NCIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTE1MzgyNH0.Qmq6GkgxP-tDTjwxmLNaNw92x27ConIjL9sK5y8FpKg",
+    end: 6.8,
   },
 ];
 
+type MainService = (typeof services)[number];
+
 export function Services() {
+  const router = useRouter();
+  const [activePremiumId, setActivePremiumId] = useState("phares");
+  const [cinematic, setCinematic] = useState<MainService | null>(null);
+  const premiumVideoRef = useRef<HTMLVideoElement>(null);
+  const cinematicVideoRef = useRef<HTMLVideoElement>(null);
+  const activePremium = useMemo(
+    () => premiumServices.find((service) => service.id === activePremiumId) ?? premiumServices[0],
+    [activePremiumId],
+  );
+
+  useEffect(() => {
+    const video = premiumVideoRef.current;
+    if (!video) return;
+    const play = () => {
+      video.currentTime = 0;
+      void video.play().catch(() => undefined);
+    };
+    if (video.readyState >= 1) play();
+    else video.addEventListener("loadedmetadata", play, { once: true });
+    return () => video.removeEventListener("loadedmetadata", play);
+  }, [activePremium]);
+
+  useEffect(() => {
+    if (!cinematic) return;
+    const video = cinematicVideoRef.current;
+    if (!video) return;
+
+    const play = () => {
+      video.currentTime = cinematic.videoStart;
+      void video.play().catch(() => undefined);
+    };
+
+    if (video.readyState >= 1) play();
+    else video.addEventListener("loadedmetadata", play, { once: true });
+
+    const fallback = window.setTimeout(() => router.push(cinematic.href), 5500);
+    return () => {
+      window.clearTimeout(fallback);
+      video.removeEventListener("loadedmetadata", play);
+    };
+  }, [cinematic, router]);
+
+  const loopPremium = () => {
+    const video = premiumVideoRef.current;
+    if (!video) return;
+    if (video.currentTime >= activePremium.end) {
+      video.currentTime = 0;
+      void video.play().catch(() => undefined);
+    }
+  };
+
+  const progressCinematic = () => {
+    const video = cinematicVideoRef.current;
+    if (!video || !cinematic) return;
+    if (video.currentTime >= cinematic.videoStart + 4) {
+      video.pause();
+      router.push(cinematic.href);
+    }
+  };
+
   return (
     <section id="services" className={styles.section} aria-labelledby="services-title">
       <div className={styles.container}>
@@ -120,7 +201,6 @@ export function Services() {
             <article data-motion-reveal data-motion-delay={index * 90} key={service.name} className={`${styles.card} ${service.name === "Formule Duo" ? styles.featured : ""}`}>
               <div className={styles.overview}>
                 <div className={styles.photo}>
-                  {/* Existing editorial photos retain their original files. */}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={service.image} alt={service.name} loading="lazy" />
                 </div>
@@ -131,7 +211,9 @@ export function Services() {
                   <div className={styles.price}><span>À partir de</span><strong>{service.price}</strong></div>
                 </div>
               </div>
-              <Link href={service.href} className={styles.action}>Choisir cette formule <span aria-hidden="true">→</span></Link>
+              <button type="button" className={styles.action} onClick={() => setCinematic(service)}>
+                Choisir cette prestation <span aria-hidden="true">→</span>
+              </button>
               <details className={styles.details}>
                 <summary>Voir le détail des prestations <span aria-hidden="true">+</span></summary>
                 <div className={styles.expanded}>
@@ -149,28 +231,88 @@ export function Services() {
 
         <header className={styles.premiumHeading} data-motion-reveal>
           <div><p className={styles.eyebrow}>Expertise & rénovation</p><h2>Pour aller plus loin.</h2></div>
-          <p className={styles.intro}>Des prestations ciblées pour restaurer, corriger et valoriser les éléments qui méritent une attention particulière.</p>
+          <p className={styles.intro}>Survolez une prestation pour découvrir le soin en action. Sur mobile, touchez simplement la prestation.</p>
         </header>
-        <div className={styles.grid}>
-          {premiumServices.map((service, index) => (
-            <article data-motion-reveal data-motion-delay={index * 90} key={service.name} className={`${styles.card} ${styles.premium}`}>
-              <div className={styles.overview}>
-                <div className={styles.photo}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={service.image} alt={service.name} loading="lazy" />
-                </div>
-                <div className={styles.copy}>
-                  <span className={styles.tag}>{service.tag}</span>
-                  <h3>{service.name}</h3>
-                  <p className={styles.description}>{service.text}</p>
-                  <div className={styles.price}><span>{service.priceLabel}</span><strong>{service.price}</strong></div>
-                </div>
+
+        <div className={styles.premiumExperience}>
+          <div className={styles.premiumSelector}>
+            {premiumServices.map((service, index) => (
+              <button
+                key={service.id}
+                type="button"
+                className={`${styles.premiumChoice} ${activePremiumId === service.id ? styles.premiumChoiceActive : ""}`}
+                onMouseEnter={() => setActivePremiumId(service.id)}
+                onFocus={() => setActivePremiumId(service.id)}
+                onClick={() => setActivePremiumId(service.id)}
+                aria-pressed={activePremiumId === service.id}
+              >
+                <span className={styles.premiumIndex}>0{index + 1}</span>
+                <span className={styles.premiumChoiceText}>
+                  <small>{service.tag}</small>
+                  <strong>{service.name}</strong>
+                  <em>{service.price}</em>
+                </span>
+                <span className={styles.premiumArrow} aria-hidden="true">↗</span>
+              </button>
+            ))}
+          </div>
+
+          <div className={styles.premiumStageWrap}>
+            <div className={styles.premiumStage} aria-live="polite">
+              <video
+                ref={premiumVideoRef}
+                key={activePremium.video}
+                className={styles.premiumVideo}
+                src={activePremium.video}
+                muted
+                autoPlay
+                playsInline
+                preload="metadata"
+                onTimeUpdate={loopPremium}
+              />
+              <div className={styles.premiumShade} />
+              <div className={styles.premiumStageTitle}>
+                <span>{activePremium.tag}</span>
+                <strong>{activePremium.name}</strong>
+                <em>{activePremium.price}</em>
               </div>
-              <Link href={service.href} className={styles.action}>Demander cette prestation <span aria-hidden="true">→</span></Link>
-            </article>
-          ))}
+            </div>
+            <div className={styles.premiumDetail}>
+              <p>{activePremium.text}</p>
+              <Link href={activePremium.href} className={styles.premiumAction}>{activePremium.cta}<span aria-hidden="true">→</span></Link>
+            </div>
+          </div>
         </div>
       </div>
+
+      {cinematic && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${cinematic.name} en action`}
+          style={{ position: "fixed", inset: 0, zIndex: 1100, display: "grid", placeItems: "center", padding: 18, background: "rgba(1,3,7,.92)", backdropFilter: "blur(14px)" }}
+        >
+          <div style={{ position: "relative", width: "min(1080px, 96vw)", aspectRatio: "16 / 9", maxHeight: "84vh", overflow: "hidden", borderRadius: 24, border: "1px solid rgba(102,158,240,.42)", background: "#05080d", boxShadow: "0 30px 100px rgba(0,0,0,.72), 0 0 55px rgba(38,113,240,.18)" }}>
+            <video
+              ref={cinematicVideoRef}
+              key={`${cinematic.name}-${cinematic.videoStart}`}
+              src={cinematic.video}
+              muted
+              autoPlay
+              playsInline
+              preload="auto"
+              onTimeUpdate={progressCinematic}
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+            />
+            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,.04) 35%, rgba(2,5,10,.88) 100%)", pointerEvents: "none" }} />
+            <div style={{ position: "absolute", left: "clamp(20px, 4vw, 42px)", right: 24, bottom: "clamp(22px, 4vw, 38px)", zIndex: 2, display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 7 }}>
+              <span style={{ color: "#88b9ff", fontSize: 11, fontWeight: 800, letterSpacing: ".18em", textTransform: "uppercase" }}>{cinematic.tag}</span>
+              <strong style={{ color: "#fff", fontSize: "clamp(38px, 7vw, 76px)", lineHeight: .94, letterSpacing: "-.055em", textShadow: "0 8px 28px #000" }}>{cinematic.name}</strong>
+              <span style={{ marginTop: 8, display: "inline-flex", alignItems: "center", minHeight: 44, padding: "9px 16px", border: "1px solid rgba(126,180,255,.58)", borderRadius: 999, background: "linear-gradient(135deg, rgba(6,14,24,.92), rgba(17,51,97,.94))", color: "#fff", fontSize: "clamp(17px, 2.4vw, 24px)", fontWeight: 850, boxShadow: "0 0 22px rgba(54,124,255,.42), 0 0 48px rgba(33,98,224,.24)" }}>À partir de {cinematic.price}</span>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -187,74 +329,12 @@ function ServiceIcon({ type }: { type: string }) {
     strokeLinejoin: "round" as const,
   };
 
-  if (type === "sparkles") {
-    return (
-      <svg {...common}>
-        <path d="m12 3 1.3 3.7L17 8l-3.7 1.3L12 13l-1.3-3.7L7 8l3.7-1.3L12 3Z" />
-        <path d="m18.5 13.5.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2Z" />
-        <path d="m5 13 .9 2.6L8.5 16l-2.6.9L5 19.5l-.9-2.6L1.5 16l2.6-.4L5 13Z" />
-      </svg>
-    );
-  }
-
-  if (type === "car") {
-    return (
-      <svg {...common}>
-        <path d="M5 16h14l-1.4-6.1A2 2 0 0 0 15.7 8H8.3a2 2 0 0 0-1.9 1.9L5 16Z" />
-        <path d="M4 16v3M20 16v3M7 19h10M7.5 13h.01M16.5 13h.01" />
-      </svg>
-    );
-  }
-
-  if (type === "engine") {
-    return (
-      <svg {...common}>
-        <path d="M7 8h8l2 2h3v7h-3l-2 2H7l-2-2H3v-7h2l2-2Z" />
-        <path d="M9 5v3M13 5v3M9 13h4" />
-      </svg>
-    );
-  }
-
-  if (type === "seat") {
-    return (
-      <svg {...common}>
-        <path d="M8 4v8a3 3 0 0 0 3 3h5v5" />
-        <path d="M8 7h5v5H8M5 20h12" />
-      </svg>
-    );
-  }
-
-  if (type === "air") {
-    return (
-      <svg {...common}>
-        <path d="M4 8h9a2 2 0 1 0-2-2M3 12h14a2 2 0 1 1-2 2M4 16h7" />
-      </svg>
-    );
-  }
-
-  if (type === "shield") {
-    return (
-      <svg {...common}>
-        <path d="M12 3 5 6v5c0 4.6 2.9 8 7 10 4.1-2 7-5.4 7-10V6l-7-3Z" />
-        <path d="m9.5 12 1.7 1.7 3.5-3.7" />
-      </svg>
-    );
-  }
-
-  if (type === "wash") {
-    return (
-      <svg {...common}>
-        <path d="M7 5h10M8 8h8M5 12c1.2 0 2 .8 2 2s-.8 2-2 2-2-.8-2-2 .8-2 2-2Zm14 0c1.2 0 2 .8 2 2s-.8 2-2 2-2-.8-2-2 .8-2 2-2Z" />
-        <path d="M9 14h6M8 19h8" />
-      </svg>
-    );
-  }
-
-  return (
-    <svg {...common}>
-      <circle cx="12" cy="12" r="7" />
-      <circle cx="12" cy="12" r="2.2" />
-      <path d="M12 5v5M18 9l-4 2M18 15l-4-2M12 19v-5M6 15l4-2M6 9l4 2" />
-    </svg>
-  );
+  if (type === "sparkles") return <svg {...common}><path d="m12 3 1.3 3.7L17 8l-3.7 1.3L12 13l-1.3-3.7L7 8l3.7-1.3L12 3Z" /><path d="m18.5 13.5.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2Z" /><path d="m5 13 .9 2.6L8.5 16l-2.6.9L5 19.5l-.9-2.6L1.5 16l2.6-.4L5 13Z" /></svg>;
+  if (type === "car") return <svg {...common}><path d="M5 16h14l-1.4-6.1A2 2 0 0 0 15.7 8H8.3a2 2 0 0 0-1.9 1.9L5 16Z" /><path d="M4 16v3M20 16v3M7 19h10M7.5 13h.01M16.5 13h.01" /></svg>;
+  if (type === "engine") return <svg {...common}><path d="M7 8h8l2 2h3v7h-3l-2 2H7l-2-2H3v-7h2l2-2Z" /><path d="M9 5v3M13 5v3M9 13h4" /></svg>;
+  if (type === "seat") return <svg {...common}><path d="M8 4v8a3 3 0 0 0 3 3h5v5" /><path d="M8 7h5v5H8M5 20h12" /></svg>;
+  if (type === "air") return <svg {...common}><path d="M4 8h9a2 2 0 1 0-2-2M3 12h14a2 2 0 1 1-2 2M4 16h7" /></svg>;
+  if (type === "shield") return <svg {...common}><path d="M12 3 5 6v5c0 4.6 2.9 8 7 10 4.1-2 7-5.4 7-10V6l-7-3Z" /><path d="m9.5 12 1.7 1.7 3.5-3.7" /></svg>;
+  if (type === "wash") return <svg {...common}><path d="M7 5h10M8 8h8M5 12c1.2 0 2 .8 2 2s-.8 2-2 2-2-.8-2-2 .8-2 2-2Zm14 0c1.2 0 2 .8 2 2s-.8 2-2 2-2-.8-2-2 .8-2 2-2Z" /><path d="M9 14h6M8 19h8" /></svg>;
+  return <svg {...common}><circle cx="12" cy="12" r="7" /><circle cx="12" cy="12" r="2.2" /><path d="M12 5v5M18 9l-4 2M18 15l-4-2M12 19v-5M6 15l4-2M6 9l4 2" /></svg>;
 }

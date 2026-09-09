@@ -1,0 +1,1 @@
+Prototype branch for the cinematic services experience. Six services only: DUO, Interior, Exterior, Headlights, Polishing, Wheels. Interior intentionally reuses the DUO cinematic segment (6.0s–13.2s) for visual consistency. Production main remains untouched until approval.
