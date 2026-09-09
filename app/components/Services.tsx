@@ -80,7 +80,7 @@ const services: Service[] = [
     price: "Sur devis",
     href: "/demande-speciale?type=polissage",
     cta: "Demander un devis",
-    video: "https://d2jqrm6oza8nb6.cloudfront.net/datasets/b1dd8971-1f8e-43ce-834e-1d49ecbca853.mov?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiY2Q5YzZjOTBjOGE3NTg2ZCIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTE0NTQ4OH0.-MRyk-BpCs4QjqwyfthY0U3PgUyaGjvGhIolYiSDSvM",
+    video: "https://d2jqrm6oza8nb6.cloudfront.net/datasets/b1dd8971-1f8e-43ce-834e-1d49ecbca853.mov?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiY2Q5YzZjOTBjOGE3NTg2ZCIsImJ1Y2tldCI6InJ1bndheS10YXNrLWFydGlmYWN0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTE0NTQ4OH0.-MRyk-BpCs4QjqwyfthY0U3PgUyaGjvGhIolYiSDSvM",
     start: 0,
     end: 6.8,
     text: "Correction des défauts visuels pour retrouver profondeur, netteté des reflets et brillance de la peinture.",
@@ -166,6 +166,7 @@ export function Services() {
               <div className={styles.stageTitle}>
                 <span>{active.eyebrow}</span>
                 <strong>{active.name}</strong>
+                <em>{active.price}</em>
               </div>
             </div>
           </div>
@@ -197,7 +198,6 @@ export function Services() {
             <p>{active.text}</p>
           </div>
           <div className={styles.detailMeta}>
-            <strong>{active.price}</strong>
             <ul>
               {active.details.map((detail) => <li key={detail}>{detail}</li>)}
             </ul>
