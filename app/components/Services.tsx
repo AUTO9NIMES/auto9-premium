@@ -1,52 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./Services.module.css";
 
-type Service = {
-  id: string;
-  name: string;
-  tag: string;
-  price: string;
-  text: string;
-  href: string;
-  image: string;
-  video: string;
-  start: number;
-  end: number;
-  highlights: { icon: string; title: string; subtitle: string }[];
-  details: string[];
-};
-
-type PremiumService = {
-  id: string;
-  tag: string;
-  name: string;
-  priceLabel: string;
-  price: string;
-  text: string;
-  href: string;
-  image: string;
-  video: string;
-  end: number;
-};
-
-const DUO_VIDEO = "https://d2jqrm6oza8nb6.cloudfront.net/datasets/f69de447-243a-45e0-be1a-564f1557f1d4.mov?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiYWJmYTg0NjdhODQ0MjAwYiIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTA3ODYzMX0.JZg_T7SezMYNO1oIAmZ66RHoGi5gaJoPX1pMsDDAGDI";
-const EXTERIOR_VIDEO = "https://d2jqrm6oza8nb6.cloudfront.net/datasets/2480bd3e-c2ef-4987-9e29-42acb8069308.mp4?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiOTU2MTBiZmUyNmEzZjYyZSIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTEzMTY0Nn0.6NnhFDLwuHJAp4LAnwmgruJlPpaAgYMJN3aGsdhMhsM";
-
-const services: Service[] = [
+const services = [
   {
-    id: "duo",
     name: "Formule Duo",
     tag: "Best seller",
     price: "169 €",
     text: "Intérieur + extérieur, avec nettoyage moteur offert.",
     href: "/devis?service=duo",
     image: "/services/duo-card.png",
-    video: DUO_VIDEO,
-    start: 0,
-    end: 9.95,
     highlights: [
       { icon: "sparkles", title: "Intérieur", subtitle: "complet" },
       { icon: "car", title: "Extérieur", subtitle: "complet" },
@@ -69,16 +34,12 @@ const services: Service[] = [
     ],
   },
   {
-    id: "interieur",
     name: "Intérieur",
     tag: "Confort",
     price: "89 €",
     text: "Un habitacle propre, sain et soigné jusque dans les détails.",
     href: "/devis?service=interieur",
     image: "/services/interieur-card.jpg",
-    video: DUO_VIDEO,
-    start: 5.25,
-    end: 8.75,
     highlights: [
       { icon: "seat", title: "Sièges", subtitle: "& tapis" },
       { icon: "air", title: "Dépoussiérage", subtitle: "complet" },
@@ -94,16 +55,12 @@ const services: Service[] = [
     ],
   },
   {
-    id: "exterieur",
     name: "Extérieur",
     tag: "Brillance",
     price: "89 €",
     text: "Une carrosserie propre, brillante et des finitions soignées.",
     href: "/devis?service=exterieur",
     image: "/services/exterieur-card.jpg",
-    video: EXTERIOR_VIDEO,
-    start: 0,
-    end: 7.8,
     highlights: [
       { icon: "wash", title: "Lavage", subtitle: "haute pression" },
       { icon: "sparkles", title: "Finition", subtitle: "brillante" },
@@ -121,16 +78,15 @@ const services: Service[] = [
   },
 ];
 
-const premiumServices: PremiumService[] = [
+const premiumServices = [
   {
     id: "phares",
     tag: "Restauration",
     name: "Rénovation phares",
-    priceLabel: "À partir de",
-    price: "69 €",
-    text: "Restauration des optiques ternis ou opaques pour retrouver transparence et éclat.",
+    price: "À partir de 69 €",
+    text: "Restauration des optiques ternis ou opaques pour retrouver transparence, éclat et une finition protégée.",
     href: "/demande-speciale?type=phares",
-    image: "/services/phares-card.jpg",
+    cta: "Demander cette prestation",
     video: "https://d2jqrm6oza8nb6.cloudfront.net/datasets/5066f38b-598e-4ca5-8db0-e004d62a3006.mov?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiMDgzNzM5NzdiOTE3YTQ1ZCIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTExMzcxOX0.AMH1SiQGiiDvkQz0LBwuV31821nWkXOp4HIVbQaVouA",
     end: 4.9,
   },
@@ -138,11 +94,10 @@ const premiumServices: PremiumService[] = [
     id: "polissage",
     tag: "Correction",
     name: "Polissage carrosserie",
-    priceLabel: "Tarif",
     price: "Sur devis",
-    text: "Correction des défauts visuels et restauration de la profondeur et de la brillance de la carrosserie.",
+    text: "Correction des défauts visuels pour retrouver profondeur, netteté des reflets et brillance de la peinture.",
     href: "/demande-speciale?type=polissage",
-    image: "/services/polissage-card.jpg",
+    cta: "Demander un devis",
     video: "https://d2jqrm6oza8nb6.cloudfront.net/datasets/b1dd8971-1f8e-43ce-834e-1d49ecbca853.mov?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiY2Q5YzZjOTBjOGE3NTg2ZCIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTE0NTQ4OH0.-MRyk-BpCs4QjqwyfthY0U3PgUyaGjvGhIolYiSDSvM",
     end: 6.8,
   },
@@ -150,50 +105,40 @@ const premiumServices: PremiumService[] = [
     id: "jantes",
     tag: "Esthétique",
     name: "Rénovation jantes",
-    priceLabel: "Tarif",
     price: "Sur devis",
-    text: "Remise en état esthétique des jantes selon leur état, leurs défauts et la finition recherchée.",
+    text: "Remise en état esthétique des jantes selon leurs défauts pour retrouver une finition nette et homogène.",
     href: "/demande-speciale?type=jantes",
-    image: "/services/jantes-card.jpg",
+    cta: "Demander un devis",
     video: "https://d2jqrm6oza8nb6.cloudfront.net/datasets/66680976-2afb-4cdf-923f-6d8ffc040697.mov?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiMzUyN2Q3MjA0YTg2Mzg3NCIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTE1MzgyNH0.Qmq6GkgxP-tDTjwxmLNaNw92x27ConIjL9sK5y8FpKg",
     end: 6.8,
   },
 ];
 
 export function Services() {
-  const [cinematic, setCinematic] = useState<Service | null>(null);
-  const cinematicRef = useRef<HTMLVideoElement>(null);
+  const [activePremiumId, setActivePremiumId] = useState("phares");
+  const premiumVideoRef = useRef<HTMLVideoElement>(null);
+  const activePremium = useMemo(
+    () => premiumServices.find((service) => service.id === activePremiumId) ?? premiumServices[0],
+    [activePremiumId],
+  );
 
   useEffect(() => {
-    if (!cinematic) return;
-    const video = cinematicRef.current;
+    const video = premiumVideoRef.current;
     if (!video) return;
-
-    const startPlayback = () => {
-      video.currentTime = cinematic.start;
+    const play = () => {
+      video.currentTime = 0;
       void video.play().catch(() => undefined);
     };
+    if (video.readyState >= 1) play();
+    else video.addEventListener("loadedmetadata", play, { once: true });
+    return () => video.removeEventListener("loadedmetadata", play);
+  }, [activePremium]);
 
-    if (video.readyState >= 1) startPlayback();
-    else video.addEventListener("loadedmetadata", startPlayback, { once: true });
-
-    return () => video.removeEventListener("loadedmetadata", startPlayback);
-  }, [cinematic]);
-
-  useEffect(() => {
-    if (!cinematic) return;
-    const close = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setCinematic(null);
-    };
-    window.addEventListener("keydown", close);
-    return () => window.removeEventListener("keydown", close);
-  }, [cinematic]);
-
-  const loopCinematic = () => {
-    const video = cinematicRef.current;
-    if (!video || !cinematic) return;
-    if (video.currentTime >= cinematic.end) {
-      video.currentTime = cinematic.start;
+  const loopPremium = () => {
+    const video = premiumVideoRef.current;
+    if (!video) return;
+    if (video.currentTime >= activePremium.end) {
+      video.currentTime = 0;
       void video.play().catch(() => undefined);
     }
   };
@@ -209,22 +154,19 @@ export function Services() {
 
         <div className={styles.grid}>
           {services.map((service, index) => (
-            <article data-motion-reveal data-motion-delay={index * 90} key={service.id} className={`${styles.card} ${service.id === "duo" ? styles.featured : ""}`}>
-              <button type="button" className={styles.cinematicTrigger} onClick={() => setCinematic(service)} aria-label={`Voir ${service.name} en action`}>
-                <div className={styles.overview}>
-                  <div className={styles.photo}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={service.image} alt={service.name} loading="lazy" />
-                    <span className={styles.playBadge}><span>▶</span> Voir le soin en action</span>
-                  </div>
-                  <div className={styles.copy}>
-                    <span className={styles.tag}>{service.tag}</span>
-                    <h3>{service.name}</h3>
-                    <p className={styles.description}>{service.text}</p>
-                    <div className={styles.price}><span>À partir de</span><strong>{service.price}</strong></div>
-                  </div>
+            <article data-motion-reveal data-motion-delay={index * 90} key={service.name} className={`${styles.card} ${service.name === "Formule Duo" ? styles.featured : ""}`}>
+              <div className={styles.overview}>
+                <div className={styles.photo}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={service.image} alt={service.name} loading="lazy" />
                 </div>
-              </button>
+                <div className={styles.copy}>
+                  <span className={styles.tag}>{service.tag}</span>
+                  <h3>{service.name}</h3>
+                  <p className={styles.description}>{service.text}</p>
+                  <div className={styles.price}><span>À partir de</span><strong>{service.price}</strong></div>
+                </div>
+              </div>
               <Link href={service.href} className={styles.action}>Choisir cette formule <span aria-hidden="true">→</span></Link>
               <details className={styles.details}>
                 <summary>Voir le détail des prestations <span aria-hidden="true">+</span></summary>
@@ -243,78 +185,60 @@ export function Services() {
 
         <header className={styles.premiumHeading} data-motion-reveal>
           <div><p className={styles.eyebrow}>Expertise & rénovation</p><h2>Pour aller plus loin.</h2></div>
-          <p className={styles.intro}>Trois prestations ciblées, présentées dans le même univers que nos formules principales. Survolez l’image pour voir la rénovation en action.</p>
+          <p className={styles.intro}>Survolez une prestation pour découvrir le soin en action. Sur mobile, touchez simplement la prestation.</p>
         </header>
 
-        <div className={styles.grid}>
-          {premiumServices.map((service, index) => (
-            <article data-motion-reveal data-motion-delay={index * 90} key={service.id} className={`${styles.card} ${styles.premium}`}>
-              <div className={styles.overview}>
-                <PremiumMedia service={service} />
-                <div className={styles.copy}>
-                  <span className={styles.tag}>{service.tag}</span>
-                  <h3>{service.name}</h3>
-                  <p className={styles.description}>{service.text}</p>
-                  <div className={styles.price}><span>{service.priceLabel}</span><strong>{service.price}</strong></div>
-                </div>
-              </div>
-              <Link href={service.href} className={styles.action}>Demander cette prestation <span aria-hidden="true">→</span></Link>
-            </article>
-          ))}
-        </div>
-      </div>
+        <div className={styles.premiumExperience}>
+          <div className={styles.premiumSelector}>
+            {premiumServices.map((service, index) => (
+              <button
+                key={service.id}
+                type="button"
+                className={`${styles.premiumChoice} ${activePremiumId === service.id ? styles.premiumChoiceActive : ""}`}
+                onMouseEnter={() => setActivePremiumId(service.id)}
+                onFocus={() => setActivePremiumId(service.id)}
+                onClick={() => setActivePremiumId(service.id)}
+                aria-pressed={activePremiumId === service.id}
+              >
+                <span className={styles.premiumIndex}>0{index + 1}</span>
+                <span className={styles.premiumChoiceText}>
+                  <small>{service.tag}</small>
+                  <strong>{service.name}</strong>
+                  <em>{service.price}</em>
+                </span>
+                <span className={styles.premiumArrow} aria-hidden="true">↗</span>
+              </button>
+            ))}
+          </div>
 
-      {cinematic && (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label={`${cinematic.name} en action`} onMouseDown={() => setCinematic(null)}>
-          <div className={styles.modalCard} onMouseDown={(event) => event.stopPropagation()}>
-            <button type="button" className={styles.closeButton} onClick={() => setCinematic(null)} aria-label="Fermer">×</button>
-            <video ref={cinematicRef} className={styles.modalVideo} src={cinematic.video} muted autoPlay playsInline preload="metadata" onTimeUpdate={loopCinematic} />
-            <div className={styles.modalShade} />
-            <div className={styles.modalTitle}>
-              <span>{cinematic.tag}</span>
-              <strong>{cinematic.name}</strong>
-              <em>À partir de {cinematic.price}</em>
+          <div className={styles.premiumStageWrap}>
+            <div className={styles.premiumStage} aria-live="polite">
+              <video
+                ref={premiumVideoRef}
+                key={activePremium.video}
+                className={styles.premiumVideo}
+                src={activePremium.video}
+                muted
+                autoPlay
+                playsInline
+                preload="metadata"
+                onTimeUpdate={loopPremium}
+              />
+              <div className={styles.premiumShade} />
+              <div className={styles.premiumStageTitle}>
+                <span>{activePremium.tag}</span>
+                <strong>{activePremium.name}</strong>
+                <em>{activePremium.price}</em>
+              </div>
+            </div>
+            <div className={styles.premiumDetail}>
+              <p>{activePremium.text}</p>
+              <Link href={activePremium.href} className={styles.premiumAction}>{activePremium.cta}<span aria-hidden="true">→</span></Link>
             </div>
           </div>
         </div>
-      )}
+      </div>
     </section>
-  );
-}
-
-function PremiumMedia({ service }: { service: PremiumService }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [active, setActive] = useState(false);
-
-  const start = () => {
-    setActive(true);
-    const video = videoRef.current;
-    if (!video) return;
-    video.currentTime = 0;
-    void video.play().catch(() => undefined);
-  };
-
-  const stop = () => {
-    setActive(false);
-    const video = videoRef.current;
-    if (!video) return;
-    video.pause();
-    video.currentTime = 0;
-  };
-
-  const loop = () => {
-    const video = videoRef.current;
-    if (!video) return;
-    if (video.currentTime >= service.end) video.currentTime = 0;
-  };
-
-  return (
-    <div className={styles.photo} onMouseEnter={start} onMouseLeave={stop} onFocus={start} onBlur={stop} tabIndex={0}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={service.image} alt={service.name} loading="lazy" className={active ? styles.mediaHidden : ""} />
-      <video ref={videoRef} className={`${styles.hoverVideo} ${active ? styles.hoverVideoActive : ""}`} src={service.video} muted playsInline preload="metadata" onTimeUpdate={loop} />
-      <span className={styles.hoverHint}>Survolez pour voir en action</span>
-    </div>
   );
 }
 
