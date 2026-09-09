@@ -18,7 +18,7 @@ type Service = {
   details: string[];
 };
 
-const DUO_VIDEO = "https://d2jqrm6oza8nb6.cloudfront.net/datasets/a7e6eaba-3b71-4599-9eb8-7aad932642f1.mov?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiZTVmOGZiMjk3ZWI3ZDBjMiIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTEwNjA4OX0.ze-8xk61CcMGT0esvNmAFOVn_twCOhGbP5InFqjXx-c";
+const DUO_VIDEO = "https://d2jqrm6oza8nb6.cloudfront.net/datasets/f69de447-243a-45e0-be1a-564f1557f1d4.mov?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiYWJmYTg0NjdhODQ0MjAwYiIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTA3ODYzMX0.JZg_T7SezMYNO1oIAmZ66RHoGi5gaJoPX1pMsDDAGDI";
 
 const services: Service[] = [
   {
@@ -30,7 +30,7 @@ const services: Service[] = [
     cta: "Choisir la formule DUO",
     video: DUO_VIDEO,
     start: 0,
-    end: 19.2,
+    end: 9.95,
     text: "Le soin complet intérieur + extérieur pour retrouver une voiture nette, brillante et agréable à vivre.",
     details: ["Aspiration et nettoyage intérieur complet", "Pré-lavage et lavage extérieur", "Jantes, vitres et finitions", "Nettoyage moteur offert"],
   },
@@ -42,8 +42,8 @@ const services: Service[] = [
     href: "/devis?service=interieur",
     cta: "Choisir l’intérieur",
     video: DUO_VIDEO,
-    start: 6.0,
-    end: 13.2,
+    start: 5.25,
+    end: 8.75,
     text: "Un habitacle propre, sain et soigné jusque dans les détails, avec une finition premium.",
     details: ["Aspiration complète", "Plastiques et tableau de bord", "Vitres intérieures", "Tapis et finitions"],
   },
@@ -80,7 +80,7 @@ const services: Service[] = [
     price: "Sur devis",
     href: "/demande-speciale?type=polissage",
     cta: "Demander un devis",
-    video: "https://d2jqrm6oza8nb6.cloudfront.net/datasets/b1dd8971-1f8e-43ce-834e-1d49ecbca853.mov?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiY2Q5YzZjOTBjOGE3NTg2ZCIsImJ1Y2tldCI6InJ1bndheS10YXNrLWFydGlmYWN0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTE0NTQ4OH0.-MRyk-BpCs4QjqwyfthY0U3PgUyaGjvGhIolYiSDSvM",
+    video: "https://d2jqrm6oza8nb6.cloudfront.net/datasets/b1dd8971-1f8e-43ce-834e-1d49ecbca853.mov?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiY2Q5YzZjOTBjOGE3NTg2ZCIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTE0NTQ4OH0.-MRyk-BpCs4QjqwyfthY0U3PgUyaGjvGhIolYiSDSvM",
     start: 0,
     end: 6.8,
     text: "Correction des défauts visuels pour retrouver profondeur, netteté des reflets et brillance de la peinture.",
