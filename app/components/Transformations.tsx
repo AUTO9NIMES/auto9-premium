@@ -37,7 +37,7 @@ export function Transformations() {
           Découvrez le résultat
         </p>
 
-        <h2 className="mt-5 max-w-5xl text-5xl font-black uppercase tracking-[-0.05em] md:text-7xl">
+        <h2 data-motion-reveal className="mt-5 max-w-5xl text-5xl font-black uppercase tracking-[-0.05em] md:text-7xl">
           Le résultat parle de lui-même.
         </h2>
 

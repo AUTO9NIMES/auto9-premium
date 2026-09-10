@@ -8,7 +8,7 @@ export function Hero() {
 
   return (
     <div className="relative z-10 flex min-h-[calc(100vh-170px)] items-center px-6 pb-16 pt-8 md:px-12 md:pb-20">
-      <div className="max-w-6xl">
+      <div className="max-w-6xl" data-motion-intro>
         <p className="text-xs font-black uppercase tracking-[0.6em] text-[#9fbdd1] md:text-sm">
           Detailing premium à domicile · Nîmes
         </p>
