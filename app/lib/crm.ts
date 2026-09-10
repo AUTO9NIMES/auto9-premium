@@ -154,11 +154,23 @@ export type Appointment = {
   updated_at?: string;
 };
 
+export type AppointmentTransitionStatus =
+  | "REQUESTED"
+  | "CONFIRMED"
+  | "COMPLETED"
+  | "CANCELLED";
+
 export type AcceptQuoteAndCreateJobResult = {
   quote: Quote;
   lead: Lead;
   job: Job;
   appointment: Appointment | null;
+};
+
+export type TransitionAppointmentStatusResult = {
+  appointment: Appointment;
+  job: Job;
+  activity: ActivityLog | null;
 };
 
 function normalizeEmail(value?: string | null): string | null {
@@ -415,6 +427,79 @@ export async function acceptQuoteAndCreateJob(input: {
   );
 
   return validateAcceptedQuoteResult(result, businessId, quoteId);
+}
+
+function validateTransitionAppointmentResult(
+  value: unknown,
+  businessId: string,
+  appointmentId: string,
+  targetStatus: AppointmentTransitionStatus,
+): TransitionAppointmentStatusResult {
+  if (!isRecord(value) || !isRecord(value.appointment) || !isRecord(value.job)) {
+    throw new Error("Supabase returned an invalid appointment transition result.");
+  }
+
+  const appointment = value.appointment;
+  const job = value.job;
+  const activity = value.activity === null || value.activity === undefined
+    ? null
+    : value.activity;
+
+  if (
+    appointment.id !== appointmentId ||
+    appointment.business_id !== businessId ||
+    appointment.job_id !== job.id ||
+    appointment.status !== targetStatus ||
+    job.business_id !== businessId ||
+    typeof job.id !== "string" ||
+    (activity !== null && !isRecord(activity))
+  ) {
+    throw new Error("Supabase returned an inconsistent appointment transition result.");
+  }
+
+  return {
+    appointment: appointment as Appointment,
+    job: job as Job,
+    activity: activity as ActivityLog | null,
+  };
+}
+
+export async function transitionAppointmentStatus(input: {
+  appointmentId: string;
+  targetStatus: AppointmentTransitionStatus;
+  source?: string;
+  notes?: string | null;
+}): Promise<TransitionAppointmentStatusResult> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const appointmentId = input.appointmentId.trim();
+
+  if (!appointmentId) {
+    throw new Error("appointmentId is required.");
+  }
+
+  const businessContext = await resolveCurrentBusinessContext();
+  const businessId = businessContext.businessId;
+  const result = await supabaseRest<unknown>(
+    "rpc/transition_appointment_status",
+    "POST",
+    {
+      p_business_id: businessId,
+      p_appointment_id: appointmentId,
+      p_target_status: input.targetStatus,
+      p_source: input.source?.trim() || "internal",
+      p_notes: input.notes ?? null,
+    },
+  );
+
+  return validateTransitionAppointmentResult(
+    result,
+    businessId,
+    appointmentId,
+    input.targetStatus,
+  );
 }
 
 export async function logActivity(input: ActivityLog) {
