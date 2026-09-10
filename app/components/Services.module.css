@@ -32,7 +32,7 @@
 .details summary > span { font-size: 19px; transition: transform .2s ease; }
 .details[open] summary > span { transform: rotate(45deg); }
 .expanded { border-top: 1px solid #26303d; padding: 16px; }
-.highlights { display: grid; gap: 10px; padding-bottom: 16px; color: #c3ddff; font-size: 12px; }
+.highlights { display: none; }
 .highlights > div { display: flex; align-items: center; gap: 10px; }
 .highlights svg { flex-shrink: 0; }
 .highlights strong { font-weight: 600; }
