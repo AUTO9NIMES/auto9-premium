@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./Services.module.css";
 
-const DUO_VIDEO = "https://d2jqrm6oza8nb6.cloudfront.net/datasets/f69de447-243a-45e0-be1a-564f1557f1d4.mov?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiYWJmYTg0NjdhODQ0MjAwYiIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTA3ODYzMX0.JZg_T7SezMYNO1oIAmZ66RHoGi5gaJoPX1pMsDDAGDI";
-const EXTERIOR_VIDEO = "https://d2jqrm6oza8nb6.cloudfront.net/datasets/2480bd3e-c2ef-4987-9e29-42acb8069308.mp4?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiOTU2MTBiZmUyNmEzZjYyZSIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTEzMTY0Nn0.6NnhFDLwuHJAp4LAnwmgruJlPpaAgYMJN3aGsdhMhsM";
+const DUO_VIDEO = "https://d2jqrm6oza8nb6.cloudfront.net/datasets/bba74f0e-d303-48da-98e8-cc5dac31a345.mp4?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiODA2ZWQyZDYxOTM5MGU4YSIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTQ0NzM4Mn0.Laveza7URMtgjW8eMRpKdh4O8JSM34xf8OAcgzg-Uys";
+const EXTERIOR_VIDEO = "https://d2jqrm6oza8nb6.cloudfront.net/datasets/f3dbdf62-f750-4f51-aad4-27c9ee2e8fde.mp4?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiZWFjOTRhMmI2NTA3OWFiNCIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTQyODI2N30.xj51ZYnLDwsq-p0bZcyESXphb3XYdalBHe4-2qzfka0";
 
 const services = [
   {
@@ -100,7 +100,7 @@ const premiumServices = [
     text: "Restauration des optiques ternis ou opaques pour retrouver transparence, éclat et une finition protégée.",
     href: "/demande-speciale?type=phares",
     cta: "Demander cette prestation",
-    video: "https://d2jqrm6oza8nb6.cloudfront.net/datasets/5066f38b-598e-4ca5-8db0-e004d62a3006.mov?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiMDgzNzM5NzdiOTE3YTQ1ZCIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTExMzcxOX0.AMH1SiQGiiDvkQz0LBwuV31821nWkXOp4HIVbQaVouA",
+    video: "https://d2jqrm6oza8nb6.cloudfront.net/datasets/2c2b25d9-ecd1-40b3-9e29-c22fb0ddf2bc.mp4?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiMjVhZjE1YjQzNGZjZGVjMSIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTQ3Mjk0OH0.l0sjsML6kxw2kGKvcbLn2cyXH2JtlaN0ncdejBgp1Jk",
     end: 4.9,
   },
   {
@@ -111,8 +111,8 @@ const premiumServices = [
     text: "Correction des défauts visuels pour retrouver profondeur, netteté des reflets et brillance de la peinture.",
     href: "/demande-speciale?type=polissage",
     cta: "Demander un devis",
-    video: "https://d2jqrm6oza8nb6.cloudfront.net/datasets/b1dd8971-1f8e-43ce-834e-1d49ecbca853.mov?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiY2Q5YzZjOTBjOGE3NTg2ZCIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTE0NTQ4OH0.-MRyk-BpCs4QjqwyfthY0U3PgUyaGjvGhIolYiSDSvM",
-    end: 6.8,
+    video: "https://d2jqrm6oza8nb6.cloudfront.net/datasets/ed292b25-6a1d-415a-8937-ff950758fade.mp4?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiMjcxNzAzYWFlZjgwYzg0YyIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTQ3NDA5MH0.nWZomkHeOyqDillHq-2lITGzV_hgG5fLjyavCYX4vws",
+    end: 6.5,
   },
   {
     id: "jantes",
@@ -122,7 +122,7 @@ const premiumServices = [
     text: "Remise en état esthétique des jantes selon leurs défauts pour retrouver une finition nette et homogène.",
     href: "/demande-speciale?type=jantes",
     cta: "Demander un devis",
-    video: "https://d2jqrm6oza8nb6.cloudfront.net/datasets/66680976-2afb-4cdf-923f-6d8ffc040697.mov?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiMzUyN2Q3MjA0YTg2Mzg3NCIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTE1MzgyNH0.Qmq6GkgxP-tDTjwxmLNaNw92x27ConIjL9sK5y8FpKg",
+    video: "https://d2jqrm6oza8nb6.cloudfront.net/datasets/cb12d5f0-5865-467b-a0df-568e56eaac5f.mp4?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiODFkZDEwZTg1OTA3N2Q0ZiIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTQzMDI0OH0.IcupEXOMnPKtLYdEjOFkZTUYnTTl8Hbmxo-ZDGoirQU",
     end: 6.8,
   },
 ];
