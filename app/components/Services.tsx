@@ -18,6 +18,7 @@ const services = [
     image: "/services/duo-card.png",
     video: DUO_VIDEO,
     videoStart: 0,
+    videoDuration: 4,
     highlights: [
       { icon: "sparkles", title: "Intérieur", subtitle: "complet" },
       { icon: "car", title: "Extérieur", subtitle: "complet" },
@@ -48,6 +49,7 @@ const services = [
     image: "/services/interieur-card.jpg",
     video: DUO_VIDEO,
     videoStart: 5.25,
+    videoDuration: 3.5,
     highlights: [
       { icon: "seat", title: "Sièges", subtitle: "& tapis" },
       { icon: "air", title: "Dépoussiérage", subtitle: "complet" },
@@ -71,6 +73,7 @@ const services = [
     image: "/services/exterieur-card.jpg",
     video: EXTERIOR_VIDEO,
     videoStart: 0,
+    videoDuration: 4,
     highlights: [
       { icon: "wash", title: "Lavage", subtitle: "haute pression" },
       { icon: "sparkles", title: "Finition", subtitle: "brillante" },
@@ -192,7 +195,7 @@ export function Services() {
       video.addEventListener("canplay", play, { once: true });
     }
 
-    const fallback = window.setTimeout(() => router.push(cinematic.href), 6500);
+    const fallback = window.setTimeout(() => router.push(cinematic.href), (cinematic.videoDuration + 2.5) * 1000);
     return () => {
       document.body.style.overflow = previousOverflow;
       window.clearTimeout(fallback);
@@ -213,7 +216,7 @@ export function Services() {
   const progressCinematic = () => {
     const video = cinematicVideoRef.current;
     if (!video || !cinematic) return;
-    if (video.currentTime >= cinematic.videoStart + 4) {
+    if (video.currentTime >= cinematic.videoStart + cinematic.videoDuration) {
       video.pause();
       router.push(cinematic.href);
     }
