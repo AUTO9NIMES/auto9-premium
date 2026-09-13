@@ -137,16 +137,37 @@ export function Services() {
     [activePremiumId],
   );
 
+  const playPremium = () => {
+    const video = premiumVideoRef.current;
+    if (!video) return;
+    video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
+    void video.play().catch(() => undefined);
+  };
+
   useEffect(() => {
     const video = premiumVideoRef.current;
     if (!video) return;
+
     const play = () => {
+      video.muted = true;
+      video.defaultMuted = true;
+      video.playsInline = true;
       video.currentTime = 0;
       void video.play().catch(() => undefined);
     };
-    if (video.readyState >= 1) play();
-    else video.addEventListener("loadedmetadata", play, { once: true });
-    return () => video.removeEventListener("loadedmetadata", play);
+
+    if (video.readyState >= 2) play();
+    else {
+      video.addEventListener("loadeddata", play, { once: true });
+      video.addEventListener("canplay", play, { once: true });
+    }
+
+    return () => {
+      video.removeEventListener("loadeddata", play);
+      video.removeEventListener("canplay", play);
+    };
   }, [activePremium]);
 
   useEffect(() => {
@@ -154,18 +175,29 @@ export function Services() {
     const video = cinematicVideoRef.current;
     if (!video) return;
 
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
     const play = () => {
+      video.muted = true;
+      video.defaultMuted = true;
+      video.playsInline = true;
       video.currentTime = cinematic.videoStart;
       void video.play().catch(() => undefined);
     };
 
-    if (video.readyState >= 1) play();
-    else video.addEventListener("loadedmetadata", play, { once: true });
+    if (video.readyState >= 2) play();
+    else {
+      video.addEventListener("loadeddata", play, { once: true });
+      video.addEventListener("canplay", play, { once: true });
+    }
 
-    const fallback = window.setTimeout(() => router.push(cinematic.href), 5500);
+    const fallback = window.setTimeout(() => router.push(cinematic.href), 6500);
     return () => {
+      document.body.style.overflow = previousOverflow;
       window.clearTimeout(fallback);
-      video.removeEventListener("loadedmetadata", play);
+      video.removeEventListener("loadeddata", play);
+      video.removeEventListener("canplay", play);
     };
   }, [cinematic, router]);
 
@@ -258,7 +290,7 @@ export function Services() {
           </div>
 
           <div className={styles.premiumStageWrap}>
-            <div className={styles.premiumStage} aria-live="polite">
+            <div className={styles.premiumStage} aria-live="polite" onClick={playPremium}>
               <video
                 ref={premiumVideoRef}
                 key={activePremium.video}
@@ -267,7 +299,9 @@ export function Services() {
                 muted
                 autoPlay
                 playsInline
-                preload="metadata"
+                preload="auto"
+                onLoadedData={playPremium}
+                onCanPlay={playPremium}
                 onTimeUpdate={loopPremium}
               />
               <div className={styles.premiumShade} />
@@ -286,30 +320,33 @@ export function Services() {
       </div>
 
       {cinematic && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={`${cinematic.name} en action`}
-          style={{ position: "fixed", inset: 0, zIndex: 1100, display: "grid", placeItems: "center", padding: 18, background: "rgba(1,3,7,.92)", backdropFilter: "blur(14px)" }}
-        >
-          <div style={{ position: "relative", width: "min(1080px, 96vw)", aspectRatio: "16 / 9", maxHeight: "84vh", overflow: "hidden", borderRadius: 24, border: "1px solid rgba(102,158,240,.42)", background: "#05080d", boxShadow: "0 30px 100px rgba(0,0,0,.72), 0 0 55px rgba(38,113,240,.18)" }}>
+        <div className={styles.cinematicOverlay} role="dialog" aria-modal="true" aria-label={`${cinematic.name} en action`}>
+          <div className={styles.cinematicFrame}>
             <video
               ref={cinematicVideoRef}
               key={`${cinematic.name}-${cinematic.videoStart}`}
+              className={styles.cinematicVideo}
               src={cinematic.video}
+              poster={cinematic.image}
               muted
               autoPlay
               playsInline
               preload="auto"
+              onLoadedData={() => {
+                const video = cinematicVideoRef.current;
+                if (!video) return;
+                video.currentTime = cinematic.videoStart;
+                void video.play().catch(() => undefined);
+              }}
+              onCanPlay={() => {
+                const video = cinematicVideoRef.current;
+                if (!video) return;
+                void video.play().catch(() => undefined);
+              }}
               onTimeUpdate={progressCinematic}
-              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
             />
-            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,.04) 35%, rgba(2,5,10,.88) 100%)", pointerEvents: "none" }} />
-            <div style={{ position: "absolute", left: "clamp(20px, 4vw, 42px)", right: 24, bottom: "clamp(22px, 4vw, 38px)", zIndex: 2, display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 7 }}>
-              <span style={{ color: "#88b9ff", fontSize: 11, fontWeight: 800, letterSpacing: ".18em", textTransform: "uppercase" }}>{cinematic.tag}</span>
-              <strong style={{ color: "#fff", fontSize: "clamp(38px, 7vw, 76px)", lineHeight: .94, letterSpacing: "-.055em", textShadow: "0 8px 28px #000" }}>{cinematic.name}</strong>
-              <span style={{ marginTop: 8, display: "inline-flex", alignItems: "center", minHeight: 44, padding: "9px 16px", border: "1px solid rgba(126,180,255,.58)", borderRadius: 999, background: "linear-gradient(135deg, rgba(6,14,24,.92), rgba(17,51,97,.94))", color: "#fff", fontSize: "clamp(17px, 2.4vw, 24px)", fontWeight: 850, boxShadow: "0 0 22px rgba(54,124,255,.42), 0 0 48px rgba(33,98,224,.24)" }}>À partir de {cinematic.price}</span>
-            </div>
+            <div className={styles.cinematicShade} />
+            <div className={styles.cinematicTitle}>{cinematic.name}</div>
           </div>
         </div>
       )}
