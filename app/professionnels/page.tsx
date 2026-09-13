@@ -28,45 +28,6 @@ const benefits = [
   },
 ];
 
-const services = [
-  {
-    name: "Préparation VO",
-    price: "Sur devis",
-    text: "Nettoyage intérieur et extérieur avant mise en vente ou shooting photo.",
-    details: [
-      "Aspiration complète",
-      "Nettoyage plastiques",
-      "Lavage extérieur",
-      "Jantes et pneus",
-      "Finition présentation",
-    ],
-  },
-  {
-    name: "Livraison client",
-    price: "100 €",
-    text: "Préparation esthétique avant remise des clés pour une livraison plus premium.",
-    details: [
-      "Finition intérieure",
-      "Brillance extérieure",
-      "Vitres",
-      "Parfum ambiance",
-      "Contrôle visuel final",
-    ],
-  },
-  {
-    name: "Partenariat régulier",
-    price: "Volume pro",
-    text: "Solution récurrente pour les garages avec plusieurs véhicules à préparer chaque mois.",
-    details: [
-      "Organisation sur mesure",
-      "Tarifs adaptés au volume",
-      "Créneaux réguliers",
-      "Suivi qualité AUTO 9",
-      "Relation long terme",
-    ],
-  },
-];
-
 const steps = [
   "Premier échange sur vos besoins",
   "Définition du volume et du niveau de préparation",
@@ -265,22 +226,32 @@ export default function ProfessionnelsPage() {
             ))}
           </div>
 
-          <div className="mt-24 grid gap-6 lg:grid-cols-3">
-            {services.map((service) => (
-              <article key={service.name} className="flex h-full flex-col rounded-[2rem] border border-white/10 bg-[linear-gradient(145deg,rgba(255,255,255,.05),rgba(9,19,34,.55))] p-8 transition hover:-translate-y-2 hover:border-[#438dff]/30 hover:shadow-[0_0_35px_rgba(38,113,240,.08)]">
-                <div>
-                  <p className="text-xs font-black uppercase tracking-[0.3em] text-[#91bbfa]">{service.price}</p>
-                  <h3 className="mt-5 text-3xl font-black uppercase tracking-[-0.05em]">{service.name}</h3>
-                  <p className="mt-5 leading-relaxed text-white/50">{service.text}</p>
+          <section className="relative mt-24 overflow-hidden rounded-[2rem] border border-[#438dff]/25 bg-[radial-gradient(circle_at_100%_0%,rgba(38,113,240,.14),transparent_38%),linear-gradient(145deg,rgba(255,255,255,.045),rgba(9,19,34,.58))] p-8 shadow-[0_0_42px_rgba(38,113,240,.08)] md:p-10">
+            <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#2671f0]/12 blur-[90px]" />
+            <div className="relative">
+              <p className="text-xs font-black uppercase tracking-[0.35em] text-[#91bbfa]">Préparation livraison</p>
+              <h3 className="mt-4 text-3xl font-black uppercase tracking-[-0.05em] md:text-5xl">Nettoyage complet avant livraison client</h3>
+              <p className="mt-6 max-w-4xl text-base leading-relaxed text-white/55 md:text-lg">
+                Une préparation esthétique complète pour présenter un véhicule propre, soigné et prêt à être livré au client.
+              </p>
+
+              <div className="mt-8 grid gap-5 md:grid-cols-2">
+                <div className="rounded-[1.5rem] border border-white/10 bg-black/20 p-6">
+                  <p className="text-xs font-black uppercase tracking-[0.25em] text-[#91bbfa]">Extérieur</p>
+                  <p className="mt-3 text-lg font-bold text-white/80">Carrosserie · Jantes</p>
                 </div>
-                <div className="mt-7 border-t border-white/10 pt-4">
-                  {service.details.map((detail) => (
-                    <p key={detail} className="border-b border-white/10 py-3 text-sm text-white/55"><span className="text-[#72aaff]">✓</span> {detail}</p>
-                  ))}
+                <div className="rounded-[1.5rem] border border-white/10 bg-black/20 p-6">
+                  <p className="text-xs font-black uppercase tracking-[0.25em] text-[#91bbfa]">Intérieur</p>
+                  <p className="mt-3 text-lg font-bold text-white/80">Moquettes · Tapis · Plastiques · Vitres</p>
                 </div>
-              </article>
-            ))}
-          </div>
+              </div>
+
+              <div className="mt-6 rounded-[1.5rem] border border-[#438dff]/20 bg-[#0b1628]/55 p-6">
+                <p className="text-xs font-black uppercase tracking-[0.25em] text-[#91bbfa]">En supplément</p>
+                <p className="mt-3 leading-relaxed text-white/60">Shampoing sièges · Rénovation phares · Lustrage · Rénovation plastiques</p>
+              </div>
+            </div>
+          </section>
 
           <div className="mt-24 grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
             <div>
