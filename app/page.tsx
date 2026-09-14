@@ -6,8 +6,10 @@ import { Showcase } from "./components/Showcase";
 import { Services } from "./components/Services";
 import { MobileHomeRefresh } from "./components/MobileHomeRefresh";
 import { Transformations } from "./components/Transformations";
+import { BeforeAfter } from "./components/BeforeAfter";
 import { RealisationsPreview } from "./components/RealisationsPreview";
 import { Reviews } from "./components/Reviews";
+import { HomeConfidence } from "./components/HomeConfidence";
 import { Reservation } from "./components/Reservation";
 import { Footer } from "./components/Footer";
 import { HomeMotion } from "./components/HomeMotion";
@@ -77,8 +79,10 @@ export default function Home() {
 
       <Services />
       <Transformations />
+      <BeforeAfter />
       <RealisationsPreview />
       <Reviews />
+      <HomeConfidence />
       <Reservation />
       <Footer />
     </main>
