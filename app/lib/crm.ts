@@ -184,6 +184,16 @@ export type JobDetailsResult = {
   activities: ActivityLog[];
 };
 
+export type Customer360Result = {
+  customer: Customer;
+  vehicles: Vehicle[];
+  leads: Lead[];
+  quotes: Quote[];
+  jobs: Job[];
+  appointments: Appointment[];
+  activities: ActivityLog[];
+};
+
 export type JobListQueryParams = {
   page?: number;
   limit?: number;
@@ -482,6 +492,109 @@ export async function getJobDetails(
     appointment: (appointmentRows as Appointment[] | null)?.[0] ?? null,
     services: (services as LeadService[] | null) ?? [],
     activities: (activities as ActivityLog[] | null) ?? [],
+  };
+}
+
+export async function getCustomer360(
+  customerId: string,
+): Promise<Customer360Result | null> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const normalizedCustomerId = customerId.trim();
+
+  if (!normalizedCustomerId) {
+    throw new Error("customerId is required.");
+  }
+
+  const businessId = await getCurrentBusinessId();
+
+  const customerRows = (await supabaseRest<Customer[]>(
+    "customers",
+    "GET",
+    null,
+    `business_id=eq.${businessId}&id=eq.${normalizedCustomerId}&select=*`,
+  )) as Customer[] | null;
+
+  const customer = customerRows?.[0];
+
+  if (!customer?.id) {
+    return null;
+  }
+
+  const [
+    vehicles,
+    leads,
+    jobs,
+    appointments,
+    activities,
+  ] = await Promise.all([
+    supabaseRest<Vehicle[]>(
+      "vehicles",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&customer_id=eq.${normalizedCustomerId}&order=created_at.desc&select=*`,
+    ),
+    supabaseRest<Lead[]>(
+      "leads",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&customer_id=eq.${normalizedCustomerId}&order=created_at.desc&select=*`,
+    ),
+    supabaseRest<Job[]>(
+      "jobs",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&customer_id=eq.${normalizedCustomerId}&order=created_at.desc&select=*`,
+    ),
+    supabaseRest<Appointment[]>(
+      "appointments",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&customer_id=eq.${normalizedCustomerId}&order=requested_at.desc.nullslast,created_at.desc&select=*`,
+    ),
+    supabaseRest<ActivityLog[]>(
+      "activity_log",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&customer_id=eq.${normalizedCustomerId}&order=created_at.desc&select=*`,
+    ),
+  ]);
+
+  const normalizedLeads = (leads as Lead[] | null) ?? [];
+  const normalizedVehicles = (vehicles as Vehicle[] | null) ?? [];
+  const normalizedJobs = (jobs as Job[] | null) ?? [];
+  const normalizedAppointments = (appointments as Appointment[] | null) ?? [];
+  const normalizedActivities = (activities as ActivityLog[] | null) ?? [];
+
+  const leadIds = [...new Set(
+    normalizedLeads
+      .map((lead) => lead.id)
+      .filter((leadId): leadId is string => Boolean(leadId)),
+  )];
+
+  let quotes: Quote[] = [];
+
+  if (leadIds.length > 0) {
+    const quoteRows = (await supabaseRest<Quote[]>(
+      "quotes",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&lead_id=in.(${leadIds.join(",")})&order=created_at.desc&select=*`,
+    )) as Quote[] | null;
+
+    quotes = quoteRows ?? [];
+  }
+
+  return {
+    customer,
+    vehicles: normalizedVehicles,
+    leads: normalizedLeads,
+    quotes,
+    jobs: normalizedJobs,
+    appointments: normalizedAppointments,
+    activities: normalizedActivities,
   };
 }
 
