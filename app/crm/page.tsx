@@ -5,7 +5,10 @@ import {
   getCustomersList,
   getJobsList,
   getLeadsList,
+  type CustomerListResult,
   type JobStatus,
+  type JobListResult,
+  type LeadListResult,
   type LeadLifecycleStatus,
 } from "../lib/crm";
 
@@ -87,9 +90,9 @@ function SectionHeading({ eyebrow, title }: {
 export default async function CrmPage() {
   await ensureCrmAccess();
 
-  let customersResult;
-  let leadsResult;
-  let jobsResult;
+  let customersResult: CustomerListResult | undefined;
+  let leadsResult: LeadListResult | undefined;
+  let jobsResult: JobListResult | undefined;
   let failed = false;
 
   try {
