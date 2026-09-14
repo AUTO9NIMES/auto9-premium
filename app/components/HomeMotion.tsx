@@ -37,18 +37,15 @@ export function HomeMotion() {
 
             const animation = element.animate(
               [
-                {
-                  opacity: 0.15,
-                  translate: `0 ${compact.matches ? 14 : 28}px`,
-                },
-                { opacity: 1, translate: "0 0" },
+                { opacity: 0.2 },
+                { opacity: 1 },
               ],
               {
-                duration: compact.matches ? 480 : 760,
+                duration: compact.matches ? 620 : 820,
                 delay: compact.matches
                   ? 0
-                  : Number(element.dataset.motionDelay || 0),
-                easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+                  : Math.min(Number(element.dataset.motionDelay || 0), 120),
+                easing: "cubic-bezier(0.22, 1, 0.36, 1)",
                 fill: "backwards",
               },
             );
@@ -57,7 +54,7 @@ export function HomeMotion() {
             animation.onfinish = () => running.delete(element);
           }
         },
-        { threshold: 0.08 },
+        { threshold: 0.06, rootMargin: "0px 0px -3% 0px" },
       );
     }
 
@@ -82,7 +79,6 @@ export function HomeMotion() {
         });
     };
 
-    // Keep only the hero fade/parallax effect from the last test.
     const heroes = Array.from(
       root.querySelectorAll<HTMLElement>("[data-home-hero]"),
     );
@@ -106,21 +102,21 @@ export function HomeMotion() {
           .querySelectorAll<HTMLElement>("[data-hero-fade]")
           .forEach((element) => {
             element.style.opacity = String(fade);
-            element.style.transform = `translate3d(0, ${-progress * (compact.matches ? 18 : 36)}px, 0)`;
-            element.style.filter = `blur(${progress * (compact.matches ? 2.5 : 5)}px)`;
+            element.style.transform = `translate3d(0, ${-progress * (compact.matches ? 12 : 24)}px, 0)`;
+            element.style.filter = `blur(${progress * (compact.matches ? 1.5 : 3)}px)`;
             element.style.pointerEvents = progress > 0.92 ? "none" : "";
           });
 
         hero
           .querySelectorAll<HTMLElement>("[data-hero-media]")
           .forEach((element) => {
-            element.style.transform = `translate3d(0, ${progress * (compact.matches ? 9 : 18)}px, 0) scale(${1 + progress * 0.02})`;
+            element.style.transform = `translate3d(0, ${progress * (compact.matches ? 6 : 12)}px, 0) scale(${1 + progress * 0.012})`;
           });
 
         hero
           .querySelectorAll<HTMLElement>("[data-hero-veil]")
           .forEach((element) => {
-            element.style.opacity = String(progress * 0.58);
+            element.style.opacity = String(progress * 0.48);
           });
       }
     };
