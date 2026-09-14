@@ -84,11 +84,11 @@
 
 @media (max-width: 767px) {
   .cinematicOverlay { padding: 0; background: #000; }
-  .cinematicFrame { width: 100vw; height: 100dvh; max-height: none; aspect-ratio: auto; border: 0; border-radius: 0; box-shadow: none; }
-  .cinematicVideo { width: 100%; height: 100%; object-fit: cover; }
+  .cinematicFrame { width: 100vw; height: 100dvh; max-height: none; aspect-ratio: auto; border: 0; border-radius: 0; background: #000; box-shadow: none; }
+  .cinematicVideo { width: 100%; height: 100%; object-fit: contain; object-position: center center; background: #000; }
   .cinematicTitle { top: calc(env(safe-area-inset-top, 0px) + 28px); left: 18px; right: 18px; font-size: clamp(34px, 11vw, 54px); }
-  .premiumStage { min-height: 260px; }
-  .premiumVideo { min-width: 100%; min-height: 100%; }
+  .premiumStage { min-height: 260px; background: #000; }
+  .premiumVideo { width: 100%; height: 100%; min-width: 100%; min-height: 100%; object-fit: contain; object-position: center center; background: #000; }
 }
 
 @media (hover: hover) {
