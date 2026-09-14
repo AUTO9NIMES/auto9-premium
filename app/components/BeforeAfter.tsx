@@ -30,7 +30,7 @@ export function BeforeAfter() {
               Avant
             </div>
             <img
-              src="/before-1.jpg"
+              src="/after-1.jpg"
               alt="Véhicule avant préparation AUTO 9"
               loading="lazy"
               className="aspect-[4/3] w-full rounded-[20px] object-cover transition duration-700 group-hover:scale-[1.015]"
@@ -43,7 +43,7 @@ export function BeforeAfter() {
               Après
             </div>
             <img
-              src="/after-1.jpg"
+              src="/before-1.jpg"
               alt="Véhicule après préparation AUTO 9"
               loading="lazy"
               className="aspect-[4/3] w-full rounded-[20px] object-cover transition duration-700 group-hover:scale-[1.015]"
