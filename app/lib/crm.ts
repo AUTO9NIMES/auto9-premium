@@ -173,6 +173,17 @@ export type TransitionAppointmentStatusResult = {
   activity: ActivityLog | null;
 };
 
+export type JobDetailsResult = {
+  job: Job;
+  customer: Customer;
+  vehicle: Vehicle | null;
+  lead: Lead;
+  quote: Quote | null;
+  appointment: Appointment | null;
+  services: LeadService[];
+  activities: ActivityLog[];
+};
+
 function normalizeEmail(value?: string | null): string | null {
   const normalized = (value || "").trim().toLowerCase();
   return normalized || null;
@@ -343,6 +354,110 @@ export async function createJob(input: Job) {
   const businessId = await getCurrentBusinessId();
 
   return (await supabaseRest<Job>("jobs", "POST", { ...input, business_id: businessId }, "select=*")) as Job | null;
+}
+
+export async function getJobDetails(
+  jobId: string,
+): Promise<JobDetailsResult | null> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const normalizedJobId = jobId.trim();
+
+  if (!normalizedJobId) {
+    throw new Error("jobId is required.");
+  }
+
+  const businessId = await getCurrentBusinessId();
+
+  const jobRows = (await supabaseRest<Job[]>(
+    "jobs",
+    "GET",
+    null,
+    `business_id=eq.${businessId}&id=eq.${normalizedJobId}&select=*`,
+  )) as Job[] | null;
+
+  const job = jobRows?.[0];
+
+  if (!job?.id) {
+    return null;
+  }
+
+  const [
+    customerRows,
+    leadRows,
+    vehicleRows,
+    quoteRows,
+    appointmentRows,
+    services,
+    activities,
+  ] = await Promise.all([
+    supabaseRest<Customer[]>(
+      "customers",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&id=eq.${job.customer_id}&select=*`,
+    ),
+    supabaseRest<Lead[]>(
+      "leads",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&id=eq.${job.lead_id}&select=*`,
+    ),
+    job.vehicle_id
+      ? supabaseRest<Vehicle[]>(
+          "vehicles",
+          "GET",
+          null,
+          `business_id=eq.${businessId}&id=eq.${job.vehicle_id}&select=*`,
+        )
+      : Promise.resolve([]),
+    job.quote_id
+      ? supabaseRest<Quote[]>(
+          "quotes",
+          "GET",
+          null,
+          `business_id=eq.${businessId}&id=eq.${job.quote_id}&select=*`,
+        )
+      : Promise.resolve([]),
+    supabaseRest<Appointment[]>(
+      "appointments",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&job_id=eq.${job.id}&select=*`,
+    ),
+    supabaseRest<LeadService[]>(
+      "lead_services",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&lead_id=eq.${job.lead_id}&select=*`,
+    ),
+    supabaseRest<ActivityLog[]>(
+      "activity_log",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&job_id=eq.${job.id}&order=created_at.asc&select=*`,
+    ),
+  ]);
+
+  const customer = (customerRows as Customer[] | null)?.[0];
+  const lead = (leadRows as Lead[] | null)?.[0];
+
+  if (!customer || !lead) {
+    throw new Error("Job relationships are inconsistent.");
+  }
+
+  return {
+    job,
+    customer,
+    vehicle: (vehicleRows as Vehicle[] | null)?.[0] ?? null,
+    lead,
+    quote: (quoteRows as Quote[] | null)?.[0] ?? null,
+    appointment: (appointmentRows as Appointment[] | null)?.[0] ?? null,
+    services: (services as LeadService[] | null) ?? [],
+    activities: (activities as ActivityLog[] | null) ?? [],
+  };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
