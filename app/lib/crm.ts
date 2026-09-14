@@ -184,6 +184,31 @@ export type JobDetailsResult = {
   activities: ActivityLog[];
 };
 
+export type JobListQueryParams = {
+  page?: number;
+  limit?: number;
+  status?: JobStatus;
+  search?: string;
+};
+
+export type JobListItem = {
+  job: Job;
+  customer: Customer;
+  vehicle: Vehicle | null;
+  appointment: Appointment | null;
+  quote: Quote | null;
+};
+
+export type JobListResult = {
+  items: JobListItem[];
+  pagination: {
+    page: number;
+    limit: number;
+    returned: number;
+    hasNextPage: boolean;
+  };
+};
+
 function normalizeEmail(value?: string | null): string | null {
   const normalized = (value || "").trim().toLowerCase();
   return normalized || null;
@@ -457,6 +482,337 @@ export async function getJobDetails(
     appointment: (appointmentRows as Appointment[] | null)?.[0] ?? null,
     services: (services as LeadService[] | null) ?? [],
     activities: (activities as ActivityLog[] | null) ?? [],
+  };
+}
+
+const JOB_LIST_DEFAULT_PAGE = 1;
+const JOB_LIST_DEFAULT_LIMIT = 20;
+const JOB_LIST_MAX_LIMIT = 100;
+const JOB_LIST_SEARCH_CANDIDATE_LIMIT = 200;
+
+function normalizeJobListSearch(search?: string): string | null {
+  if (search === undefined) {
+    return null;
+  }
+
+  const normalized = search.trim();
+  return normalized.length > 0 ? normalized : null;
+}
+
+function matchesJobListSearch(
+  item: JobListItem,
+  normalizedSearch: string,
+): boolean {
+  const searchableFields = [
+    item.job.title,
+    item.job.job_number,
+    item.customer.full_name,
+    item.customer.phone,
+    item.customer.email,
+    item.vehicle?.plate,
+    item.vehicle?.brand,
+    item.vehicle?.model,
+  ].map((value) => (value ?? "").toLowerCase());
+
+  return searchableFields.join(" ").includes(normalizedSearch.toLowerCase());
+}
+
+export async function getJobsList(
+  input: JobListQueryParams,
+): Promise<JobListResult> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const businessId = await getCurrentBusinessId();
+
+  const page = Number.isInteger(input.page) && (input.page ?? 0) > 0
+    ? Math.max(1, input.page as number)
+    : JOB_LIST_DEFAULT_PAGE;
+
+  const limit = Number.isInteger(input.limit) && (input.limit ?? 0) > 0
+    ? Math.min(Math.max(1, input.limit as number), JOB_LIST_MAX_LIMIT)
+    : JOB_LIST_DEFAULT_LIMIT;
+
+  const normalizedSearch = normalizeJobListSearch(input.search);
+
+  const baseJobsFilter = `business_id=eq.${businessId}${input.status ? `&status=eq.${input.status}` : ""}`;
+
+  if (normalizedSearch) {
+    const candidateRows = (await supabaseRest<Job[]>(
+      "jobs",
+      "GET",
+      null,
+      `${baseJobsFilter}&order=created_at.desc&limit=${JOB_LIST_SEARCH_CANDIDATE_LIMIT}&select=*`,
+    )) as Job[] | null;
+
+    const candidateJobs = (candidateRows ?? []).filter((job): job is Job => Boolean(job?.id));
+
+    if (candidateJobs.length === 0) {
+      return {
+        items: [],
+        pagination: {
+          page,
+          limit,
+          returned: 0,
+          hasNextPage: false,
+        },
+      };
+    }
+
+    const customerIds = [...new Set(
+      candidateJobs
+        .map((job) => job.customer_id)
+        .filter((customerId): customerId is string => Boolean(customerId)),
+    )];
+
+    const vehicleIds = [...new Set(
+      candidateJobs
+        .map((job) => job.vehicle_id)
+        .filter((vehicleId): vehicleId is string => Boolean(vehicleId)),
+    )];
+
+    const quoteIds = [...new Set(
+      candidateJobs
+        .map((job) => job.quote_id)
+        .filter((quoteId): quoteId is string => Boolean(quoteId)),
+    )];
+
+    const jobIds = [...new Set(
+      candidateJobs
+        .map((job) => job.id)
+        .filter((jobId): jobId is string => Boolean(jobId)),
+    )];
+
+    const [customerRows, vehicleRows, appointmentRows, quoteRows] = await Promise.all([
+      customerIds.length > 0
+        ? supabaseRest<Customer[]>(
+            "customers",
+            "GET",
+            null,
+            `business_id=eq.${businessId}&id=in.(${customerIds.join(",")})&select=*`,
+          )
+        : Promise.resolve([]),
+      vehicleIds.length > 0
+        ? supabaseRest<Vehicle[]>(
+            "vehicles",
+            "GET",
+            null,
+            `business_id=eq.${businessId}&id=in.(${vehicleIds.join(",")})&select=*`,
+          )
+        : Promise.resolve([]),
+      jobIds.length > 0
+        ? supabaseRest<Appointment[]>(
+            "appointments",
+            "GET",
+            null,
+            `business_id=eq.${businessId}&job_id=in.(${jobIds.join(",")})&select=*`,
+          )
+        : Promise.resolve([]),
+      quoteIds.length > 0
+        ? supabaseRest<Quote[]>(
+            "quotes",
+            "GET",
+            null,
+            `business_id=eq.${businessId}&id=in.(${quoteIds.join(",")})&select=*`,
+          )
+        : Promise.resolve([]),
+    ]);
+
+    const customersById = new Map<string, Customer>();
+    for (const customer of (customerRows as Customer[] | null) ?? []) {
+      if (customer.id) {
+        customersById.set(customer.id, customer);
+      }
+    }
+
+    const vehiclesById = new Map<string, Vehicle>();
+    for (const vehicle of (vehicleRows as Vehicle[] | null) ?? []) {
+      if (vehicle.id) {
+        vehiclesById.set(vehicle.id, vehicle);
+      }
+    }
+
+    const appointmentsByJobId = new Map<string, Appointment>();
+    for (const appointment of (appointmentRows as Appointment[] | null) ?? []) {
+      if (appointment.job_id && !appointmentsByJobId.has(appointment.job_id)) {
+        appointmentsByJobId.set(appointment.job_id, appointment);
+      }
+    }
+
+    const quotesById = new Map<string, Quote>();
+    for (const quote of (quoteRows as Quote[] | null) ?? []) {
+      if (quote.id) {
+        quotesById.set(quote.id, quote);
+      }
+    }
+
+    const jobListItems: JobListItem[] = candidateJobs.map((job) => {
+      const customer = customersById.get(job.customer_id);
+
+      if (!customer) {
+        throw new Error("Job relationships are inconsistent.");
+      }
+
+      return {
+        job,
+        customer,
+        vehicle: job.vehicle_id ? vehiclesById.get(job.vehicle_id) ?? null : null,
+        appointment: job.id ? appointmentsByJobId.get(job.id) ?? null : null,
+        quote: job.quote_id ? quotesById.get(job.quote_id) ?? null : null,
+      };
+    });
+
+    const matchedItems = jobListItems.filter((item) => matchesJobListSearch(item, normalizedSearch));
+    const startIndex = (page - 1) * limit;
+    const pageItems = matchedItems.slice(startIndex, startIndex + limit);
+
+    return {
+      items: pageItems,
+      pagination: {
+        page,
+        limit,
+        returned: pageItems.length,
+        hasNextPage: startIndex + limit < matchedItems.length,
+      },
+    };
+  }
+
+  const offset = (page - 1) * limit;
+  const jobsRows = (await supabaseRest<Job[]>(
+    "jobs",
+    "GET",
+    null,
+    `${baseJobsFilter}&order=created_at.desc&offset=${offset}&limit=${limit + 1}&select=*`,
+  )) as Job[] | null;
+
+  const jobs = (jobsRows ?? []).filter((job): job is Job => Boolean(job?.id));
+  const pageJobs = jobs.slice(0, limit);
+  const hasNextPage = jobs.length > limit;
+
+  if (pageJobs.length === 0) {
+    return {
+      items: [],
+      pagination: {
+        page,
+        limit,
+        returned: 0,
+        hasNextPage: false,
+      },
+    };
+  }
+
+  const customerIds = [...new Set(
+    pageJobs
+      .map((job) => job.customer_id)
+      .filter((customerId): customerId is string => Boolean(customerId)),
+  )];
+
+  const vehicleIds = [...new Set(
+    pageJobs
+      .map((job) => job.vehicle_id)
+      .filter((vehicleId): vehicleId is string => Boolean(vehicleId)),
+  )];
+
+  const quoteIds = [...new Set(
+    pageJobs
+      .map((job) => job.quote_id)
+      .filter((quoteId): quoteId is string => Boolean(quoteId)),
+  )];
+
+  const jobIds = [...new Set(
+    pageJobs
+      .map((job) => job.id)
+      .filter((jobId): jobId is string => Boolean(jobId)),
+  )];
+
+  const [customerRows, vehicleRows, appointmentRows, quoteRows] = await Promise.all([
+    customerIds.length > 0
+      ? supabaseRest<Customer[]>(
+          "customers",
+          "GET",
+          null,
+          `business_id=eq.${businessId}&id=in.(${customerIds.join(",")})&select=*`,
+        )
+      : Promise.resolve([]),
+    vehicleIds.length > 0
+      ? supabaseRest<Vehicle[]>(
+          "vehicles",
+          "GET",
+          null,
+          `business_id=eq.${businessId}&id=in.(${vehicleIds.join(",")})&select=*`,
+        )
+      : Promise.resolve([]),
+    jobIds.length > 0
+      ? supabaseRest<Appointment[]>(
+          "appointments",
+          "GET",
+          null,
+          `business_id=eq.${businessId}&job_id=in.(${jobIds.join(",")})&select=*`,
+        )
+      : Promise.resolve([]),
+    quoteIds.length > 0
+      ? supabaseRest<Quote[]>(
+          "quotes",
+          "GET",
+          null,
+          `business_id=eq.${businessId}&id=in.(${quoteIds.join(",")})&select=*`,
+        )
+      : Promise.resolve([]),
+  ]);
+
+  const customersById = new Map<string, Customer>();
+  for (const customer of (customerRows as Customer[] | null) ?? []) {
+    if (customer.id) {
+      customersById.set(customer.id, customer);
+    }
+  }
+
+  const vehiclesById = new Map<string, Vehicle>();
+  for (const vehicle of (vehicleRows as Vehicle[] | null) ?? []) {
+    if (vehicle.id) {
+      vehiclesById.set(vehicle.id, vehicle);
+    }
+  }
+
+  const appointmentsByJobId = new Map<string, Appointment>();
+  for (const appointment of (appointmentRows as Appointment[] | null) ?? []) {
+    if (appointment.job_id && !appointmentsByJobId.has(appointment.job_id)) {
+      appointmentsByJobId.set(appointment.job_id, appointment);
+    }
+  }
+
+  const quotesById = new Map<string, Quote>();
+  for (const quote of (quoteRows as Quote[] | null) ?? []) {
+    if (quote.id) {
+      quotesById.set(quote.id, quote);
+    }
+  }
+
+  const items: JobListItem[] = pageJobs.map((job) => {
+    const customer = customersById.get(job.customer_id);
+
+    if (!customer) {
+      throw new Error("Job relationships are inconsistent.");
+    }
+
+    return {
+      job,
+      customer,
+      vehicle: job.vehicle_id ? vehiclesById.get(job.vehicle_id) ?? null : null,
+      appointment: job.id ? appointmentsByJobId.get(job.id) ?? null : null,
+      quote: job.quote_id ? quotesById.get(job.quote_id) ?? null : null,
+    };
+  });
+
+  return {
+    items,
+    pagination: {
+      page,
+      limit,
+      returned: items.length,
+      hasNextPage,
+    },
   };
 }
 
