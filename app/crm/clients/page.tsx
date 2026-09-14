@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CrmAccessError, requireCrmAccess } from "../../lib/auth/dal";
 import {
@@ -96,6 +97,7 @@ function CustomerRow({ item }: { item: CustomerListItem }) {
     ? leadStatusLabels[item.latestLead.lifecycle_status]
     : null;
   const createdAt = formatDate(customer.created_at);
+  const customerHref = customer.id ? `/crm/clients/${customer.id}` : null;
 
   const content = (
     <div className="grid gap-5 px-5 py-5 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_auto] md:items-center md:px-7">
@@ -115,7 +117,13 @@ function CustomerRow({ item }: { item: CustomerListItem }) {
       </div>
       <div className="flex items-center justify-between gap-4 text-xs text-white/30 md:block md:text-right">
         {createdAt && <p>{createdAt}</p>}
-        <span className="mt-2 inline-block text-white/25">Profil détaillé bientôt disponible</span>
+        {customerHref ? (
+          <Link href={customerHref} className="mt-2 inline-block text-[#d8b477] hover:text-white">
+            Profil détaillé <span aria-hidden="true">→</span>
+          </Link>
+        ) : (
+          <span className="mt-2 inline-block text-white/25">Profil détaillé indisponible</span>
+        )}
       </div>
     </div>
   );
@@ -167,7 +175,7 @@ export default async function ClientsPage({ searchParams }: {
             <label htmlFor="customer-search" className="sr-only">Rechercher un client</label>
             <input id="customer-search" name="q" type="search" defaultValue={search} maxLength={SEARCH_MAX_LENGTH} placeholder="Nom, email, téléphone ou ville" className="min-w-0 flex-1 border border-white/15 bg-[#0d1014] px-4 py-3 text-sm text-white outline-none placeholder:text-white/25 focus:border-[#d8b477]" />
             <button type="submit" className="border border-[#d8b477] px-5 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[#d8b477] transition-colors hover:bg-[#d8b477] hover:text-[#080a0d]">Rechercher</button>
-            {hasSearch && <a href="/crm/clients" className="border border-white/10 px-5 py-3 text-center text-xs text-white/50 transition-colors hover:border-white/30 hover:text-white">Effacer</a>}
+            {hasSearch && <Link href="/crm/clients" className="border border-white/10 px-5 py-3 text-center text-xs text-white/50 transition-colors hover:border-white/30 hover:text-white">Effacer</Link>}
           </form>
           <p className="mt-3 text-[11px] text-white/30">Recherche sur les clients récents et leurs coordonnées disponibles.</p>
         </div>
