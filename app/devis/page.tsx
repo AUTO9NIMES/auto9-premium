@@ -5,7 +5,7 @@ import "./configurator-v2.css";
 export default function DevisPage() {
   return (
     <main className="configurator-v2 min-h-screen bg-[#050608] text-white">
-      <div className="relative z-10 border-b border-white/10 px-6 py-6 md:px-12">
+      <div className="preview-header relative z-10 border-b border-white/10 px-6 py-6 md:px-12">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
           <a
             href="/"
