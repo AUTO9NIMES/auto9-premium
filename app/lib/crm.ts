@@ -219,6 +219,33 @@ export type JobListResult = {
   };
 };
 
+export type LeadListQueryParams = {
+  page?: number;
+  limit?: number;
+  status?: LeadLifecycleStatus;
+  source?: string;
+  search?: string;
+};
+
+export type LeadListItem = {
+  lead: Lead;
+  customer: Customer;
+  vehicle: Vehicle | null;
+  latestQuote: Quote | null;
+  latestJob: Job | null;
+  latestAppointment: Appointment | null;
+};
+
+export type LeadListResult = {
+  items: LeadListItem[];
+  pagination: {
+    page: number;
+    limit: number;
+    returned: number;
+    hasNextPage: boolean;
+  };
+};
+
 function normalizeEmail(value?: string | null): string | null {
   const normalized = (value || "").trim().toLowerCase();
   return normalized || null;
@@ -917,6 +944,252 @@ export async function getJobsList(
       quote: job.quote_id ? quotesById.get(job.quote_id) ?? null : null,
     };
   });
+
+  return {
+    items,
+    pagination: {
+      page,
+      limit,
+      returned: items.length,
+      hasNextPage,
+    },
+  };
+}
+
+const LEAD_LIST_DEFAULT_PAGE = 1;
+const LEAD_LIST_DEFAULT_LIMIT = 20;
+const LEAD_LIST_MAX_LIMIT = 100;
+const LEAD_LIST_SEARCH_CANDIDATE_LIMIT = 200;
+
+function normalizeLeadListSearch(search?: string): string | null {
+  if (search === undefined) {
+    return null;
+  }
+
+  const normalized = search.trim();
+  return normalized.length > 0 ? normalized : null;
+}
+
+function matchesLeadListSearch(
+  item: LeadListItem,
+  normalizedSearch: string,
+): boolean {
+  const searchableFields = [
+    item.customer.full_name,
+    item.customer.phone,
+    item.customer.email,
+    item.vehicle?.plate,
+    item.vehicle?.brand,
+    item.vehicle?.model,
+  ].map((value) => (value ?? "").toLowerCase());
+
+  return searchableFields.join(" ").includes(normalizedSearch.toLowerCase());
+}
+
+async function enrichLeadListItems(
+  businessId: string,
+  leads: Lead[],
+): Promise<LeadListItem[]> {
+  const customerIds = [...new Set(
+    leads
+      .map((lead) => lead.customer_id)
+      .filter((customerId): customerId is string => Boolean(customerId)),
+  )];
+
+  const vehicleIds = [...new Set(
+    leads
+      .map((lead) => lead.vehicle_id)
+      .filter((vehicleId): vehicleId is string => Boolean(vehicleId)),
+  )];
+
+  const leadIds = [...new Set(
+    leads
+      .map((lead) => lead.id)
+      .filter((leadId): leadId is string => Boolean(leadId)),
+  )];
+
+  const [customerRows, vehicleRows, quoteRows, jobRows, appointmentRows] = await Promise.all([
+    customerIds.length > 0
+      ? supabaseRest<Customer[]>(
+          "customers",
+          "GET",
+          null,
+          `business_id=eq.${businessId}&id=in.(${customerIds.join(",")})&select=*`,
+        )
+      : Promise.resolve([]),
+    vehicleIds.length > 0
+      ? supabaseRest<Vehicle[]>(
+          "vehicles",
+          "GET",
+          null,
+          `business_id=eq.${businessId}&id=in.(${vehicleIds.join(",")})&select=*`,
+        )
+      : Promise.resolve([]),
+    leadIds.length > 0
+      ? supabaseRest<Quote[]>(
+          "quotes",
+          "GET",
+          null,
+          `business_id=eq.${businessId}&lead_id=in.(${leadIds.join(",")})&order=created_at.desc,id.desc&select=*`,
+        )
+      : Promise.resolve([]),
+    leadIds.length > 0
+      ? supabaseRest<Job[]>(
+          "jobs",
+          "GET",
+          null,
+          `business_id=eq.${businessId}&lead_id=in.(${leadIds.join(",")})&order=created_at.desc,id.desc&select=*`,
+        )
+      : Promise.resolve([]),
+    leadIds.length > 0
+      ? supabaseRest<Appointment[]>(
+          "appointments",
+          "GET",
+          null,
+          `business_id=eq.${businessId}&lead_id=in.(${leadIds.join(",")})&order=requested_at.desc.nullslast,created_at.desc,id.desc&select=*`,
+        )
+      : Promise.resolve([]),
+  ]);
+
+  const customersById = new Map<string, Customer>();
+  for (const customer of (customerRows as Customer[] | null) ?? []) {
+    if (customer.id) {
+      customersById.set(customer.id, customer);
+    }
+  }
+
+  const vehiclesById = new Map<string, Vehicle>();
+  for (const vehicle of (vehicleRows as Vehicle[] | null) ?? []) {
+    if (vehicle.id) {
+      vehiclesById.set(vehicle.id, vehicle);
+    }
+  }
+
+  // Rows are pre-sorted by the deterministic tiebreaker, so the first match per lead is the latest.
+  const latestQuoteByLeadId = new Map<string, Quote>();
+  for (const quote of (quoteRows as Quote[] | null) ?? []) {
+    if (quote.lead_id && !latestQuoteByLeadId.has(quote.lead_id)) {
+      latestQuoteByLeadId.set(quote.lead_id, quote);
+    }
+  }
+
+  const latestJobByLeadId = new Map<string, Job>();
+  for (const job of (jobRows as Job[] | null) ?? []) {
+    if (job.lead_id && !latestJobByLeadId.has(job.lead_id)) {
+      latestJobByLeadId.set(job.lead_id, job);
+    }
+  }
+
+  const latestAppointmentByLeadId = new Map<string, Appointment>();
+  for (const appointment of (appointmentRows as Appointment[] | null) ?? []) {
+    if (appointment.lead_id && !latestAppointmentByLeadId.has(appointment.lead_id)) {
+      latestAppointmentByLeadId.set(appointment.lead_id, appointment);
+    }
+  }
+
+  return leads.map((lead) => {
+    const customer = customersById.get(lead.customer_id);
+
+    if (!customer) {
+      throw new Error("Lead relationships are inconsistent.");
+    }
+
+    return {
+      lead,
+      customer,
+      vehicle: lead.vehicle_id ? vehiclesById.get(lead.vehicle_id) ?? null : null,
+      latestQuote: lead.id ? latestQuoteByLeadId.get(lead.id) ?? null : null,
+      latestJob: lead.id ? latestJobByLeadId.get(lead.id) ?? null : null,
+      latestAppointment: lead.id ? latestAppointmentByLeadId.get(lead.id) ?? null : null,
+    };
+  });
+}
+
+export async function getLeadsList(
+  input: LeadListQueryParams,
+): Promise<LeadListResult> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const businessId = await getCurrentBusinessId();
+
+  const page = Number.isInteger(input.page) && (input.page ?? 0) > 0
+    ? Math.max(1, input.page as number)
+    : LEAD_LIST_DEFAULT_PAGE;
+
+  const limit = Number.isInteger(input.limit) && (input.limit ?? 0) > 0
+    ? Math.min(Math.max(1, input.limit as number), LEAD_LIST_MAX_LIMIT)
+    : LEAD_LIST_DEFAULT_LIMIT;
+
+  const normalizedSearch = normalizeLeadListSearch(input.search);
+  const normalizedSource = input.source?.trim() || null;
+
+  const baseLeadsFilter = `business_id=eq.${businessId}${input.status ? `&lifecycle_status=eq.${input.status}` : ""}${normalizedSource ? `&source=eq.${encodeURIComponent(normalizedSource)}` : ""}`;
+
+  if (normalizedSearch) {
+    const candidateRows = (await supabaseRest<Lead[]>(
+      "leads",
+      "GET",
+      null,
+      `${baseLeadsFilter}&order=created_at.desc,id.desc&limit=${LEAD_LIST_SEARCH_CANDIDATE_LIMIT}&select=*`,
+    )) as Lead[] | null;
+
+    const candidateLeads = (candidateRows ?? []).filter((lead): lead is Lead => Boolean(lead?.id));
+
+    if (candidateLeads.length === 0) {
+      return {
+        items: [],
+        pagination: {
+          page,
+          limit,
+          returned: 0,
+          hasNextPage: false,
+        },
+      };
+    }
+
+    const enrichedItems = await enrichLeadListItems(businessId, candidateLeads);
+    const matchedItems = enrichedItems.filter((item) => matchesLeadListSearch(item, normalizedSearch));
+    const startIndex = (page - 1) * limit;
+    const pageItems = matchedItems.slice(startIndex, startIndex + limit);
+
+    return {
+      items: pageItems,
+      pagination: {
+        page,
+        limit,
+        returned: pageItems.length,
+        hasNextPage: startIndex + limit < matchedItems.length,
+      },
+    };
+  }
+
+  const offset = (page - 1) * limit;
+  const leadsRows = (await supabaseRest<Lead[]>(
+    "leads",
+    "GET",
+    null,
+    `${baseLeadsFilter}&order=created_at.desc,id.desc&offset=${offset}&limit=${limit + 1}&select=*`,
+  )) as Lead[] | null;
+
+  const leads = (leadsRows ?? []).filter((lead): lead is Lead => Boolean(lead?.id));
+  const pageLeads = leads.slice(0, limit);
+  const hasNextPage = leads.length > limit;
+
+  if (pageLeads.length === 0) {
+    return {
+      items: [],
+      pagination: {
+        page,
+        limit,
+        returned: 0,
+        hasNextPage: false,
+      },
+    };
+  }
+
+  const items = await enrichLeadListItems(businessId, pageLeads);
 
   return {
     items,
