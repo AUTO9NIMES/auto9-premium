@@ -246,6 +246,28 @@ export type LeadListResult = {
   };
 };
 
+export type CustomerListQueryParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+};
+
+export type CustomerListItem = {
+  customer: Customer;
+  latestVehicle: Vehicle | null;
+  latestLead: Lead | null;
+};
+
+export type CustomerListResult = {
+  items: CustomerListItem[];
+  pagination: {
+    page: number;
+    limit: number;
+    returned: number;
+    hasNextPage: boolean;
+  };
+};
+
 function normalizeEmail(value?: string | null): string | null {
   const normalized = (value || "").trim().toLowerCase();
   return normalized || null;
@@ -1190,6 +1212,180 @@ export async function getLeadsList(
   }
 
   const items = await enrichLeadListItems(businessId, pageLeads);
+
+  return {
+    items,
+    pagination: {
+      page,
+      limit,
+      returned: items.length,
+      hasNextPage,
+    },
+  };
+}
+
+const CUSTOMER_LIST_DEFAULT_PAGE = 1;
+const CUSTOMER_LIST_DEFAULT_LIMIT = 20;
+const CUSTOMER_LIST_MAX_LIMIT = 100;
+const CUSTOMER_LIST_SEARCH_CANDIDATE_LIMIT = 200;
+
+function normalizeCustomerListSearch(search?: string): string | null {
+  if (search === undefined) {
+    return null;
+  }
+
+  const normalized = search.trim();
+  return normalized.length > 0 ? normalized : null;
+}
+
+function matchesCustomerListSearch(
+  item: CustomerListItem,
+  normalizedSearch: string,
+): boolean {
+  const searchableFields = [
+    item.customer.full_name,
+    item.customer.phone,
+    item.customer.email,
+    item.customer.city,
+  ].map((value) => (value ?? "").toLowerCase());
+
+  return searchableFields.join(" ").includes(normalizedSearch.toLowerCase());
+}
+
+async function enrichCustomerListItems(
+  businessId: string,
+  customers: Customer[],
+): Promise<CustomerListItem[]> {
+  const customerIds = [...new Set(
+    customers
+      .map((customer) => customer.id)
+      .filter((customerId): customerId is string => Boolean(customerId)),
+  )];
+
+  const [vehicleRows, leadRows] = await Promise.all([
+    customerIds.length > 0
+      ? supabaseRest<Vehicle[]>(
+          "vehicles",
+          "GET",
+          null,
+          `business_id=eq.${businessId}&customer_id=in.(${customerIds.join(",")})&order=created_at.desc,id.desc&select=*`,
+        )
+      : Promise.resolve([]),
+    customerIds.length > 0
+      ? supabaseRest<Lead[]>(
+          "leads",
+          "GET",
+          null,
+          `business_id=eq.${businessId}&customer_id=in.(${customerIds.join(",")})&order=created_at.desc,id.desc&select=*`,
+        )
+      : Promise.resolve([]),
+  ]);
+
+  // Rows are pre-sorted by the deterministic tiebreaker, so the first match per customer is the latest.
+  const latestVehicleByCustomerId = new Map<string, Vehicle>();
+  for (const vehicle of (vehicleRows as Vehicle[] | null) ?? []) {
+    if (vehicle.customer_id && !latestVehicleByCustomerId.has(vehicle.customer_id)) {
+      latestVehicleByCustomerId.set(vehicle.customer_id, vehicle);
+    }
+  }
+
+  const latestLeadByCustomerId = new Map<string, Lead>();
+  for (const lead of (leadRows as Lead[] | null) ?? []) {
+    if (lead.customer_id && !latestLeadByCustomerId.has(lead.customer_id)) {
+      latestLeadByCustomerId.set(lead.customer_id, lead);
+    }
+  }
+
+  return customers.map((customer) => ({
+    customer,
+    latestVehicle: customer.id ? latestVehicleByCustomerId.get(customer.id) ?? null : null,
+    latestLead: customer.id ? latestLeadByCustomerId.get(customer.id) ?? null : null,
+  }));
+}
+
+export async function getCustomersList(
+  input: CustomerListQueryParams,
+): Promise<CustomerListResult> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const businessId = await getCurrentBusinessId();
+
+  const page = Number.isInteger(input.page) && (input.page ?? 0) > 0
+    ? Math.max(1, input.page as number)
+    : CUSTOMER_LIST_DEFAULT_PAGE;
+
+  const limit = Number.isInteger(input.limit) && (input.limit ?? 0) > 0
+    ? Math.min(Math.max(1, input.limit as number), CUSTOMER_LIST_MAX_LIMIT)
+    : CUSTOMER_LIST_DEFAULT_LIMIT;
+
+  const normalizedSearch = normalizeCustomerListSearch(input.search);
+  const baseCustomersFilter = `business_id=eq.${businessId}`;
+
+  if (normalizedSearch) {
+    const candidateRows = (await supabaseRest<Customer[]>(
+      "customers",
+      "GET",
+      null,
+      `${baseCustomersFilter}&order=created_at.desc,id.desc&limit=${CUSTOMER_LIST_SEARCH_CANDIDATE_LIMIT}&select=*`,
+    )) as Customer[] | null;
+
+    const candidateCustomers = (candidateRows ?? []).filter((customer): customer is Customer => Boolean(customer?.id));
+
+    if (candidateCustomers.length === 0) {
+      return {
+        items: [],
+        pagination: {
+          page,
+          limit,
+          returned: 0,
+          hasNextPage: false,
+        },
+      };
+    }
+
+    const enrichedItems = await enrichCustomerListItems(businessId, candidateCustomers);
+    const matchedItems = enrichedItems.filter((item) => matchesCustomerListSearch(item, normalizedSearch));
+    const startIndex = (page - 1) * limit;
+    const pageItems = matchedItems.slice(startIndex, startIndex + limit);
+
+    return {
+      items: pageItems,
+      pagination: {
+        page,
+        limit,
+        returned: pageItems.length,
+        hasNextPage: startIndex + limit < matchedItems.length,
+      },
+    };
+  }
+
+  const offset = (page - 1) * limit;
+  const customersRows = (await supabaseRest<Customer[]>(
+    "customers",
+    "GET",
+    null,
+    `${baseCustomersFilter}&order=created_at.desc,id.desc&offset=${offset}&limit=${limit + 1}&select=*`,
+  )) as Customer[] | null;
+
+  const customers = (customersRows ?? []).filter((customer): customer is Customer => Boolean(customer?.id));
+  const pageCustomers = customers.slice(0, limit);
+  const hasNextPage = customers.length > limit;
+
+  if (pageCustomers.length === 0) {
+    return {
+      items: [],
+      pagination: {
+        page,
+        limit,
+        returned: 0,
+        hasNextPage: false,
+      },
+    };
+  }
+
+  const items = await enrichCustomerListItems(businessId, pageCustomers);
 
   return {
     items,
