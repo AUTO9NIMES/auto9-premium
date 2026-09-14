@@ -55,26 +55,6 @@ export function Reservation() {
                     →
                   </span>
                 </Link>
-
-                <Link
-                  href="/devis"
-                  className="group relative flex min-h-[70px] items-center overflow-hidden rounded-full border border-[#9bb9d8]/55 bg-[linear-gradient(110deg,#0b1118_0%,#151d27_44%,#090d12_100%)] px-5 text-white shadow-[inset_0_1px_0_rgba(255,255,255,.08),0_10px_34px_rgba(0,0,0,.25)] transition duration-300 hover:-translate-y-0.5 hover:border-[#b4d3f3]/75 active:scale-[0.985] sm:min-h-[78px] sm:px-7"
-                >
-                  <span className="pointer-events-none absolute inset-x-8 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(187,218,249,.65),transparent)]" />
-                  <span className="pointer-events-none absolute bottom-0 left-10 h-px w-1/3 bg-[linear-gradient(90deg,#3186d8,transparent)] opacity-70" />
-
-                  <span className="relative grid h-10 w-10 shrink-0 place-items-center border-r border-white/10 pr-4 text-[#d4e6f7] sm:h-11 sm:w-12">
-                    <CarIcon />
-                  </span>
-
-                  <span className="relative flex-1 px-4 text-[11px] font-black uppercase tracking-[0.16em] text-[#e9f1f8] sm:px-6 sm:text-[13px] sm:tracking-[0.2em]">
-                    Choisir mon véhicule
-                  </span>
-
-                  <span className="relative grid h-11 w-11 shrink-0 place-items-center rounded-full border border-[#78aee4]/35 bg-white/[0.025] text-[24px] text-[#e9f3fc] transition-transform duration-300 group-hover:translate-x-1">
-                    →
-                  </span>
-                </Link>
               </div>
 
               <p className="mt-7 text-[13px] leading-6 text-white/38 sm:text-sm">
@@ -129,26 +109,6 @@ function CalendarIcon() {
       <rect x="3" y="5" width="18" height="16" rx="2" />
       <path d="M8 3v4M16 3v4M3 10h18" />
       <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" />
-    </svg>
-  );
-}
-
-function CarIcon() {
-  return (
-    <svg
-      width="25"
-      height="25"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M5 16h14l-1.5-6A2 2 0 0 0 15.6 8H8.4a2 2 0 0 0-1.9 2L5 16Z" />
-      <path d="M4 16v3M20 16v3M7 19h10" />
-      <path d="M7.5 13h.01M16.5 13h.01" />
     </svg>
   );
 }
