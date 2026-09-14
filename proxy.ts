@@ -25,7 +25,13 @@ export async function proxy(request: NextRequest) {
 
   function applySession(response: NextResponse) {
     pendingCookies.forEach(({ name, value, options }) => {
-      response.cookies.set(name, value, options);
+      response.cookies.set(name, value, {
+        ...options,
+        httpOnly: true,
+        sameSite: "lax",
+        secure: request.nextUrl.protocol === "https:",
+        path: "/",
+      });
     });
     pendingHeaders.forEach((value, name) => {
       response.headers.set(name, value);
