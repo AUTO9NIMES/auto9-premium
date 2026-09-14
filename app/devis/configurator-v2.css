@@ -113,7 +113,29 @@
   .configurator-v2 .preview-hero {
     padding: 48px 28px 14px;
   }
-  .configurator-v2 .preview-copy { font-size: 16px; }
+
+  .configurator-v2 .preview-copy {
+    font-size: 16px;
+  }
+
+  .configurator-v2 [class~="lg:grid-cols-3"] details {
+    border-top-color: rgba(125, 183, 255, .16) !important;
+    background: rgba(5, 11, 20, .2);
+  }
+
+  .configurator-v2 [class~="lg:grid-cols-3"] details summary {
+    display: none !important;
+  }
+
+  .configurator-v2 [class~="lg:grid-cols-3"] details > div {
+    display: block !important;
+    margin-top: 0 !important;
+    padding: 18px 22px 20px;
+  }
+
+  .configurator-v2 [class~="lg:grid-cols-3"] details > div p {
+    line-height: 1.55;
+  }
 }
 
 @media (max-width: 767px) {
@@ -273,6 +295,11 @@
     height: 22px !important;
   }
 
-  .configurator-v2 .auto9-card-enter { border-radius: 18px !important; }
-  .configurator-v2 .auto9-bottom-bar { backdrop-filter: blur(20px) saturate(135%) !important; }
+  .configurator-v2 .auto9-card-enter {
+    border-radius: 18px !important;
+  }
+
+  .configurator-v2 .auto9-bottom-bar {
+    backdrop-filter: blur(20px) saturate(135%) !important;
+  }
 }
