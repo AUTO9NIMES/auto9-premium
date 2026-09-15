@@ -7,13 +7,19 @@ import {
   requireCrmAccess,
 } from "../../../lib/auth/dal";
 import { updateCustomerProfile, type UpdateCustomerProfileResult } from "../../../lib/crm";
+import { createCustomerVehicle, findCustomerVehicleReplay, type CustomerVehicleResult } from "../../../lib/crm";
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const UNSIGNED_DECIMAL_INTEGER_REGEX = /^[0-9]+$/;
 
 function redirectWithError(customerId: string, error: "invalid" | "access" | "unavailable"): never {
   redirect(`/crm/clients/${customerId}?profile_error=${error}`);
+}
+
+function redirectWithVehicleError(customerId: string, error: "invalid" | "access" | "unavailable"): never {
+  redirect(`/crm/clients/${customerId}?vehicle_error=${error}`);
 }
 
 export async function updateCustomerProfileAction(formData: FormData) {
@@ -92,4 +98,111 @@ export async function updateCustomerProfileAction(formData: FormData) {
   revalidatePath("/crm/clients");
   revalidatePath("/crm");
   redirect(`/crm/clients/${normalizedCustomerId}?profile=${result.noOp ? "unchanged" : "updated"}`);
+}
+
+export async function createCustomerVehicleAction(formData: FormData) {
+  const customerId = formData.get("customerId");
+  const idempotencyKey = formData.get("idempotencyKey");
+
+  if (
+    typeof customerId !== "string" || !UUID_REGEX.test(customerId.trim()) ||
+    typeof idempotencyKey !== "string" || !UUID_REGEX.test(idempotencyKey.trim())
+  ) {
+    redirect("/crm/clients");
+  }
+
+  const normalizedCustomerId = customerId.trim();
+  const normalizedIdempotencyKey = idempotencyKey.trim();
+
+  try {
+    await requireCrmAccess();
+  } catch (error) {
+    if (error instanceof CrmAccessError) {
+      if (error.code === "UNAUTHENTICATED") redirect("/crm/login");
+      if (error.code === "FORBIDDEN") redirectWithVehicleError(normalizedCustomerId, "access");
+    }
+    redirectWithVehicleError(normalizedCustomerId, "unavailable");
+  }
+
+  let replay: CustomerVehicleResult | null = null;
+  try {
+    replay = await findCustomerVehicleReplay({
+      customerId: normalizedCustomerId,
+      idempotencyKey: normalizedIdempotencyKey,
+    });
+  } catch {
+    redirectWithVehicleError(normalizedCustomerId, "unavailable");
+  }
+
+  if (replay) {
+    revalidatePath(`/crm/clients/${normalizedCustomerId}`);
+    revalidatePath("/crm/clients");
+    redirect(`/crm/clients/${normalizedCustomerId}?vehicle=created`);
+  }
+
+  const brand = formData.get("brand");
+  const model = formData.get("model");
+  const variant = formData.get("variant");
+  const year = formData.get("year");
+  const color = formData.get("color");
+  const plate = formData.get("plate");
+  const mileage = formData.get("mileage_km");
+
+  if (
+    typeof brand !== "string" ||
+    typeof model !== "string" ||
+    typeof variant !== "string" ||
+    typeof year !== "string" ||
+    typeof color !== "string" ||
+    typeof plate !== "string" ||
+    typeof mileage !== "string"
+  ) {
+    redirectWithVehicleError(normalizedCustomerId, "invalid");
+  }
+
+  const normalizedBrand = brand.trim();
+  const normalizedModel = model.trim();
+  const normalizedVariant = variant.trim() || null;
+  const normalizedYearValue = year.trim();
+  const normalizedYear = normalizedYearValue ? Number(normalizedYearValue) : null;
+  const normalizedColor = color.trim() || null;
+  const normalizedPlate = plate.trim() || null;
+  const normalizedMileageValue = mileage.trim();
+  const normalizedMileage = normalizedMileageValue ? Number(normalizedMileageValue) : null;
+
+  if (
+    !normalizedBrand || normalizedBrand.length > 100 ||
+    !normalizedModel || normalizedModel.length > 100 ||
+    (normalizedVariant !== null && normalizedVariant.length > 100) ||
+    (normalizedColor !== null && normalizedColor.length > 100) ||
+    (normalizedPlate !== null && normalizedPlate.length > 32) ||
+    (normalizedYearValue !== "" && !UNSIGNED_DECIMAL_INTEGER_REGEX.test(normalizedYearValue)) ||
+    (normalizedMileageValue !== "" && !UNSIGNED_DECIMAL_INTEGER_REGEX.test(normalizedMileageValue)) ||
+    (normalizedYear !== null && (!Number.isInteger(normalizedYear) || normalizedYear < 1900 || normalizedYear > 2100)) ||
+    (normalizedMileage !== null && (!Number.isInteger(normalizedMileage) || normalizedMileage < 0 || normalizedMileage > 2147483647))
+  ) {
+    redirectWithVehicleError(normalizedCustomerId, "invalid");
+  }
+
+  let result: CustomerVehicleResult;
+  try {
+    result = await createCustomerVehicle({
+      idempotencyKey: normalizedIdempotencyKey,
+      customerId: normalizedCustomerId,
+      brand: normalizedBrand,
+      model: normalizedModel,
+      variant: normalizedVariant,
+      year: normalizedYear,
+      color: normalizedColor,
+      plate: normalizedPlate,
+      mileageKm: normalizedMileage,
+    });
+  } catch {
+    redirectWithVehicleError(normalizedCustomerId, "unavailable");
+  }
+
+  revalidatePath(`/crm/clients/${normalizedCustomerId}`);
+  revalidatePath("/crm/clients");
+  revalidatePath("/crm");
+  redirect(`/crm/clients/${normalizedCustomerId}?vehicle=${result.noOp ? "unchanged" : "created"}`);
 }
