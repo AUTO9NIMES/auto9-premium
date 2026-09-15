@@ -178,6 +178,29 @@ export async function POST(
     const formData =
       await request.formData();
 
+    const rawSubmissionId =
+      formData.get("submissionId");
+
+    if (
+      typeof rawSubmissionId !== "string" ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        rawSubmissionId,
+      )
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "L’identifiant de la demande est invalide.",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    const submissionId =
+      rawSubmissionId.toLowerCase();
+
     const rawPayload =
       formData.get("payload");
 
@@ -225,35 +248,6 @@ export async function POST(
           status: 400,
         }
       );
-    }
-
-    try {
-      await persistWebsiteLead({
-        customerName: payload.customerName,
-        customerPhone: payload.customerPhone,
-        customerCity: payload.customerCity,
-        servicePlace: payload.servicePlace,
-        servicePlaceLabel: payload.servicePlaceLabel,
-        availabilityDateTime: payload.availabilityDateTime,
-        formattedAvailabilityDateTime: payload.formattedAvailabilityDateTime,
-        serviceId: payload.serviceId,
-        serviceName: payload.serviceName,
-        vehicleId: payload.vehicleId,
-        vehicleName: payload.vehicleName,
-        basePrice: payload.basePrice,
-        selectedOptions: payload.selectedOptions,
-        selectedPremiumAddons: payload.selectedPremiumAddons,
-        totalPrice: payload.totalPrice,
-        estimatedTime: payload.estimatedTime,
-        hasQuoteAddon: payload.hasQuoteAddon,
-        customerComment: payload.customerComment,
-        mainPhotoIndex: payload.mainPhotoIndex,
-        reservationMessage: payload.reservationMessage,
-        source: "website_quote_request",
-        sourcePage: "/devis",
-      });
-    } catch (databaseError) {
-      console.warn("CRM persistence skipped for quote request:", databaseError);
     }
 
     /* ===================================================== */
@@ -317,13 +311,42 @@ export async function POST(
     }
 
     /* ===================================================== */
+    /* CRM — ATOMIC WEBSITE INTAKE                           */
+    /* ===================================================== */
+
+    await persistWebsiteLead({
+      submissionId,
+      customerName: payload.customerName,
+      customerPhone: payload.customerPhone,
+      customerCity: payload.customerCity,
+      servicePlace: payload.servicePlace,
+      servicePlaceLabel: payload.servicePlaceLabel,
+      availabilityDateTime: payload.availabilityDateTime,
+      formattedAvailabilityDateTime:
+        payload.formattedAvailabilityDateTime,
+      serviceId: payload.serviceId,
+      serviceName: payload.serviceName,
+      vehicleId: payload.vehicleId,
+      vehicleName: payload.vehicleName,
+      basePrice: payload.basePrice,
+      selectedOptions: payload.selectedOptions,
+      selectedPremiumAddons:
+        payload.selectedPremiumAddons,
+      totalPrice: payload.totalPrice,
+      estimatedTime: payload.estimatedTime,
+      hasQuoteAddon: payload.hasQuoteAddon,
+      customerComment: payload.customerComment,
+      mainPhotoIndex: payload.mainPhotoIndex,
+      reservationMessage: payload.reservationMessage,
+      source: "website_quote_request",
+      sourcePage: "/devis",
+    });
+
+    /* ===================================================== */
     /* IDENTIFIANT                                           */
     /* ===================================================== */
 
-    const requestId =
-      `${Date.now()}-${crypto
-        .randomUUID()
-        .slice(0, 8)}`;
+    const requestId = submissionId;
 
     /* ===================================================== */
     /* UPLOAD PHOTOS VERCEL BLOB — OIDC                      */

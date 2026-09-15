@@ -1,7 +1,8 @@
 import { resolveCurrentBusinessContext } from "./business";
-import { createLead, createLeadService, createQuote, createVehicle, findCustomerByEmailOrPhone, logActivity, upsertCustomer, type LeadLifecycleStatus } from "./crm";
+import { hasSupabaseWriteConfig, supabaseRest } from "./supabase";
 
 export type WebsiteLeadDraft = {
+  submissionId: string;
   customerName: string;
   customerPhone: string;
   customerEmail?: string;
@@ -34,112 +35,79 @@ export type WebsiteLeadDraft = {
   utmCampaign?: string;
 };
 
-export async function persistWebsiteLead(draft: WebsiteLeadDraft) {
+export type WebsiteLeadResult = {
+  customerId: string;
+  vehicleId: string;
+  leadId: string;
+  quoteId: string;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export async function persistWebsiteLead(
+  draft: WebsiteLeadDraft,
+): Promise<WebsiteLeadResult> {
+  const submissionId = (draft.submissionId || "").trim();
   const customerName = (draft.customerName || "").trim();
   const customerPhone = (draft.customerPhone || "").trim();
   const customerEmail = (draft.customerEmail || "").trim();
 
-  if (!customerName || !customerPhone) {
-    throw new Error("customerName and customerPhone are required");
+  if (!submissionId || !customerName || !customerPhone) {
+    throw new Error(
+      "submissionId, customerName and customerPhone are required",
+    );
+  }
+
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
   }
 
   const businessContext = await resolveCurrentBusinessContext();
-  const businessId = businessContext.businessId;
 
-  const existingCustomer = await findCustomerByEmailOrPhone(customerEmail, customerPhone);
-  const customer = existingCustomer && existingCustomer.length > 0
-    ? existingCustomer[0]
-    : await upsertCustomer({
-        business_id: businessId,
-        full_name: customerName,
-        email: customerEmail || null,
-        phone: customerPhone,
-        city: draft.customerCity || null,
-        source: draft.source || "website",
-      });
-
-  if (!customer?.id) {
-    throw new Error("Unable to resolve or create a customer record.");
-  }
-
-  const vehicle = await createVehicle({
-    business_id: businessId,
-    customer_id: customer.id,
-    brand: draft.vehicleName ? draft.vehicleName.split(" ")[0] || null : null,
-    model: draft.vehicleName || null,
-    vehicle_type: draft.vehicleId || null,
-    color: null,
-    plate: null,
-  });
-
-  const lead = await createLead({
-    business_id: businessId,
-    customer_id: customer.id,
-    vehicle_id: vehicle?.id || null,
-    source: draft.source || "website",
-    source_page: draft.sourcePage || "/devis",
-    lifecycle_status: "NEW" as LeadLifecycleStatus,
-    utm_source: draft.utmSource || null,
-    utm_campaign: draft.utmCampaign || null,
-    notes: draft.customerComment || null,
-  });
-
-  if (!lead?.id) {
-    throw new Error("Unable to create a lead record.");
-  }
-
-  await createLeadService({
-    business_id: businessId,
-    lead_id: lead.id,
-    service_name: draft.serviceName || "Prestation",
-    service_slug: draft.serviceId || null,
-    base_price: draft.basePrice || null,
-    estimated_time: draft.estimatedTime || null,
-    selected_options: draft.selectedOptions || [],
-    premium_addons: draft.selectedPremiumAddons?.map((addon) => addon.name) || [],
-    customer_comment: draft.customerComment || null,
-  });
-
-  const quote = await createQuote({
-    business_id: businessId,
-    lead_id: lead.id,
-    quote_version: 1,
-    total_price: draft.totalPrice || 0,
-    estimated_time: draft.estimatedTime || null,
-    status: "DRAFT",
-    payload_json: {
-      customerName,
-      customerPhone,
-      customerCity: draft.customerCity || null,
-      serviceName: draft.serviceName || null,
-      vehicleName: draft.vehicleName || null,
-      selectedOptions: draft.selectedOptions || [],
-      selectedPremiumAddons: draft.selectedPremiumAddons || [],
-      availabilityDateTime: draft.availabilityDateTime || null,
+  const result = await supabaseRest<unknown>(
+    "rpc/create_website_quote_request",
+    "POST",
+    {
+      p_business_id: businessContext.businessId,
+      p_submission_id: submissionId,
+      p_customer_name: customerName,
+      p_customer_phone: customerPhone,
+      p_customer_email: customerEmail || null,
+      p_customer_city: draft.customerCity || null,
+      p_source: draft.source || "website",
+      p_source_page: draft.sourcePage || "/devis",
+      p_utm_source: draft.utmSource || null,
+      p_utm_campaign: draft.utmCampaign || null,
+      p_customer_comment: draft.customerComment || null,
+      p_vehicle_name: draft.vehicleName || null,
+      p_vehicle_type: draft.vehicleId || null,
+      p_service_name: draft.serviceName || "Prestation",
+      p_service_slug: draft.serviceId || null,
+      p_base_price: draft.basePrice ?? null,
+      p_estimated_time: draft.estimatedTime || null,
+      p_selected_options: draft.selectedOptions || [],
+      p_premium_addons: draft.selectedPremiumAddons || [],
+      p_total_price: draft.totalPrice ?? 0,
+      p_availability_datetime: draft.availabilityDateTime || null,
     },
-  });
+  );
 
-  await logActivity({
-    business_id: businessId,
-    lead_id: lead.id,
-    customer_id: customer.id,
-    event_type: "website.lead.created",
-    event_data: {
-      source: draft.source || "website",
-      customer_name: customerName,
-      customer_phone: customerPhone,
-      vehicle_name: draft.vehicleName || null,
-      service_name: draft.serviceName || null,
-      total_price: draft.totalPrice || null,
-      quote_id: quote?.id || null,
-      vehicle_id: vehicle?.id || null,
-    },
-  });
+  if (
+    !isRecord(result) ||
+    typeof result.customer_id !== "string" ||
+    typeof result.vehicle_id !== "string" ||
+    typeof result.lead_id !== "string" ||
+    typeof result.quote_id !== "string"
+  ) {
+    throw new Error("Supabase returned an invalid website intake result.");
+  }
 
   return {
-    customer,
-    vehicle,
-    lead,
-    quote,
+    customerId: result.customer_id,
+    vehicleId: result.vehicle_id,
+    leadId: result.lead_id,
+    quoteId: result.quote_id,
   };
 }

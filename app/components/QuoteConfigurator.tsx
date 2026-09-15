@@ -235,6 +235,7 @@ export function QuoteConfigurator() {
 
   const stepContentRef = useRef<HTMLElement | null>(null);
   const objectUrlsRef = useRef<string[]>([]);
+  const submissionIdRef = useRef<string | null>(null);
 
   const [step, setStep] = useState(1);
 
@@ -611,7 +612,14 @@ export function QuoteConfigurator() {
     setSubmitSuccess(false);
 
     try {
+      const submissionId =
+        submissionIdRef.current ?? crypto.randomUUID();
+
+      submissionIdRef.current = submissionId;
+
       const formData = new FormData();
+
+      formData.append("submissionId", submissionId);
 
       formData.append(
         "payload",
@@ -665,6 +673,7 @@ export function QuoteConfigurator() {
       }
 
       trackLeadClick("mail");
+      submissionIdRef.current = null;
       setSubmitSuccess(true);
     } catch (error) {
       setSubmitError(
