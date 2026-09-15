@@ -1,17 +1,20 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CrmAccessError, requireCrmAccess } from "../../lib/auth/dal";
-import { transitionPipelineLead } from "./actions";
+import { acceptPipelineQuote, transitionPipelineLead } from "./actions";
 import {
   getLeadsList,
   type LeadListItem,
   type LeadLifecycleStatus,
+  type Quote,
 } from "../../lib/crm";
 
 export const dynamic = "force-dynamic";
 
 const LEAD_LIST_LIMIT = 20;
 const SEARCH_MAX_LENGTH = 100;
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const leadStatuses: LeadLifecycleStatus[] = [
   "NEW",
@@ -35,6 +38,14 @@ const leadStatusLabels: Record<LeadLifecycleStatus, string> = {
   COMPLETED: "Terminé",
   REVIEW_REQUESTED: "Avis demandé",
   CLOSED_LOST: "Clôturé",
+};
+
+const quoteStatusLabels: Record<Quote["status"], string> = {
+  DRAFT: "Brouillon",
+  SENT: "Envoyé",
+  ACCEPTED: "Accepté",
+  REJECTED: "Refusé",
+  EXPIRED: "Expiré",
 };
 
 async function ensureCrmAccess() {
@@ -129,6 +140,13 @@ function vehicleName(item: LeadListItem): string | null {
   return name || "Véhicule sans désignation";
 }
 
+function quoteServiceName(quote: Quote): string | null {
+  const serviceName = quote.payload_json?.serviceName;
+  return typeof serviceName === "string" && serviceName.trim()
+    ? serviceName.trim()
+    : null;
+}
+
 function leadActions(status: LeadLifecycleStatus): Array<{
   label: string;
   targetStatus: "QUALIFIED" | "CONTACTED" | "QUOTE_SENT" | "CLOSED_LOST";
@@ -169,6 +187,16 @@ function LeadCard({ item }: { item: LeadListItem }) {
   const vehicle = vehicleName(item);
   const quoteAmount = formatAmount(item.latestQuote?.total_price);
   const appointmentDate = formatDateTime(item.latestAppointment?.requested_at);
+  const quoteService = item.latestQuote ? quoteServiceName(item.latestQuote) : null;
+  const canAcceptQuote = Boolean(
+    item.latestQuote?.id &&
+    UUID_REGEX.test(item.latestQuote.id) &&
+    (lead.lifecycle_status === "NEW" ||
+      lead.lifecycle_status === "QUALIFIED" ||
+      lead.lifecycle_status === "CONTACTED" ||
+      lead.lifecycle_status === "QUOTE_SENT") &&
+    (item.latestQuote.status === "DRAFT" || item.latestQuote.status === "SENT"),
+  );
 
   return (
     <article className="border border-white/10 bg-[#101419] p-4 transition-colors hover:border-[#d8b477]/50">
@@ -192,10 +220,21 @@ function LeadCard({ item }: { item: LeadListItem }) {
 
       {(quoteAmount || item.latestQuote || item.latestJob || appointmentDate) && (
         <div className="mt-4 border-t border-white/10 pt-3 text-[11px] text-white/35">
-          {item.latestQuote && <p>Devis : {item.latestQuote.status}{quoteAmount ? ` · ${quoteAmount}` : ""}</p>}
+          {item.latestQuote && <p>Devis : {quoteStatusLabels[item.latestQuote.status]}{quoteAmount ? ` · ${quoteAmount}` : ""}</p>}
+          {item.latestQuote?.estimated_time && <p>Durée estimée : {item.latestQuote.estimated_time}</p>}
+          {quoteService && <p>Service : {quoteService}</p>}
           {item.latestJob && <p>Prestation : {item.latestJob.status}</p>}
           {appointmentDate && <p>Rendez-vous : {appointmentDate}</p>}
         </div>
+      )}
+
+      {canAcceptQuote && item.latestQuote?.id && (
+        <form action={acceptPipelineQuote} className="mt-4 border-t border-white/10 pt-4">
+          <input type="hidden" name="quoteId" value={item.latestQuote.id} />
+          <button type="submit" className="w-full border border-[#d8b477] px-3 py-2.5 text-xs font-medium uppercase tracking-[0.12em] text-[#d8b477] transition-colors hover:bg-[#d8b477] hover:text-[#080a0d]">
+            Accepter le devis
+          </button>
+        </form>
       )}
 
       {lead.notes && <p className="mt-4 line-clamp-3 text-xs leading-5 text-white/40">{lead.notes}</p>}
@@ -246,6 +285,8 @@ export default async function PipelinePage({ searchParams }: {
   const status = normalizeStatus(params.status);
   const updated = firstQueryValue(params.updated) === "1";
   const actionError = firstQueryValue(params.error);
+  const quoteUpdated = firstQueryValue(params.quote_updated) === "1";
+  const quoteError = firstQueryValue(params.quote_error);
   let result;
   let failed = false;
 
@@ -285,6 +326,8 @@ export default async function PipelinePage({ searchParams }: {
 
       {updated && <p role="status" className="border border-emerald-300/30 bg-emerald-300/5 px-4 py-3 text-sm text-emerald-200">Lead mis à jour.</p>}
       {actionError && <p role="alert" className="border border-red-300/30 bg-red-300/5 px-4 py-3 text-sm text-red-200">{actionError === "invalid" ? "Action invalide." : actionError === "access" ? "Action non autorisée." : "Action momentanément indisponible."}</p>}
+      {quoteUpdated && <p role="status" className="border border-emerald-300/30 bg-emerald-300/5 px-4 py-3 text-sm text-emerald-200">Devis accepté. Le lead et la prestation ont été mis à jour.</p>}
+      {quoteError && <p role="alert" className="border border-red-300/30 bg-red-300/5 px-4 py-3 text-sm text-red-200">{quoteError === "invalid" ? "Action invalide." : quoteError === "access" ? "Action non autorisée." : "Action momentanément indisponible."}</p>}
 
       <section aria-labelledby="pipeline-board" className="border border-white/10 bg-[#101419]">
         <div className="flex items-center justify-between border-b border-white/10 px-5 py-4 md:px-7">

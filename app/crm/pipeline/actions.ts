@@ -7,6 +7,7 @@ import {
   requireCrmAccess,
 } from "../../lib/auth/dal";
 import {
+  acceptQuoteAndCreateJob,
   transitionLeadStatus,
   type LeadLifecycleStatus,
 } from "../../lib/crm";
@@ -23,6 +24,10 @@ const manualTargetStatuses = new Set<LeadLifecycleStatus>([
 
 function redirectWithError(error: "invalid" | "access" | "unavailable"): never {
   redirect(`/crm/pipeline?error=${error}`);
+}
+
+function redirectWithQuoteError(error: "invalid" | "access" | "unavailable"): never {
+  redirect(`/crm/pipeline?quote_error=${error}`);
 }
 
 export async function transitionPipelineLead(formData: FormData) {
@@ -60,4 +65,36 @@ export async function transitionPipelineLead(formData: FormData) {
 
   revalidatePath("/crm/pipeline");
   redirect("/crm/pipeline?updated=1");
+}
+
+export async function acceptPipelineQuote(formData: FormData) {
+  try {
+    await requireCrmAccess();
+  } catch (error) {
+    if (error instanceof CrmAccessError) {
+      if (error.code === "UNAUTHENTICATED") redirect("/crm/login");
+      if (error.code === "FORBIDDEN") redirectWithQuoteError("access");
+    }
+    redirectWithQuoteError("unavailable");
+  }
+
+  const quoteId = formData.get("quoteId");
+
+  if (typeof quoteId !== "string" || !UUID_REGEX.test(quoteId.trim())) {
+    redirectWithQuoteError("invalid");
+  }
+
+  try {
+    await acceptQuoteAndCreateJob({
+      quoteId: quoteId.trim(),
+      source: "crm_pipeline_ui",
+    });
+  } catch {
+    redirectWithQuoteError("unavailable");
+  }
+
+  revalidatePath("/crm");
+  revalidatePath("/crm/pipeline");
+  revalidatePath("/crm/jobs");
+  redirect("/crm/pipeline?quote_updated=1");
 }
