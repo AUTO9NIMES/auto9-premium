@@ -710,7 +710,7 @@ export async function getJobsList(
       "jobs",
       "GET",
       null,
-      `${baseJobsFilter}&order=created_at.desc&limit=${JOB_LIST_SEARCH_CANDIDATE_LIMIT}&select=*`,
+      `${baseJobsFilter}&order=created_at.desc,id.desc&limit=${JOB_LIST_SEARCH_CANDIDATE_LIMIT}&select=*`,
     )) as Job[] | null;
 
     const candidateJobs = (candidateRows ?? []).filter((job): job is Job => Boolean(job?.id));
@@ -850,7 +850,7 @@ export async function getJobsList(
     "jobs",
     "GET",
     null,
-    `${baseJobsFilter}&order=created_at.desc&offset=${offset}&limit=${limit + 1}&select=*`,
+    `${baseJobsFilter}&order=created_at.desc,id.desc&offset=${offset}&limit=${limit + 1}&select=*`,
   )) as Job[] | null;
 
   const jobs = (jobsRows ?? []).filter((job): job is Job => Boolean(job?.id));

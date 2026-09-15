@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CrmAccessError, requireCrmAccess } from "../../lib/auth/dal";
+import Pagination, { normalizePage } from "../components/Pagination";
 import {
   getCustomersList,
   type CustomerListItem,
@@ -137,13 +138,14 @@ export default async function ClientsPage({ searchParams }: {
   await ensureCrmAccess();
 
   const params = await searchParams;
+  const page = normalizePage(params.page);
   const search = normalizeSearchValue(params.q);
   let result;
   let failed = false;
 
   try {
     result = await getCustomersList({
-      page: 1,
+      page,
       limit: CUSTOMER_LIST_LIMIT,
       search,
     });
@@ -206,6 +208,13 @@ export default async function ClientsPage({ searchParams }: {
           </div>
         )}
       </section>
+
+      {!failed && result && <Pagination
+        basePath="/crm/clients"
+        currentPage={result.pagination.page}
+        hasNextPage={result.pagination.hasNextPage}
+        query={{ q: search }}
+      />}
 
       {!failed && result?.pagination.hasNextPage && (
         <p className="text-xs text-white/35">Affichage limité aux {CUSTOMER_LIST_LIMIT} premiers clients. La pagination sera ajoutée dans une étape dédiée.</p>
