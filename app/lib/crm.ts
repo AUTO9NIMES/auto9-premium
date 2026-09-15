@@ -155,6 +155,7 @@ export type Appointment = {
   vehicle_id?: string | null;
   status: "REQUESTED" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
   requested_at: string;
+  scheduled_at?: string | null;
   confirmed_at?: string | null;
   completed_at?: string | null;
   cancelled_at?: string | null;
@@ -185,6 +186,13 @@ export type TransitionAppointmentStatusResult = {
   appointment: Appointment;
   job: Job;
   activity: ActivityLog | null;
+};
+
+export type ScheduleJobResult = {
+  appointment: Appointment;
+  job: Job;
+  activity: ActivityLog | null;
+  noOp: boolean;
 };
 
 export type TransitionLeadStatusResult = {
@@ -2248,6 +2256,71 @@ export async function transitionAppointmentStatus(input: {
     appointmentId,
     input.targetStatus,
   );
+}
+
+function validateScheduleJobResult(
+  value: unknown,
+  businessId: string,
+  jobId: string,
+): ScheduleJobResult {
+  if (!isRecord(value) || !isRecord(value.appointment) || !isRecord(value.job) || typeof value.no_op !== "boolean") {
+    throw new Error("Supabase returned an invalid scheduling result.");
+  }
+
+  const appointment = value.appointment;
+  const job = value.job;
+  const activity = value.activity === null || value.activity === undefined
+    ? null
+    : value.activity;
+
+  if (
+    appointment.business_id !== businessId ||
+    appointment.job_id !== jobId ||
+    appointment.status !== "REQUESTED" ||
+    typeof appointment.scheduled_at !== "string" ||
+    job.business_id !== businessId ||
+    job.id !== jobId ||
+    job.status !== "SCHEDULED" ||
+    typeof job.scheduled_at !== "string" ||
+    appointment.scheduled_at !== job.scheduled_at ||
+    (activity !== null && !isRecord(activity))
+  ) {
+    throw new Error("Supabase returned an inconsistent scheduling result.");
+  }
+
+  return {
+    appointment: appointment as Appointment,
+    job: job as Job,
+    activity: activity as ActivityLog | null,
+    noOp: value.no_op,
+  };
+}
+
+export async function scheduleJob(input: {
+  jobId: string;
+  scheduledAtLocal: string;
+}): Promise<ScheduleJobResult> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const jobId = input.jobId.trim();
+  if (!jobId) {
+    throw new Error("jobId is required.");
+  }
+
+  const businessId = await getCurrentBusinessId();
+  const result = await supabaseRest<unknown>(
+    "rpc/schedule_job",
+    "POST",
+    {
+      p_business_id: businessId,
+      p_job_id: jobId,
+      p_scheduled_at_local: input.scheduledAtLocal,
+    },
+  );
+
+  return validateScheduleJobResult(result, businessId, jobId);
 }
 
 export async function logActivity(input: ActivityLog) {
