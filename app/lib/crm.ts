@@ -293,6 +293,12 @@ export type CustomerListResult = {
   };
 };
 
+export type UpdateCustomerProfileResult = {
+  customer: Customer;
+  changedFields: string[];
+  noOp: boolean;
+};
+
 function normalizeEmail(value?: string | null): string | null {
   const normalized = (value || "").trim().toLowerCase();
   return normalized || null;
@@ -382,6 +388,59 @@ export async function upsertCustomer(input: Customer) {
   }
 
   return result;
+}
+
+export async function updateCustomerProfile(input: {
+  customerId: string;
+  fullName: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  city?: string | null;
+}): Promise<UpdateCustomerProfileResult> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const customerId = input.customerId.trim();
+  if (!customerId) {
+    throw new Error("customerId is required.");
+  }
+
+  const businessId = await getCurrentBusinessId();
+  const result = await supabaseRest<unknown>(
+    "rpc/update_customer_profile",
+    "POST",
+    {
+      p_business_id: businessId,
+      p_customer_id: customerId,
+      p_full_name: input.fullName,
+      p_first_name: input.firstName ?? null,
+      p_last_name: input.lastName ?? null,
+      p_email: input.email ?? null,
+      p_phone: input.phone ?? null,
+      p_city: input.city ?? null,
+      p_source: "crm_customer_profile_ui",
+    },
+  );
+
+  if (
+    !isRecord(result) ||
+    !isRecord(result.customer) ||
+    !Array.isArray(result.changed_fields) ||
+    typeof result.no_op !== "boolean"
+  ) {
+    throw new Error("Supabase returned an invalid customer profile result.");
+  }
+
+  return {
+    customer: result.customer as Customer,
+    changedFields: result.changed_fields.filter(
+      (field): field is string => typeof field === "string",
+    ),
+    noOp: result.no_op,
+  };
 }
 
 export async function findCustomerByEmailOrPhone(email?: string | null, phone?: string | null) {

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { CrmAccessError, requireCrmAccess } from "../../../lib/auth/dal";
+import { updateCustomerProfileAction } from "./actions";
 import {
   getCustomer360,
   type ActivityLog,
@@ -244,8 +245,9 @@ function ActivityRow({ activity }: { activity: ActivityLog }) {
   );
 }
 
-export default async function Customer360Page({ params }: {
+export default async function Customer360Page({ params, searchParams }: {
   params: Promise<{ customerId?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   await ensureCrmAccess();
 
@@ -284,6 +286,9 @@ export default async function Customer360Page({ params }: {
 
   const customer = result.customer;
   const displayName = formatCustomerName(result);
+  const feedback = await searchParams;
+  const profileStatus = Array.isArray(feedback.profile) ? feedback.profile[0] : feedback.profile;
+  const profileError = Array.isArray(feedback.profile_error) ? feedback.profile_error[0] : feedback.profile_error;
   const contactDetails = [customer.email, customer.phone, customer.city].filter(
     (value): value is string => Boolean(value?.trim()),
   );
@@ -301,6 +306,26 @@ export default async function Customer360Page({ params }: {
           </div>
           {formatDate(customer.created_at) && <p className="text-xs text-white/35">Client depuis le {formatDate(customer.created_at)}</p>}
         </div>
+      </section>
+
+      <section aria-labelledby="customer-profile-edit" className="space-y-4">
+        <div className="border-b border-white/10 pb-4">
+          <p className="text-[10px] uppercase tracking-[0.2em] text-[#d8b477]">Profil</p>
+          <h2 id="customer-profile-edit" className="mt-2 text-xl font-medium text-white">Modifier le profil</h2>
+        </div>
+        {profileStatus === "updated" && <p role="status" className="border border-emerald-300/30 bg-emerald-300/5 px-4 py-3 text-sm text-emerald-200">Profil mis à jour.</p>}
+        {profileStatus === "unchanged" && <p role="status" className="border border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-white/55">Aucun changement à enregistrer.</p>}
+        {profileError && <p role="alert" className="border border-red-300/30 bg-red-300/5 px-4 py-3 text-sm text-red-200">{profileError === "invalid" ? "Vérifiez les informations saisies." : profileError === "access" ? "Action non autorisée." : "Mise à jour momentanément indisponible."}</p>}
+        <form action={updateCustomerProfileAction} className="grid gap-4 border border-white/10 bg-[#101419] p-5 md:grid-cols-2 md:p-7">
+          <input type="hidden" name="customerId" value={normalizedCustomerId} />
+          <div className="md:col-span-2"><label htmlFor="full_name" className="block text-xs text-white/55">Nom complet</label><input id="full_name" name="full_name" defaultValue={customer.full_name} required maxLength={200} autoComplete="name" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[#d8b477]" /></div>
+          <div><label htmlFor="first_name" className="block text-xs text-white/55">Prénom</label><input id="first_name" name="first_name" defaultValue={customer.first_name || ""} maxLength={100} autoComplete="given-name" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[#d8b477]" /></div>
+          <div><label htmlFor="last_name" className="block text-xs text-white/55">Nom</label><input id="last_name" name="last_name" defaultValue={customer.last_name || ""} maxLength={100} autoComplete="family-name" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[#d8b477]" /></div>
+          <div><label htmlFor="email" className="block text-xs text-white/55">Email</label><input id="email" name="email" type="email" defaultValue={customer.email || ""} maxLength={254} autoComplete="email" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[#d8b477]" /></div>
+          <div><label htmlFor="phone" className="block text-xs text-white/55">Téléphone</label><input id="phone" name="phone" type="tel" defaultValue={customer.phone || ""} maxLength={40} autoComplete="tel" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[#d8b477]" /></div>
+          <div><label htmlFor="city" className="block text-xs text-white/55">Ville</label><input id="city" name="city" defaultValue={customer.city || ""} maxLength={120} autoComplete="address-level2" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[#d8b477]" /></div>
+          <div className="md:col-span-2"><button type="submit" className="border border-[#d8b477] px-5 py-2.5 text-xs font-medium uppercase tracking-[0.14em] text-[#d8b477] transition-colors hover:bg-[#d8b477] hover:text-[#080a0d]">Enregistrer les modifications</button></div>
+        </form>
       </section>
 
       <section aria-labelledby="customer-summary" className="space-y-4">
