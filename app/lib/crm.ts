@@ -173,6 +173,11 @@ export type TransitionAppointmentStatusResult = {
   activity: ActivityLog | null;
 };
 
+export type TransitionLeadStatusResult = {
+  lead: Lead;
+  activity: ActivityLog | null;
+};
+
 export type JobDetailsResult = {
   job: Job;
   customer: Customer;
@@ -1480,6 +1485,72 @@ export async function acceptQuoteAndCreateJob(input: {
   );
 
   return validateAcceptedQuoteResult(result, businessId, quoteId);
+}
+
+function validateTransitionLeadResult(
+  value: unknown,
+  businessId: string,
+  leadId: string,
+  targetStatus: LeadLifecycleStatus,
+): TransitionLeadStatusResult {
+  if (!isRecord(value) || !isRecord(value.lead)) {
+    throw new Error("Supabase returned an invalid lead transition result.");
+  }
+
+  const lead = value.lead;
+  const activity = value.activity === null || value.activity === undefined
+    ? null
+    : value.activity;
+
+  if (
+    lead.id !== leadId ||
+    lead.business_id !== businessId ||
+    lead.lifecycle_status !== targetStatus ||
+    (activity !== null && !isRecord(activity))
+  ) {
+    throw new Error("Supabase returned an inconsistent lead transition result.");
+  }
+
+  return {
+    lead: lead as Lead,
+    activity: activity as ActivityLog | null,
+  };
+}
+
+export async function transitionLeadStatus(input: {
+  leadId: string;
+  targetStatus: LeadLifecycleStatus;
+  source?: string;
+}): Promise<TransitionLeadStatusResult> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const leadId = input.leadId.trim();
+
+  if (!leadId) {
+    throw new Error("leadId is required.");
+  }
+
+  const businessContext = await resolveCurrentBusinessContext();
+  const businessId = businessContext.businessId;
+  const result = await supabaseRest<unknown>(
+    "rpc/transition_lead_status",
+    "POST",
+    {
+      p_business_id: businessId,
+      p_lead_id: leadId,
+      p_target_status: input.targetStatus,
+      p_source: input.source?.trim() || "internal",
+    },
+  );
+
+  return validateTransitionLeadResult(
+    result,
+    businessId,
+    leadId,
+    input.targetStatus,
+  );
 }
 
 function validateTransitionAppointmentResult(
