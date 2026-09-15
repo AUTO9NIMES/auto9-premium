@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CrmAccessError, requireCrmAccess } from "../../lib/auth/dal";
+import { transitionPipelineLead } from "./actions";
 import {
   getLeadsList,
   type LeadListItem,
@@ -128,6 +129,38 @@ function vehicleName(item: LeadListItem): string | null {
   return name || "Véhicule sans désignation";
 }
 
+function leadActions(status: LeadLifecycleStatus): Array<{
+  label: string;
+  targetStatus: "QUALIFIED" | "CONTACTED" | "QUOTE_SENT" | "CLOSED_LOST";
+}> {
+  if (status === "NEW") {
+    return [
+      { label: "Qualifier", targetStatus: "QUALIFIED" },
+      { label: "Clôturer", targetStatus: "CLOSED_LOST" },
+    ];
+  }
+
+  if (status === "QUALIFIED") {
+    return [
+      { label: "Contacter", targetStatus: "CONTACTED" },
+      { label: "Clôturer", targetStatus: "CLOSED_LOST" },
+    ];
+  }
+
+  if (status === "CONTACTED") {
+    return [
+      { label: "Marquer devis envoyé", targetStatus: "QUOTE_SENT" },
+      { label: "Clôturer", targetStatus: "CLOSED_LOST" },
+    ];
+  }
+
+  if (status === "QUOTE_SENT") {
+    return [{ label: "Clôturer", targetStatus: "CLOSED_LOST" }];
+  }
+
+  return [];
+}
+
 function LeadCard({ item }: { item: LeadListItem }) {
   const lead = item.lead;
   const customerHref = item.customer.id
@@ -166,6 +199,20 @@ function LeadCard({ item }: { item: LeadListItem }) {
       )}
 
       {lead.notes && <p className="mt-4 line-clamp-3 text-xs leading-5 text-white/40">{lead.notes}</p>}
+
+      {lead.id && leadActions(lead.lifecycle_status).length > 0 && (
+        <div className="mt-4 flex flex-wrap gap-2 border-t border-white/10 pt-4">
+          {leadActions(lead.lifecycle_status).map((action) => (
+            <form key={action.targetStatus} action={transitionPipelineLead}>
+              <input type="hidden" name="leadId" value={lead.id} />
+              <input type="hidden" name="targetStatus" value={action.targetStatus} />
+              <button type="submit" className="border border-white/15 px-3 py-2 text-xs text-white/65 transition-colors hover:border-[#d8b477] hover:text-[#d8b477]">
+                {action.label}
+              </button>
+            </form>
+          ))}
+        </div>
+      )}
     </article>
   );
 }
@@ -197,6 +244,8 @@ export default async function PipelinePage({ searchParams }: {
   const params = await searchParams;
   const search = normalizeSearch(params.search);
   const status = normalizeStatus(params.status);
+  const updated = firstQueryValue(params.updated) === "1";
+  const actionError = firstQueryValue(params.error);
   let result;
   let failed = false;
 
@@ -233,6 +282,9 @@ export default async function PipelinePage({ searchParams }: {
         </div>
         <span className="w-fit border border-white/10 px-3 py-2 text-[10px] uppercase tracking-[0.16em] text-white/35">Lecture seule</span>
       </section>
+
+      {updated && <p role="status" className="border border-emerald-300/30 bg-emerald-300/5 px-4 py-3 text-sm text-emerald-200">Lead mis à jour.</p>}
+      {actionError && <p role="alert" className="border border-red-300/30 bg-red-300/5 px-4 py-3 text-sm text-red-200">{actionError === "invalid" ? "Action invalide." : actionError === "access" ? "Action non autorisée." : "Action momentanément indisponible."}</p>}
 
       <section aria-labelledby="pipeline-board" className="border border-white/10 bg-[#101419]">
         <div className="flex items-center justify-between border-b border-white/10 px-5 py-4 md:px-7">
