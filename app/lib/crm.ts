@@ -176,6 +176,11 @@ export type AcceptQuoteAndCreateJobResult = {
   appointment: Appointment | null;
 };
 
+export type MarkQuoteAsSentResult = {
+  quote: Quote;
+  noOp: boolean;
+};
+
 export type TransitionAppointmentStatusResult = {
   appointment: Appointment;
   job: Job;
@@ -1712,6 +1717,43 @@ export async function acceptQuoteAndCreateJob(input: {
   );
 
   return validateAcceptedQuoteResult(result, businessId, quoteId);
+}
+
+export async function markQuoteAsSent(
+  quoteId: string,
+): Promise<MarkQuoteAsSentResult> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const normalizedQuoteId = quoteId.trim();
+  if (!normalizedQuoteId) {
+    throw new Error("quoteId is required.");
+  }
+
+  const businessId = await getCurrentBusinessId();
+  const result = await supabaseRest<unknown>(
+    "rpc/mark_quote_as_sent",
+    "POST",
+    {
+      p_business_id: businessId,
+      p_quote_id: normalizedQuoteId,
+      p_source: "crm_quote_send_ui",
+    },
+  );
+
+  if (
+    !isRecord(result) ||
+    !isRecord(result.quote) ||
+    typeof result.no_op !== "boolean"
+  ) {
+    throw new Error("Supabase returned an invalid quote send result.");
+  }
+
+  return {
+    quote: result.quote as Quote,
+    noOp: result.no_op,
+  };
 }
 
 function validateTransitionLeadResult(
