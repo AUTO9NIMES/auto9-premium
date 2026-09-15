@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CrmAccessError, requireCrmAccess } from "../../lib/auth/dal";
 import { acceptPipelineQuote, transitionPipelineLead } from "./actions";
+import Pagination, { normalizePage } from "../components/Pagination";
 import {
   getLeadsList,
   type LeadListItem,
@@ -281,6 +282,7 @@ export default async function PipelinePage({ searchParams }: {
   await ensureCrmAccess();
 
   const params = await searchParams;
+  const page = normalizePage(params.page);
   const search = normalizeSearch(params.search);
   const status = normalizeStatus(params.status);
   const updated = firstQueryValue(params.updated) === "1";
@@ -292,7 +294,7 @@ export default async function PipelinePage({ searchParams }: {
 
   try {
     result = await getLeadsList({
-      page: 1,
+      page,
       limit: LEAD_LIST_LIMIT,
       search,
       status,
@@ -370,6 +372,13 @@ export default async function PipelinePage({ searchParams }: {
           </div>
         )}
       </section>
+
+      {!failed && result && <Pagination
+        basePath="/crm/pipeline"
+        currentPage={result.pagination.page}
+        hasNextPage={result.pagination.hasNextPage}
+        query={{ search, status }}
+      />}
 
       {!failed && result?.pagination.hasNextPage && (
         <p className="text-xs text-white/35">Affichage limité aux {LEAD_LIST_LIMIT} premiers leads correspondant aux filtres. Ce compteur n&apos;est pas un total global.</p>

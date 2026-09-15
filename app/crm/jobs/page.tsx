@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CrmAccessError, requireCrmAccess } from "../../lib/auth/dal";
 import { transitionJobAppointment } from "./actions";
+import Pagination, { normalizePage } from "../components/Pagination";
 import {
   getJobsList,
   type Appointment,
@@ -208,6 +209,7 @@ export default async function JobsPage({ searchParams }: {
   await ensureCrmAccess();
 
   const params = await searchParams;
+  const page = normalizePage(params.page);
   const search = normalizeSearch(params.search);
   const status = normalizeStatus(params.status);
   const updated = firstQueryValue(params.updated) === "1";
@@ -217,7 +219,7 @@ export default async function JobsPage({ searchParams }: {
 
   try {
     result = await getJobsList({
-      page: 1,
+      page,
       limit: JOB_LIST_LIMIT,
       search,
       status,
@@ -287,6 +289,13 @@ export default async function JobsPage({ searchParams }: {
           </div>
         )}
       </section>
+
+      {!failed && result && <Pagination
+        basePath="/crm/jobs"
+        currentPage={result.pagination.page}
+        hasNextPage={result.pagination.hasNextPage}
+        query={{ search, status }}
+      />}
 
       {!failed && result?.pagination.hasNextPage && (
         <p className="text-xs text-white/35">Affichage limité aux {JOB_LIST_LIMIT} premières prestations correspondant aux filtres. Ce compteur n&apos;est pas un total global.</p>
