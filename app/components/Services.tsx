@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./Services.module.css";
 
-const DUO_VIDEO = "https://d2jqrm6oza8nb6.cloudfront.net/datasets/bba74f0e-d303-48da-98e8-cc5dac31a345.mp4?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiODA2ZWQyZDYxOTM5MGU4YSIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTQ0NzM4Mn0.Laveza7URMtgjW8eMRpKdh4O8JSM34xf8OAcgzg-Uys";
-const EXTERIOR_VIDEO = "https://d2jqrm6oza8nb6.cloudfront.net/datasets/f3dbdf62-f750-4f51-aad4-27c9ee2e8fde.mp4?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiZWFjOTRhMmI2NTA3OWFiNCIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTQyODI2N30.xj51ZYnLDwsq-p0bZcyESXphb3XYdalBHe4-2qzfka0";
+const DUO_VIDEO = "/result-duo.mp4";
+const INTERIOR_VIDEO = "/result-interieur.mp4";
+const EXTERIOR_VIDEO = "/result-exterieur.mp4";
 
 const services = [
   {
@@ -47,9 +48,9 @@ const services = [
     text: "Un habitacle propre, sain et soigné jusque dans les détails.",
     href: "/devis?service=interieur",
     image: "/services/interieur-card.jpg",
-    video: DUO_VIDEO,
-    videoStart: 5.25,
-    videoDuration: 3.5,
+    video: INTERIOR_VIDEO,
+    videoStart: 0,
+    videoDuration: 4,
     highlights: [
       { icon: "seat", title: "Sièges", subtitle: "& tapis" },
       { icon: "air", title: "Dépoussiérage", subtitle: "complet" },
@@ -100,7 +101,8 @@ const premiumServices = [
     text: "Restauration des optiques ternis ou opaques pour retrouver transparence, éclat et une finition protégée.",
     href: "/demande-speciale?type=phares",
     cta: "Demander cette prestation",
-    video: "https://d2jqrm6oza8nb6.cloudfront.net/datasets/2c2b25d9-ecd1-40b3-9e29-c22fb0ddf2bc.mp4?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiMjVhZjE1YjQzNGZjZGVjMSIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTQ3Mjk0OH0.l0sjsML6kxw2kGKvcbLn2cyXH2JtlaN0ncdejBgp1Jk",
+    video: "/phares/mercedes-renovation-phares-auto9-nimes.mp4",
+    image: "/services/phares-card.jpg",
     end: 4.9,
   },
   {
@@ -111,7 +113,8 @@ const premiumServices = [
     text: "Correction des défauts visuels pour retrouver profondeur, netteté des reflets et brillance de la peinture.",
     href: "/demande-speciale?type=polissage",
     cta: "Demander un devis",
-    video: "https://d2jqrm6oza8nb6.cloudfront.net/datasets/ed292b25-6a1d-415a-8937-ff950758fade.mp4?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiMjcxNzAzYWFlZjgwYzg0YyIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTQ3NDA5MH0.nWZomkHeOyqDillHq-2lITGzV_hgG5fLjyavCYX4vws",
+    video: null,
+    image: "/services/polissage-card.jpg",
     end: 6.5,
   },
   {
@@ -122,7 +125,8 @@ const premiumServices = [
     text: "Remise en état esthétique des jantes selon leurs défauts pour retrouver une finition nette et homogène.",
     href: "/demande-speciale?type=jantes",
     cta: "Demander un devis",
-    video: "https://d2jqrm6oza8nb6.cloudfront.net/datasets/cb12d5f0-5865-467b-a0df-568e56eaac5f.mp4?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiODFkZDEwZTg1OTA3N2Q0ZiIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTQzMDI0OH0.IcupEXOMnPKtLYdEjOFkZTUYnTTl8Hbmxo-ZDGoirQU",
+    video: null,
+    image: "/services/jantes-card.jpg",
     end: 6.8,
   },
 ];
@@ -133,6 +137,7 @@ export function Services() {
   const router = useRouter();
   const [activePremiumId, setActivePremiumId] = useState("phares");
   const [cinematic, setCinematic] = useState<MainService | null>(null);
+  const [premiumVideoFailed, setPremiumVideoFailed] = useState(false);
   const premiumVideoRef = useRef<HTMLVideoElement>(null);
   const cinematicVideoRef = useRef<HTMLVideoElement>(null);
   const activePremium = useMemo(
@@ -140,25 +145,29 @@ export function Services() {
     [activePremiumId],
   );
 
+  useEffect(() => {
+    setPremiumVideoFailed(false);
+  }, [activePremiumId]);
+
   const playPremium = () => {
     const video = premiumVideoRef.current;
-    if (!video) return;
+    if (!video || !activePremium.video || premiumVideoFailed) return;
     video.muted = true;
     video.defaultMuted = true;
     video.playsInline = true;
-    void video.play().catch(() => undefined);
+    void video.play().catch(() => setPremiumVideoFailed(true));
   };
 
   useEffect(() => {
     const video = premiumVideoRef.current;
-    if (!video) return;
+    if (!video || !activePremium.video) return;
 
     const play = () => {
       video.muted = true;
       video.defaultMuted = true;
       video.playsInline = true;
       video.currentTime = 0;
-      void video.play().catch(() => undefined);
+      void video.play().catch(() => setPremiumVideoFailed(true));
     };
 
     if (video.readyState >= 2) play();
@@ -186,7 +195,7 @@ export function Services() {
       video.defaultMuted = true;
       video.playsInline = true;
       video.currentTime = cinematic.videoStart;
-      void video.play().catch(() => undefined);
+      void video.play().catch(() => router.push(cinematic.href));
     };
 
     if (video.readyState >= 2) play();
@@ -206,10 +215,10 @@ export function Services() {
 
   const loopPremium = () => {
     const video = premiumVideoRef.current;
-    if (!video) return;
+    if (!video || !activePremium.video) return;
     if (video.currentTime >= activePremium.end) {
       video.currentTime = 0;
-      void video.play().catch(() => undefined);
+      void video.play().catch(() => setPremiumVideoFailed(true));
     }
   };
 
@@ -294,19 +303,32 @@ export function Services() {
 
           <div className={styles.premiumStageWrap}>
             <div className={styles.premiumStage} aria-live="polite" onClick={playPremium}>
-              <video
-                ref={premiumVideoRef}
-                key={activePremium.video}
-                className={styles.premiumVideo}
-                src={activePremium.video}
-                muted
-                autoPlay
-                playsInline
-                preload="auto"
-                onLoadedData={playPremium}
-                onCanPlay={playPremium}
-                onTimeUpdate={loopPremium}
-              />
+              {activePremium.video && !premiumVideoFailed ? (
+                <video
+                  ref={premiumVideoRef}
+                  key={activePremium.video}
+                  className={styles.premiumVideo}
+                  src={activePremium.video}
+                  poster={activePremium.image}
+                  muted
+                  autoPlay
+                  playsInline
+                  preload="metadata"
+                  onLoadedData={playPremium}
+                  onCanPlay={playPremium}
+                  onTimeUpdate={loopPremium}
+                  onError={() => setPremiumVideoFailed(true)}
+                />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={activePremium.image}
+                  className={`${styles.premiumVideo} ${styles.premiumFallbackImage}`}
+                  src={activePremium.image}
+                  alt=""
+                  aria-hidden="true"
+                />
+              )}
               <div className={styles.premiumShade} />
               <div className={styles.premiumStageTitle}>
                 <span>{activePremium.tag}</span>
@@ -334,18 +356,19 @@ export function Services() {
               muted
               autoPlay
               playsInline
-              preload="auto"
+              preload="metadata"
               onLoadedData={() => {
                 const video = cinematicVideoRef.current;
                 if (!video) return;
                 video.currentTime = cinematic.videoStart;
-                void video.play().catch(() => undefined);
+                void video.play().catch(() => router.push(cinematic.href));
               }}
               onCanPlay={() => {
                 const video = cinematicVideoRef.current;
                 if (!video) return;
-                void video.play().catch(() => undefined);
+                void video.play().catch(() => router.push(cinematic.href));
               }}
+              onError={() => router.push(cinematic.href)}
               onTimeUpdate={progressCinematic}
             />
             <div className={styles.cinematicShade} />
