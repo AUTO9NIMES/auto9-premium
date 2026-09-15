@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./Services.module.css";
 
-const DUO_VIDEO = "https://d2jqrm6oza8nb6.cloudfront.net/datasets/bba74f0e-d303-48da-98e8-cc5dac31a345.mp4?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiODA2ZWQyZDYxOTM5MGU4YSIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTQ0NzM4Mn0.Laveza7URMtgjW8eMRpKdh4O8JSM34xf8OAcgzg-Uys";
-const EXTERIOR_VIDEO = "https://d2jqrm6oza8nb6.cloudfront.net/datasets/f3dbdf62-f750-4f51-aad4-27c9ee2e8fde.mp4?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiZWFjOTRhMmI2NTA3OWFiNCIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTQyODI2N30.xj51ZYnLDwsq-p0bZcyESXphb3XYdalBHe4-2qzfka0";
+const DUO_VIDEO = "https://d2jqrm6oza8nb6.cloudfront.net/datasets/10dc8e99-a159-45a1-b805-fead3eb3f136.mp4?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiNzFhYTFkZmRlZjg3NmQ3OCIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTY0MzAwNX0.sQxZu3qBLddnVyFbHcHRor02agyY-b3ow-qJNite7o0";
+const INTERIOR_VIDEO = "https://d2jqrm6oza8nb6.cloudfront.net/datasets/667f3763-bfe6-46c3-bb6b-8023878e3e05.mp4?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiODdlMTI4YjYwNGEzN2E4OCIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTYxOTM4Mn0.R-bsG4dt0ootWMdtudvYjpN7SX341t2yd_-Ob7lC0kc";
+const EXTERIOR_VIDEO = "https://d2jqrm6oza8nb6.cloudfront.net/datasets/872f9f84-e3be-43dd-a024-f14146295a2e.mp4?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiZTNlZDZkZWNhZTZmOGEzYSIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTYxMzgwNH0.KMPFlqIQmCLCV9QpOt8YU-jaw-MsZaqCPqrvD-ksf3w";
 
 const services = [
   {
@@ -47,9 +48,9 @@ const services = [
     text: "Un habitacle propre, sain et soigné jusque dans les détails.",
     href: "/devis?service=interieur",
     image: "/services/interieur-card.jpg",
-    video: DUO_VIDEO,
-    videoStart: 5.25,
-    videoDuration: 3.5,
+    video: INTERIOR_VIDEO,
+    videoStart: 0,
+    videoDuration: 4,
     highlights: [
       { icon: "seat", title: "Sièges", subtitle: "& tapis" },
       { icon: "air", title: "Dépoussiérage", subtitle: "complet" },
