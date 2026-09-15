@@ -10,10 +10,13 @@ import {
   acceptQuoteAndCreateJob,
   createManualLead,
   createManualLeadWithCustomer,
+  createCrmQuote,
   findManualLeadWithCustomerReplay,
+  findCrmQuoteReplay,
   markQuoteAsSent,
   transitionLeadStatus,
   type LeadLifecycleStatus,
+  type CrmQuoteResult,
   type ManualLeadResult,
 } from "../../lib/crm";
 
@@ -41,6 +44,10 @@ function redirectWithManualLeadError(error: "invalid" | "access" | "unavailable"
 
 function redirectWithQuoteSendError(error: "invalid" | "access" | "unavailable"): never {
   redirect(`/crm/pipeline?quote_send_error=${error}`);
+}
+
+function redirectWithCrmQuoteError(leadId: string, error: "invalid" | "access" | "unavailable"): never {
+  redirect(`/crm/pipeline/${leadId}?quote_error=${error}`);
 }
 
 export async function transitionPipelineLead(formData: FormData) {
@@ -264,5 +271,81 @@ export async function createManualLeadAction(formData: FormData) {
   }
 
   revalidatePath("/crm/pipeline");
+  redirect(`/crm/pipeline/${result.leadId}`);
+}
+
+export async function createCrmQuoteAction(formData: FormData) {
+  const leadId = formData.get("leadId");
+  const idempotencyKey = formData.get("idempotencyKey");
+
+  if (
+    typeof leadId !== "string" || !UUID_REGEX.test(leadId.trim()) ||
+    typeof idempotencyKey !== "string" || !UUID_REGEX.test(idempotencyKey.trim())
+  ) {
+    redirect("/crm/pipeline");
+  }
+
+  const normalizedLeadId = leadId.trim();
+  const normalizedIdempotencyKey = idempotencyKey.trim();
+
+  try {
+    await requireCrmAccess();
+  } catch (error) {
+    if (error instanceof CrmAccessError) {
+      if (error.code === "UNAUTHENTICATED") redirect("/crm/login");
+      if (error.code === "FORBIDDEN") redirectWithCrmQuoteError(normalizedLeadId, "access");
+    }
+    redirectWithCrmQuoteError(normalizedLeadId, "unavailable");
+  }
+
+  let replay: CrmQuoteResult | null = null;
+  try {
+    replay = await findCrmQuoteReplay(normalizedIdempotencyKey);
+  } catch {
+    redirectWithCrmQuoteError(normalizedLeadId, "unavailable");
+  }
+
+  if (replay) {
+    revalidatePath(`/crm/pipeline/${replay.leadId}`);
+    revalidatePath("/crm/pipeline");
+    redirect(`/crm/pipeline/${replay.leadId}`);
+  }
+
+  const totalPriceValue = formData.get("totalPrice");
+  const estimatedTimeValue = formData.get("estimatedTime");
+
+  if (typeof totalPriceValue !== "string" || typeof estimatedTimeValue !== "string") {
+    redirectWithCrmQuoteError(normalizedLeadId, "invalid");
+  }
+
+  const normalizedTotalPriceValue = totalPriceValue.trim();
+  const normalizedEstimatedTime = estimatedTimeValue.trim() || null;
+  const totalPrice = Number(normalizedTotalPriceValue);
+
+  if (
+    !/^\d+(?:\.\d{1,2})?$/.test(normalizedTotalPriceValue) ||
+    !Number.isFinite(totalPrice) ||
+    totalPrice < 0 ||
+    totalPrice > 10000000 ||
+    (normalizedEstimatedTime !== null && normalizedEstimatedTime.length > 100)
+  ) {
+    redirectWithCrmQuoteError(normalizedLeadId, "invalid");
+  }
+
+  let result: CrmQuoteResult;
+  try {
+    result = await createCrmQuote({
+      idempotencyKey: normalizedIdempotencyKey,
+      leadId: normalizedLeadId,
+      totalPrice,
+      estimatedTime: normalizedEstimatedTime,
+    });
+  } catch {
+    redirectWithCrmQuoteError(normalizedLeadId, "unavailable");
+  }
+
+  revalidatePath(`/crm/pipeline/${result.leadId}`);
+  revalidatePath("/crm/pipeline");
+  revalidatePath("/crm");
   redirect(`/crm/pipeline/${result.leadId}`);
 }

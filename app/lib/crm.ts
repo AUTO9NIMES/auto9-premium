@@ -313,6 +313,13 @@ export type ManualLeadWithCustomerResult = ManualLeadResult & {
   customerId: string;
 };
 
+export type CrmQuoteResult = {
+  quoteId: string;
+  leadId: string;
+  quoteVersion: number;
+  noOp: boolean;
+};
+
 export type CustomerIntakeSelection = {
   customer: Customer;
   vehicles: Vehicle[];
@@ -675,6 +682,84 @@ export async function createManualLeadWithCustomer(input: {
   return {
     leadId: result.lead_id,
     customerId: result.customer_id,
+    noOp: result.no_op,
+  };
+}
+
+export async function findCrmQuoteReplay(
+  idempotencyKey: string,
+): Promise<CrmQuoteResult | null> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const businessId = await getCurrentBusinessId();
+  const rows = await supabaseRest<Array<{
+    id: string;
+    lead_id: string;
+    quote_version: number;
+  }>>(
+    "quotes",
+    "GET",
+    null,
+    `business_id=eq.${businessId}&idempotency_key=eq.${encodeURIComponent(idempotencyKey.trim())}&select=id,lead_id,quote_version&limit=1`,
+  );
+  const quote = (rows as Array<{
+    id: string;
+    lead_id: string;
+    quote_version: number;
+  }> | null)?.[0];
+
+  if (!quote?.id || !quote.lead_id || !Number.isInteger(quote.quote_version)) {
+    return null;
+  }
+
+  return {
+    quoteId: quote.id,
+    leadId: quote.lead_id,
+    quoteVersion: quote.quote_version,
+    noOp: true,
+  };
+}
+
+export async function createCrmQuote(input: {
+  idempotencyKey: string;
+  leadId: string;
+  totalPrice: number;
+  estimatedTime?: string | null;
+}): Promise<CrmQuoteResult> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const businessId = await getCurrentBusinessId();
+  const result = await supabaseRest<unknown>(
+    "rpc/create_crm_quote",
+    "POST",
+    {
+      p_business_id: businessId,
+      p_idempotency_key: input.idempotencyKey.trim(),
+      p_lead_id: input.leadId.trim(),
+      p_total_price: input.totalPrice,
+      p_estimated_time: input.estimatedTime ?? null,
+    },
+  );
+
+  if (
+    !isRecord(result) ||
+    typeof result.quote_id !== "string" ||
+    typeof result.lead_id !== "string" ||
+    typeof result.quote_version !== "number" ||
+    !Number.isInteger(result.quote_version) ||
+    typeof result.no_op !== "boolean"
+  ) {
+    throw new Error("Supabase returned an invalid CRM quote result.");
+  }
+
+  return {
+    quoteId: result.quote_id,
+    leadId: result.lead_id,
+    quoteVersion: result.quote_version,
     noOp: result.no_op,
   };
 }
