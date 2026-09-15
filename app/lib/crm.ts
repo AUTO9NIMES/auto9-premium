@@ -164,6 +164,17 @@ export type Appointment = {
   updated_at?: string;
 };
 
+export type Payment = {
+  id: string;
+  business_id: string;
+  job_id: string;
+  amount: number;
+  method: "CASH" | "CARD" | "BANK_TRANSFER" | "OTHER";
+  idempotency_key: string;
+  received_at: string;
+  created_at: string;
+};
+
 export type AppointmentTransitionStatus =
   | "REQUESTED"
   | "CONFIRMED"
@@ -195,6 +206,13 @@ export type ScheduleJobResult = {
   noOp: boolean;
 };
 
+export type RecordJobPaymentResult = {
+  payment: Payment;
+  job: Job;
+  activity: ActivityLog | null;
+  noOp: boolean;
+};
+
 export type TransitionLeadStatusResult = {
   lead: Lead;
   activity: ActivityLog | null;
@@ -207,6 +225,7 @@ export type JobDetailsResult = {
   lead: Lead;
   quote: Quote | null;
   appointment: Appointment | null;
+  payment: Payment | null;
   services: LeadService[];
   activities: ActivityLog[];
 };
@@ -926,6 +945,7 @@ export async function getJobDetails(
     vehicleRows,
     quoteRows,
     appointmentRows,
+    paymentRows,
     services,
     activities,
   ] = await Promise.all([
@@ -963,6 +983,12 @@ export async function getJobDetails(
       null,
       `business_id=eq.${businessId}&job_id=eq.${job.id}&select=*`,
     ),
+    supabaseRest<Payment[]>(
+      "payments",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&job_id=eq.${job.id}&order=received_at.desc,id.desc&limit=1&select=id,business_id,job_id,amount,method,idempotency_key,received_at,created_at`,
+    ),
     supabaseRest<LeadService[]>(
       "lead_services",
       "GET",
@@ -991,6 +1017,7 @@ export async function getJobDetails(
     lead,
     quote: (quoteRows as Quote[] | null)?.[0] ?? null,
     appointment: (appointmentRows as Appointment[] | null)?.[0] ?? null,
+    payment: (paymentRows as Payment[] | null)?.[0] ?? null,
     services: (services as LeadService[] | null) ?? [],
     activities: (activities as ActivityLog[] | null) ?? [],
   };
@@ -2381,6 +2408,118 @@ export async function startJob(jobId: string): Promise<StartJobResult> {
   );
 
   return validateStartJobResult(result, businessId, normalizedJobId);
+}
+
+function validateRecordJobPaymentResult(
+  value: unknown,
+  businessId: string,
+  jobId: string,
+): RecordJobPaymentResult {
+  if (!isRecord(value) || !isRecord(value.payment) || !isRecord(value.job) || typeof value.no_op !== "boolean") {
+    throw new Error("Supabase returned an invalid payment result.");
+  }
+
+  const payment = value.payment;
+  const job = value.job;
+  const activity = value.activity === null || value.activity === undefined
+    ? null
+    : value.activity;
+
+  if (
+    payment.business_id !== businessId ||
+    payment.job_id !== jobId ||
+    typeof payment.id !== "string" ||
+    typeof payment.amount !== "number" ||
+    !["CASH", "CARD", "BANK_TRANSFER", "OTHER"].includes(payment.method as string) ||
+    typeof payment.received_at !== "string" ||
+    job.business_id !== businessId ||
+    job.id !== jobId ||
+    job.status !== "PAID" ||
+    (activity !== null && !isRecord(activity))
+  ) {
+    throw new Error("Supabase returned an inconsistent payment result.");
+  }
+
+  return {
+    payment: payment as Payment,
+    job: job as Job,
+    activity: activity as ActivityLog | null,
+    noOp: value.no_op,
+  };
+}
+
+export async function findJobPaymentReplay(input: {
+  idempotencyKey: string;
+  jobId: string;
+}): Promise<RecordJobPaymentResult | null> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const businessId = await getCurrentBusinessId();
+  const paymentRows = await supabaseRest<Payment[]>(
+    "payments",
+    "GET",
+    null,
+    `business_id=eq.${businessId}&idempotency_key=eq.${encodeURIComponent(input.idempotencyKey.trim())}&select=*&limit=1`,
+  );
+  const payment = (paymentRows as Payment[] | null)?.[0];
+
+  if (!payment) {
+    return null;
+  }
+
+  if (payment.job_id !== input.jobId.trim()) {
+    throw new Error("Payment request token belongs to another job.");
+  }
+
+  const jobRows = await supabaseRest<Job[]>(
+    "jobs",
+    "GET",
+    null,
+    `business_id=eq.${businessId}&id=eq.${payment.job_id}&select=*`,
+  );
+  const job = (jobRows as Job[] | null)?.[0];
+
+  if (!job || job.status !== "PAID") {
+    throw new Error("Payment replay has inconsistent job state.");
+  }
+
+  return {
+    payment,
+    job,
+    activity: null,
+    noOp: true,
+  };
+}
+
+export async function recordJobPayment(input: {
+  idempotencyKey: string;
+  jobId: string;
+  method: Payment["method"];
+}): Promise<RecordJobPaymentResult> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const jobId = input.jobId.trim();
+  if (!jobId) {
+    throw new Error("jobId is required.");
+  }
+
+  const businessId = await getCurrentBusinessId();
+  const result = await supabaseRest<unknown>(
+    "rpc/record_job_payment",
+    "POST",
+    {
+      p_business_id: businessId,
+      p_idempotency_key: input.idempotencyKey.trim(),
+      p_job_id: jobId,
+      p_method: input.method,
+    },
+  );
+
+  return validateRecordJobPaymentResult(result, businessId, jobId);
 }
 
 export async function logActivity(input: ActivityLog) {

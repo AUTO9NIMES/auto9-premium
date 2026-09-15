@@ -7,15 +7,25 @@ import {
   requireCrmAccess,
 } from "../../lib/auth/dal";
 import {
+  findJobPaymentReplay,
+  recordJobPayment,
   startJob,
   scheduleJob,
   transitionAppointmentStatus,
+  type Payment,
   type AppointmentTransitionStatus,
+  type RecordJobPaymentResult,
 } from "../../lib/crm";
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const LOCAL_DATETIME_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
+const paymentMethods = new Set<Payment["method"]>([
+  "CASH",
+  "CARD",
+  "BANK_TRANSFER",
+  "OTHER",
+]);
 
 const validTargetStatuses = new Set<AppointmentTransitionStatus>([
   "CONFIRMED",
@@ -33,6 +43,10 @@ function redirectWithScheduleError(jobId: string, error: "invalid" | "access" | 
 
 function redirectWithStartError(jobId: string, error: "invalid" | "access" | "unavailable"): never {
   redirect(`/crm/jobs/${jobId}?start_error=${error}`);
+}
+
+function redirectWithPaymentError(jobId: string, error: "invalid" | "access" | "unavailable"): never {
+  redirect(`/crm/jobs/${jobId}?payment_error=${error}`);
 }
 
 export async function transitionJobAppointment(formData: FormData) {
@@ -140,4 +154,66 @@ export async function startJobAction(formData: FormData) {
   revalidatePath("/crm/jobs");
   revalidatePath("/crm");
   redirect(`/crm/jobs/${normalizedJobId}?started=1`);
+}
+
+export async function recordJobPaymentAction(formData: FormData) {
+  const jobId = formData.get("jobId");
+  const idempotencyKey = formData.get("idempotencyKey");
+
+  if (
+    typeof jobId !== "string" || !UUID_REGEX.test(jobId.trim()) ||
+    typeof idempotencyKey !== "string" || !UUID_REGEX.test(idempotencyKey.trim())
+  ) {
+    redirect("/crm/jobs");
+  }
+
+  const normalizedJobId = jobId.trim();
+  const normalizedIdempotencyKey = idempotencyKey.trim();
+
+  try {
+    await requireCrmAccess();
+  } catch (error) {
+    if (error instanceof CrmAccessError) {
+      if (error.code === "UNAUTHENTICATED") redirect("/crm/login");
+      if (error.code === "FORBIDDEN") redirectWithPaymentError(normalizedJobId, "access");
+    }
+    redirectWithPaymentError(normalizedJobId, "unavailable");
+  }
+
+  let replay: RecordJobPaymentResult | null = null;
+  try {
+    replay = await findJobPaymentReplay({
+      idempotencyKey: normalizedIdempotencyKey,
+      jobId: normalizedJobId,
+    });
+  } catch {
+    redirectWithPaymentError(normalizedJobId, "unavailable");
+  }
+
+  if (replay) {
+    revalidatePath(`/crm/jobs/${normalizedJobId}`);
+    revalidatePath("/crm/jobs");
+    revalidatePath("/crm");
+    redirect(`/crm/jobs/${normalizedJobId}?payment=recorded`);
+  }
+
+  const method = formData.get("method");
+  if (typeof method !== "string" || !paymentMethods.has(method as Payment["method"])) {
+    redirectWithPaymentError(normalizedJobId, "invalid");
+  }
+
+  try {
+    await recordJobPayment({
+      idempotencyKey: normalizedIdempotencyKey,
+      jobId: normalizedJobId,
+      method: method as Payment["method"],
+    });
+  } catch {
+    redirectWithPaymentError(normalizedJobId, "unavailable");
+  }
+
+  revalidatePath(`/crm/jobs/${normalizedJobId}`);
+  revalidatePath("/crm/jobs");
+  revalidatePath("/crm");
+  redirect(`/crm/jobs/${normalizedJobId}?payment=recorded`);
 }

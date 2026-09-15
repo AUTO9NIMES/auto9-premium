@@ -1,7 +1,8 @@
+import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { CrmAccessError, requireCrmAccess } from "../../../lib/auth/dal";
-import { scheduleJobAction, startJobAction, transitionJobAppointment } from "../actions";
+import { recordJobPaymentAction, scheduleJobAction, startJobAction, transitionJobAppointment } from "../actions";
 import {
   getJobDetails,
   type ActivityLog,
@@ -55,6 +56,12 @@ const appointmentStatusLabels: Record<Appointment["status"], string> = {
   COMPLETED: "Terminé",
   CANCELLED: "Annulé",
 };
+const paymentMethodLabels = {
+  CASH: "Espèces",
+  CARD: "Carte",
+  BANK_TRANSFER: "Virement bancaire",
+  OTHER: "Autre",
+} as const;
 
 async function ensureCrmAccess() {
   try {
@@ -210,18 +217,24 @@ export default async function JobDetailPage({ params, searchParams }: {
     notFound();
   }
 
-  const { job, customer, vehicle, lead, quote, appointment, services, activities } = result;
+  const { job, customer, vehicle, lead, quote, appointment, payment, services, activities } = result;
   const feedback = await searchParams;
   const scheduleStatus = Array.isArray(feedback.schedule) ? feedback.schedule[0] : feedback.schedule;
   const scheduleError = Array.isArray(feedback.schedule_error) ? feedback.schedule_error[0] : feedback.schedule_error;
   const started = Array.isArray(feedback.started) ? feedback.started[0] : feedback.started;
   const startError = Array.isArray(feedback.start_error) ? feedback.start_error[0] : feedback.start_error;
+  const paymentStatus = Array.isArray(feedback.payment) ? feedback.payment[0] : feedback.payment;
+  const paymentError = Array.isArray(feedback.payment_error) ? feedback.payment_error[0] : feedback.payment_error;
   const canSchedule = job.status === "QUOTE_ACCEPTED" &&
     !job.scheduled_at &&
     (!appointment || (appointment.status === "REQUESTED" && !appointment.scheduled_at));
   const canComplete = job.status === "IN_PROGRESS" &&
     appointment?.status === "CONFIRMED" &&
     Boolean(appointment.id);
+  const canRecordPayment = job.status === "COMPLETED" &&
+    typeof job.total_amount === "number" &&
+    job.total_amount > 0;
+  const paymentIdempotencyKey = randomUUID();
   const customerHref = customer.id && UUID_REGEX.test(customer.id)
     ? `/crm/clients/${customer.id}`
     : null;
@@ -264,6 +277,13 @@ export default async function JobDetailPage({ params, searchParams }: {
           </div>
         </div>
         {job.notes && <p className="border border-white/10 bg-[#101419] p-5 text-sm leading-7 text-white/50">{job.notes}</p>}
+      </section>
+
+      <section aria-labelledby="job-payment" className="space-y-4">
+        <SectionHeading eyebrow="Paiement" title="Règlement" />
+        {paymentStatus === "recorded" && <p role="status" className="border border-emerald-300/30 bg-emerald-300/5 px-4 py-3 text-sm text-emerald-200">Paiement enregistré.</p>}
+        {paymentError && <p role="alert" className="border border-red-300/30 bg-red-300/5 px-4 py-3 text-sm text-red-200">{paymentError === "invalid" ? "Vérifiez le mode de paiement." : paymentError === "access" ? "Action non autorisée." : "Enregistrement du paiement momentanément indisponible."}</p>}
+        {job.status === "PAID" && payment ? <div className="border border-emerald-300/30 bg-emerald-300/5 p-5"><p className="text-sm font-medium text-emerald-100">Paiement enregistré</p><p className="mt-3 text-lg text-white">{formatAmount(payment.amount)}</p><p className="mt-2 text-sm text-white/60">{paymentMethodLabels[payment.method]} · {formatDateTime(payment.received_at)}</p></div> : job.status === "PAID" ? <p role="alert" className="border border-red-300/30 bg-red-300/5 px-4 py-3 text-sm text-red-200">État de paiement historique incomplet.</p> : canRecordPayment ? <form action={recordJobPaymentAction} className="grid gap-4 border border-[#d8b477]/30 bg-[#101419] p-5 md:grid-cols-[1fr_auto] md:items-end md:p-7"><input type="hidden" name="jobId" value={normalizedJobId} /><input type="hidden" name="idempotencyKey" value={paymentIdempotencyKey} /><div><p className="text-xs text-white/55">Montant à encaisser</p><p className="mt-2 text-xl font-medium text-white">{formatAmount(job.total_amount)}</p><label htmlFor="paymentMethod" className="mt-5 block text-xs text-white/55">Mode de paiement</label><select id="paymentMethod" name="method" required defaultValue="" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[#d8b477]"><option value="" disabled>Choisir un mode</option><option value="CASH">Espèces</option><option value="CARD">Carte</option><option value="BANK_TRANSFER">Virement bancaire</option><option value="OTHER">Autre</option></select></div><button type="submit" className="border border-[#d8b477] px-5 py-2.5 text-xs font-medium uppercase tracking-[0.14em] text-[#d8b477] transition-colors hover:bg-[#d8b477] hover:text-[#080a0d]">Enregistrer le paiement</button></form> : <EmptySection>Le paiement peut être enregistré une fois la prestation terminée.</EmptySection>}
       </section>
 
       <section aria-labelledby="job-vehicle" className="space-y-4">
