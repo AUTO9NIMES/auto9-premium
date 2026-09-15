@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { CrmAccessError, requireCrmAccess } from "../../../lib/auth/dal";
+import { scheduleJobAction } from "../actions";
 import {
   getJobDetails,
   type ActivityLog,
@@ -82,6 +83,7 @@ function formatDateTime(value?: string | null): string | null {
   if (Number.isNaN(date.getTime())) return null;
   return new Intl.DateTimeFormat("fr-FR", {
     dateStyle: "medium", timeStyle: "short",
+    timeZone: "Europe/Paris",
   }).format(date);
 }
 
@@ -169,8 +171,9 @@ function ActivityRow({ activity }: { activity: ActivityLog }) {
   );
 }
 
-export default async function JobDetailPage({ params }: {
+export default async function JobDetailPage({ params, searchParams }: {
   params: Promise<{ jobId?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   await ensureCrmAccess();
 
@@ -208,6 +211,12 @@ export default async function JobDetailPage({ params }: {
   }
 
   const { job, customer, vehicle, lead, quote, appointment, services, activities } = result;
+  const feedback = await searchParams;
+  const scheduleStatus = Array.isArray(feedback.schedule) ? feedback.schedule[0] : feedback.schedule;
+  const scheduleError = Array.isArray(feedback.schedule_error) ? feedback.schedule_error[0] : feedback.schedule_error;
+  const canSchedule = job.status === "QUOTE_ACCEPTED" &&
+    !job.scheduled_at &&
+    (!appointment || (appointment.status === "REQUESTED" && !appointment.scheduled_at));
   const customerHref = customer.id && UUID_REGEX.test(customer.id)
     ? `/crm/clients/${customer.id}`
     : null;
@@ -279,7 +288,10 @@ export default async function JobDetailPage({ params }: {
 
       <section aria-labelledby="job-appointment" className="space-y-4">
         <SectionHeading eyebrow="05 / Planning" title="Rendez-vous" />
-        {appointment ? <div className="border border-white/10 bg-[#101419] p-5"><p className="text-sm font-medium text-white">{statusLabel(appointment.status, appointmentStatusLabels)}</p><p className="mt-2 text-sm text-white/55">Demandé le {formatDateTime(appointment.requested_at) || "date non renseignée"}</p>{appointment.confirmed_at && <p className="mt-2 text-xs text-white/40">Confirmé le {formatDateTime(appointment.confirmed_at)}</p>}{appointment.completed_at && <p className="mt-2 text-xs text-white/40">Terminé le {formatDateTime(appointment.completed_at)}</p>}{appointment.cancelled_at && <p className="mt-2 text-xs text-white/40">Annulé le {formatDateTime(appointment.cancelled_at)}</p>}{appointment.notes && <p className="mt-4 text-sm leading-6 text-white/45">{appointment.notes}</p>}</div> : <EmptySection>Aucun rendez-vous associé à cette prestation.</EmptySection>}
+        {scheduleStatus === "created" && <p role="status" className="border border-emerald-300/30 bg-emerald-300/5 px-4 py-3 text-sm text-emerald-200">Prestation planifiée.</p>}
+        {scheduleError && <p role="alert" className="border border-red-300/30 bg-red-300/5 px-4 py-3 text-sm text-red-200">{scheduleError === "invalid" ? "Vérifiez la date et l&apos;heure sélectionnées." : scheduleError === "access" ? "Action non autorisée." : "Planification momentanément indisponible."}</p>}
+        {canSchedule && <form action={scheduleJobAction} className="grid gap-4 border border-[#d8b477]/30 bg-[#101419] p-5 md:grid-cols-[1fr_auto] md:items-end md:p-7"><input type="hidden" name="jobId" value={normalizedJobId} /><div><label htmlFor="scheduledAt" className="block text-xs text-white/55">Début opérationnel <span className="text-[#d8b477]">*</span></label><input id="scheduledAt" name="scheduledAt" type="datetime-local" required step="60" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[#d8b477]" /><p className="mt-2 text-[11px] text-white/35">Fuseau horaire : Europe/Paris</p></div><button type="submit" className="border border-[#d8b477] px-5 py-2.5 text-xs font-medium uppercase tracking-[0.14em] text-[#d8b477] transition-colors hover:bg-[#d8b477] hover:text-[#080a0d]">Planifier</button></form>}
+        {appointment ? <div className="border border-white/10 bg-[#101419] p-5"><p className="text-sm font-medium text-white">{statusLabel(appointment.status, appointmentStatusLabels)}</p><p className="mt-2 text-sm text-white/55">Demandé le {formatDateTime(appointment.requested_at) || "date non renseignée"}</p>{appointment.scheduled_at ? <p className="mt-2 text-sm text-white/70">Planifié le {formatDateTime(appointment.scheduled_at)}</p> : <p className="mt-2 text-xs text-white/35">Non planifié</p>}{appointment.confirmed_at && <p className="mt-2 text-xs text-white/40">Confirmé le {formatDateTime(appointment.confirmed_at)}</p>}{appointment.completed_at && <p className="mt-2 text-xs text-white/40">Terminé le {formatDateTime(appointment.completed_at)}</p>}{appointment.cancelled_at && <p className="mt-2 text-xs text-white/40">Annulé le {formatDateTime(appointment.cancelled_at)}</p>}{appointment.notes && <p className="mt-4 text-sm leading-6 text-white/45">{appointment.notes}</p>}</div> : <EmptySection>Aucun rendez-vous associé à cette prestation.</EmptySection>}
       </section>
 
       <section aria-labelledby="job-activity" className="space-y-4">
