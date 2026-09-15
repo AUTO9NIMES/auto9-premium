@@ -10,6 +10,7 @@ import {
   findJobPaymentReplay,
   recordJobPayment,
   requestJobReview,
+  rescheduleJob,
   startJob,
   scheduleJob,
   transitionAppointmentStatus,
@@ -40,6 +41,10 @@ function redirectWithError(error: "invalid" | "access" | "unavailable"): never {
 
 function redirectWithScheduleError(jobId: string, error: "invalid" | "access" | "unavailable"): never {
   redirect(`/crm/jobs/${jobId}?schedule_error=${error}`);
+}
+
+function redirectWithRescheduleError(jobId: string, error: "invalid" | "access" | "unavailable"): never {
+  redirect(`/crm/jobs/${jobId}?reschedule_error=${error}`);
 }
 
 function redirectWithStartError(jobId: string, error: "invalid" | "access" | "unavailable"): never {
@@ -128,6 +133,57 @@ export async function scheduleJobAction(formData: FormData) {
   revalidatePath("/crm/jobs");
   revalidatePath("/crm");
   redirect(`/crm/jobs/${normalizedJobId}?schedule=created`);
+}
+
+export async function rescheduleJobAction(formData: FormData) {
+  const jobId = formData.get("jobId");
+  const expectedScheduledAt = formData.get("expectedScheduledAt");
+  const scheduledAt = formData.get("scheduledAt");
+
+  if (typeof jobId !== "string" || !UUID_REGEX.test(jobId.trim())) {
+    redirect("/crm/jobs");
+  }
+
+  const normalizedJobId = jobId.trim();
+
+  try {
+    await requireCrmAccess();
+  } catch (error) {
+    if (error instanceof CrmAccessError) {
+      if (error.code === "UNAUTHENTICATED") redirect("/crm/login");
+      if (error.code === "FORBIDDEN") {
+        redirectWithRescheduleError(normalizedJobId, "access");
+      }
+    }
+
+    redirectWithRescheduleError(normalizedJobId, "unavailable");
+  }
+
+  if (
+    typeof expectedScheduledAt !== "string" ||
+    expectedScheduledAt.length > 64 ||
+    !Number.isFinite(Date.parse(expectedScheduledAt)) ||
+    typeof scheduledAt !== "string" ||
+    !LOCAL_DATETIME_REGEX.test(scheduledAt)
+  ) {
+    redirectWithRescheduleError(normalizedJobId, "invalid");
+  }
+
+  try {
+    await rescheduleJob({
+      jobId: normalizedJobId,
+      expectedScheduledAt,
+      scheduledAtLocal: scheduledAt,
+    });
+  } catch {
+    redirectWithRescheduleError(normalizedJobId, "unavailable");
+  }
+
+  revalidatePath(`/crm/jobs/${normalizedJobId}`);
+  revalidatePath("/crm/jobs");
+  revalidatePath("/crm/calendar");
+  revalidatePath("/crm");
+  redirect(`/crm/jobs/${normalizedJobId}?schedule=rescheduled`);
 }
 
 export async function startJobAction(formData: FormData) {

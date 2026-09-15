@@ -10,6 +10,7 @@ const navigation = [
   { href: "/crm/clients", label: "Clients", detail: "Base relationnelle" },
   { href: "/crm/pipeline", label: "Pipeline", detail: "Suivi commercial" },
   { href: "/crm/jobs", label: "Prestations", detail: "Opérations en cours" },
+  { href: "/crm/calendar", label: "Calendrier", detail: "Planning mensuel" },
 ];
 
 export default function CrmLayout({ children }: {
@@ -21,7 +22,8 @@ export default function CrmLayout({ children }: {
         .crm-shell:has([data-crm-route="dashboard"]) a[href="/crm"],
         .crm-shell:has([data-crm-route="clients"]) a[href="/crm/clients"],
         .crm-shell:has([data-crm-route="pipeline"]) a[href="/crm/pipeline"],
-        .crm-shell:has([data-crm-route="jobs"]) a[href="/crm/jobs"] {
+        .crm-shell:has([data-crm-route="jobs"]) a[href="/crm/jobs"],
+        .crm-shell:has([data-crm-route="calendar"]) a[href="/crm/calendar"] {
           background: #d8b477;
           color: #080a0d;
         }
