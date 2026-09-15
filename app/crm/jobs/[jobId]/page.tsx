@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { CrmAccessError, requireCrmAccess } from "../../../lib/auth/dal";
-import { scheduleJobAction, startJobAction } from "../actions";
+import { scheduleJobAction, startJobAction, transitionJobAppointment } from "../actions";
 import {
   getJobDetails,
   type ActivityLog,
@@ -219,6 +219,9 @@ export default async function JobDetailPage({ params, searchParams }: {
   const canSchedule = job.status === "QUOTE_ACCEPTED" &&
     !job.scheduled_at &&
     (!appointment || (appointment.status === "REQUESTED" && !appointment.scheduled_at));
+  const canComplete = job.status === "IN_PROGRESS" &&
+    appointment?.status === "CONFIRMED" &&
+    Boolean(appointment.id);
   const customerHref = customer.id && UUID_REGEX.test(customer.id)
     ? `/crm/clients/${customer.id}`
     : null;
@@ -257,6 +260,7 @@ export default async function JobDetailPage({ params, searchParams }: {
             {job.completed_at && <p className="mt-2 text-xs text-white/40">Terminée : {formatDateTime(job.completed_at)}</p>}
             {!job.scheduled_at && job.total_amount === null && !job.started_at && !job.completed_at && <p className="mt-3 text-sm text-white/35">Informations opérationnelles non renseignées.</p>}
             {job.status === "CONFIRMED" && <form action={startJobAction} className="mt-5 border-t border-white/10 pt-4"><input type="hidden" name="jobId" value={normalizedJobId} /><button type="submit" className="border border-[#d8b477] px-4 py-2.5 text-xs font-medium uppercase tracking-[0.12em] text-[#d8b477] transition-colors hover:bg-[#d8b477] hover:text-[#080a0d]">Démarrer la prestation</button></form>}
+            {canComplete && <form action={transitionJobAppointment} className="mt-5 border-t border-white/10 pt-4"><input type="hidden" name="appointmentId" value={appointment.id} /><input type="hidden" name="targetStatus" value="COMPLETED" /><button type="submit" className="border border-[#d8b477] px-4 py-2.5 text-xs font-medium uppercase tracking-[0.12em] text-[#d8b477] transition-colors hover:bg-[#d8b477] hover:text-[#080a0d]">Terminer la prestation</button></form>}
           </div>
         </div>
         {job.notes && <p className="border border-white/10 bg-[#101419] p-5 text-sm leading-7 text-white/50">{job.notes}</p>}
