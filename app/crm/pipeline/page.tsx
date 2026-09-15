@@ -182,6 +182,9 @@ function leadActions(status: LeadLifecycleStatus): Array<{
 
 function LeadCard({ item }: { item: LeadListItem }) {
   const lead = item.lead;
+  const leadHref = lead.id && UUID_REGEX.test(lead.id)
+    ? `/crm/pipeline/${lead.id}`
+    : null;
   const customerHref = item.customer.id
     ? `/crm/clients/${item.customer.id}`
     : null;
@@ -211,6 +214,8 @@ function LeadCard({ item }: { item: LeadListItem }) {
         )}
         <span className="shrink-0 text-[10px] text-white/30">{formatDate(lead.created_at) || "Date inconnue"}</span>
       </div>
+
+      {leadHref && <Link href={leadHref} className="mt-3 inline-block text-xs text-[#d8b477] hover:text-white">Voir le lead →</Link>}
 
       <div className="mt-4 space-y-2 text-xs text-white/45">
         {customerHref && <Link href={customerHref} className="block truncate text-white/45 hover:text-white">{item.customer.email || item.customer.phone || "Coordonnées non renseignées"}</Link>}
