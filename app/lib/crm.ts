@@ -309,6 +309,10 @@ export type ManualLeadResult = {
   noOp: boolean;
 };
 
+export type ManualLeadWithCustomerResult = ManualLeadResult & {
+  customerId: string;
+};
+
 export type CustomerIntakeSelection = {
   customer: Customer;
   vehicles: Vehicle[];
@@ -587,6 +591,90 @@ export async function createManualLead(input: {
 
   return {
     leadId: result.lead_id,
+    noOp: result.no_op,
+  };
+}
+
+export async function findManualLeadWithCustomerReplay(
+  idempotencyKey: string,
+): Promise<ManualLeadResult | null> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const businessId = await getCurrentBusinessId();
+  const customerRows = await supabaseRest<Array<{ id: string }>>(
+    "customers",
+    "GET",
+    null,
+    `business_id=eq.${businessId}&idempotency_key=eq.${encodeURIComponent(idempotencyKey.trim())}&select=id&limit=1`,
+  );
+  const customerId = (customerRows as Array<{ id: string }> | null)?.[0]?.id;
+
+  if (!customerId) {
+    return null;
+  }
+
+  const leadRows = await supabaseRest<Array<{ id: string }>>(
+    "leads",
+    "GET",
+    null,
+    `business_id=eq.${businessId}&customer_id=eq.${customerId}&idempotency_key=eq.${encodeURIComponent(idempotencyKey.trim())}&select=id&limit=1`,
+  );
+  const leadId = (leadRows as Array<{ id: string }> | null)?.[0]?.id;
+
+  return leadId ? { leadId, noOp: true } : null;
+}
+
+export async function createManualLeadWithCustomer(input: {
+  idempotencyKey: string;
+  fullName: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  city?: string | null;
+  serviceName: string;
+  basePrice?: number | null;
+  estimatedTime?: string | null;
+  customerComment?: string | null;
+}): Promise<ManualLeadWithCustomerResult> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const businessId = await getCurrentBusinessId();
+  const result = await supabaseRest<unknown>(
+    "rpc/create_manual_lead_with_customer",
+    "POST",
+    {
+      p_business_id: businessId,
+      p_idempotency_key: input.idempotencyKey.trim(),
+      p_full_name: input.fullName,
+      p_service_name: input.serviceName,
+      p_first_name: input.firstName ?? null,
+      p_last_name: input.lastName ?? null,
+      p_email: normalizeEmail(input.email),
+      p_phone: normalizePhone(input.phone),
+      p_city: input.city ?? null,
+      p_base_price: input.basePrice ?? null,
+      p_estimated_time: input.estimatedTime ?? null,
+      p_customer_comment: input.customerComment ?? null,
+    },
+  );
+
+  if (
+    !isRecord(result) ||
+    typeof result.lead_id !== "string" ||
+    typeof result.customer_id !== "string" ||
+    typeof result.no_op !== "boolean"
+  ) {
+    throw new Error("Supabase returned an invalid manual lead with customer result.");
+  }
+
+  return {
+    leadId: result.lead_id,
+    customerId: result.customer_id,
     noOp: result.no_op,
   };
 }

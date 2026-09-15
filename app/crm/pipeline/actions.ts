@@ -9,6 +9,8 @@ import {
 import {
   acceptQuoteAndCreateJob,
   createManualLead,
+  createManualLeadWithCustomer,
+  findManualLeadWithCustomerReplay,
   markQuoteAsSent,
   transitionLeadStatus,
   type LeadLifecycleStatus,
@@ -139,11 +141,13 @@ export async function markPipelineQuoteSent(formData: FormData) {
 }
 
 export async function createManualLeadAction(formData: FormData) {
+  const intakeMode = formData.get("intakeMode");
   const customerId = formData.get("customerId");
   const idempotencyKey = formData.get("idempotencyKey");
 
   if (
-    typeof customerId !== "string" || !UUID_REGEX.test(customerId.trim()) ||
+    (intakeMode !== "existing" && intakeMode !== "new") ||
+    (intakeMode !== "new" && (typeof customerId !== "string" || !UUID_REGEX.test(customerId.trim()))) ||
     typeof idempotencyKey !== "string" || !UUID_REGEX.test(idempotencyKey.trim())
   ) {
     redirectWithManualLeadError("invalid");
@@ -159,14 +163,34 @@ export async function createManualLeadAction(formData: FormData) {
     redirectWithManualLeadError("unavailable");
   }
 
+  if (intakeMode === "new") {
+    let replay: ManualLeadResult | null = null;
+    try {
+      replay = await findManualLeadWithCustomerReplay(idempotencyKey.trim());
+    } catch {
+      redirectWithManualLeadError("unavailable");
+    }
+
+    if (replay) {
+      revalidatePath("/crm/pipeline");
+      redirect(`/crm/pipeline/${replay.leadId}`);
+    }
+  }
+
   const vehicleId = formData.get("vehicleId");
+  const fullName = formData.get("fullName");
+  const firstName = formData.get("firstName");
+  const lastName = formData.get("lastName");
+  const email = formData.get("email");
+  const phone = formData.get("phone");
+  const city = formData.get("city");
   const serviceName = formData.get("serviceName");
   const basePriceValue = formData.get("basePrice");
   const estimatedTime = formData.get("estimatedTime");
   const customerComment = formData.get("customerComment");
 
   if (
-    (vehicleId !== null && (typeof vehicleId !== "string" || (vehicleId.trim() && !UUID_REGEX.test(vehicleId.trim())))) ||
+    (intakeMode !== "new" && vehicleId !== null && (typeof vehicleId !== "string" || (vehicleId.trim() && !UUID_REGEX.test(vehicleId.trim())))) ||
     typeof serviceName !== "string" ||
     typeof estimatedTime !== "string" ||
     typeof customerComment !== "string" ||
@@ -179,28 +203,62 @@ export async function createManualLeadAction(formData: FormData) {
   const normalizedEstimatedTime = estimatedTime.trim() || null;
   const normalizedComment = customerComment.trim() || null;
   const normalizedVehicleId = typeof vehicleId === "string" ? vehicleId.trim() || null : null;
+  const normalizedCustomerId = typeof customerId === "string" ? customerId.trim() : null;
   const normalizedPrice = basePriceValue.trim() ? Number(basePriceValue) : null;
+  const normalizedFullName = typeof fullName === "string" ? fullName.trim() : "";
+  const normalizedFirstName = typeof firstName === "string" ? firstName.trim() || null : null;
+  const normalizedLastName = typeof lastName === "string" ? lastName.trim() || null : null;
+  const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() || null : null;
+  const rawPhone = typeof phone === "string" ? phone.trim() : "";
+  const normalizedPhone = typeof phone === "string" ? phone.replace(/\D/g, "") || null : null;
+  const normalizedCity = typeof city === "string" ? city.trim() || null : null;
 
   if (
     !normalizedServiceName || normalizedServiceName.length > 200 ||
     (normalizedEstimatedTime !== null && normalizedEstimatedTime.length > 100) ||
     (normalizedComment !== null && normalizedComment.length > 2000) ||
-    (normalizedPrice !== null && (!Number.isFinite(normalizedPrice) || normalizedPrice < 0 || normalizedPrice > 10000000))
+    (normalizedPrice !== null && (!Number.isFinite(normalizedPrice) || normalizedPrice < 0 || normalizedPrice > 10000000)) ||
+    (intakeMode === "new" && (
+      !normalizedFullName || normalizedFullName.length > 200 ||
+      (normalizedFirstName !== null && normalizedFirstName.length > 100) ||
+      (normalizedLastName !== null && normalizedLastName.length > 100) ||
+      (normalizedEmail !== null && (normalizedEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail))) ||
+      (rawPhone.length > 40) ||
+      (normalizedPhone !== null && (normalizedPhone.length < 7 || normalizedPhone.length > 15)) ||
+      (normalizedCity !== null && normalizedCity.length > 120) ||
+      (!normalizedEmail && !normalizedPhone)
+    ))
   ) {
     redirectWithManualLeadError("invalid");
   }
 
   let result: ManualLeadResult;
   try {
-    result = await createManualLead({
-      idempotencyKey: idempotencyKey.trim(),
-      customerId: customerId.trim(),
-      vehicleId: normalizedVehicleId,
-      serviceName: normalizedServiceName,
-      basePrice: normalizedPrice,
-      estimatedTime: normalizedEstimatedTime,
-      customerComment: normalizedComment,
-    });
+    if (intakeMode === "new") {
+      result = await createManualLeadWithCustomer({
+        idempotencyKey: idempotencyKey.trim(),
+        fullName: normalizedFullName,
+        firstName: normalizedFirstName,
+        lastName: normalizedLastName,
+        email: normalizedEmail,
+        phone: normalizedPhone,
+        city: normalizedCity,
+        serviceName: normalizedServiceName,
+        basePrice: normalizedPrice,
+        estimatedTime: normalizedEstimatedTime,
+        customerComment: normalizedComment,
+      });
+    } else {
+      result = await createManualLead({
+        idempotencyKey: idempotencyKey.trim(),
+        customerId: normalizedCustomerId as string,
+        vehicleId: normalizedVehicleId,
+        serviceName: normalizedServiceName,
+        basePrice: normalizedPrice,
+        estimatedTime: normalizedEstimatedTime,
+        customerComment: normalizedComment,
+      });
+    }
   } catch {
     redirectWithManualLeadError("unavailable");
   }
