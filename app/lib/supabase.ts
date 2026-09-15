@@ -11,6 +11,7 @@ export async function supabaseRest<T>(
   method: "GET" | "POST" | "PATCH" | "PUT" | "DELETE",
   body?: Record<string, unknown> | unknown[] | null,
   query?: string,
+  preserveArrayResponse = false,
 ): Promise<T | T[] | null> {
   if (!hasSupabaseWriteConfig()) {
     return null;
@@ -59,6 +60,10 @@ export async function supabaseRest<T>(
   const responseData = (await response.json()) as T | T[];
 
   if (method === "GET" || method === "DELETE") {
+    return responseData;
+  }
+
+  if (preserveArrayResponse && Array.isArray(responseData)) {
     return responseData;
   }
 
