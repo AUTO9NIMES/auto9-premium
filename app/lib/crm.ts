@@ -320,6 +320,12 @@ export type CrmQuoteResult = {
   noOp: boolean;
 };
 
+export type CustomerVehicleResult = {
+  vehicleId: string;
+  customerId: string;
+  noOp: boolean;
+};
+
 export type CustomerIntakeSelection = {
   customer: Customer;
   vehicles: Vehicle[];
@@ -760,6 +766,90 @@ export async function createCrmQuote(input: {
     quoteId: result.quote_id,
     leadId: result.lead_id,
     quoteVersion: result.quote_version,
+    noOp: result.no_op,
+  };
+}
+
+export async function findCustomerVehicleReplay(input: {
+  customerId: string;
+  idempotencyKey: string;
+}): Promise<CustomerVehicleResult | null> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const businessId = await getCurrentBusinessId();
+  const rows = await supabaseRest<Array<{
+    id: string;
+    customer_id: string;
+  }>>(
+    "vehicles",
+    "GET",
+    null,
+    `business_id=eq.${businessId}&idempotency_key=eq.${encodeURIComponent(input.idempotencyKey.trim())}&select=id,customer_id&limit=1`,
+  );
+  const vehicle = (rows as Array<{ id: string; customer_id: string }> | null)?.[0];
+
+  if (!vehicle?.id || !vehicle.customer_id) {
+    return null;
+  }
+
+  if (vehicle.customer_id !== input.customerId.trim()) {
+    throw new Error("Vehicle request token belongs to another customer.");
+  }
+
+  return {
+    vehicleId: vehicle.id,
+    customerId: vehicle.customer_id,
+    noOp: true,
+  };
+}
+
+export async function createCustomerVehicle(input: {
+  idempotencyKey: string;
+  customerId: string;
+  brand: string;
+  model: string;
+  variant?: string | null;
+  year?: number | null;
+  color?: string | null;
+  plate?: string | null;
+  mileageKm?: number | null;
+}): Promise<CustomerVehicleResult> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const businessId = await getCurrentBusinessId();
+  const result = await supabaseRest<unknown>(
+    "rpc/create_customer_vehicle",
+    "POST",
+    {
+      p_business_id: businessId,
+      p_idempotency_key: input.idempotencyKey.trim(),
+      p_customer_id: input.customerId.trim(),
+      p_brand: input.brand,
+      p_model: input.model,
+      p_variant: input.variant ?? null,
+      p_year: input.year ?? null,
+      p_color: input.color ?? null,
+      p_plate: input.plate ?? null,
+      p_mileage_km: input.mileageKm ?? null,
+    },
+  );
+
+  if (
+    !isRecord(result) ||
+    typeof result.vehicle_id !== "string" ||
+    typeof result.customer_id !== "string" ||
+    typeof result.no_op !== "boolean"
+  ) {
+    throw new Error("Supabase returned an invalid customer vehicle result.");
+  }
+
+  return {
+    vehicleId: result.vehicle_id,
+    customerId: result.customer_id,
     noOp: result.no_op,
   };
 }

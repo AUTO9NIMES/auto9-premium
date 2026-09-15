@@ -1,7 +1,8 @@
+import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { CrmAccessError, requireCrmAccess } from "../../../lib/auth/dal";
-import { updateCustomerProfileAction } from "./actions";
+import { createCustomerVehicleAction, updateCustomerProfileAction } from "./actions";
 import {
   getCustomer360,
   type ActivityLog,
@@ -289,6 +290,9 @@ export default async function Customer360Page({ params, searchParams }: {
   const feedback = await searchParams;
   const profileStatus = Array.isArray(feedback.profile) ? feedback.profile[0] : feedback.profile;
   const profileError = Array.isArray(feedback.profile_error) ? feedback.profile_error[0] : feedback.profile_error;
+  const vehicleStatus = Array.isArray(feedback.vehicle) ? feedback.vehicle[0] : feedback.vehicle;
+  const vehicleError = Array.isArray(feedback.vehicle_error) ? feedback.vehicle_error[0] : feedback.vehicle_error;
+  const vehicleIdempotencyKey = randomUUID();
   const contactDetails = [customer.email, customer.phone, customer.city].filter(
     (value): value is string => Boolean(value?.trim()),
   );
@@ -348,6 +352,21 @@ export default async function Customer360Page({ params, searchParams }: {
 
       <section aria-labelledby="customer-vehicles" className="space-y-4">
         <SectionHeading eyebrow="01 / Parc" title="Véhicules" count={result.vehicles.length} />
+        {vehicleStatus === "created" && <p role="status" className="border border-emerald-300/30 bg-emerald-300/5 px-4 py-3 text-sm text-emerald-200">Véhicule créé.</p>}
+        {vehicleStatus === "unchanged" && <p role="status" className="border border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-white/55">Véhicule déjà créé.</p>}
+        {vehicleError && <p role="alert" className="border border-red-300/30 bg-red-300/5 px-4 py-3 text-sm text-red-200">{vehicleError === "invalid" ? "Vérifiez les informations du véhicule." : vehicleError === "access" ? "Action non autorisée." : "Création du véhicule momentanément indisponible."}</p>}
+        <form action={createCustomerVehicleAction} className="grid gap-4 border border-white/10 bg-[#101419] p-5 md:grid-cols-2 md:p-7">
+          <input type="hidden" name="customerId" value={normalizedCustomerId} />
+          <input type="hidden" name="idempotencyKey" value={vehicleIdempotencyKey} />
+          <div><label htmlFor="vehicle-brand" className="block text-xs text-white/55">Marque <span className="text-[#d8b477]">*</span></label><input id="vehicle-brand" name="brand" required maxLength={100} autoComplete="off" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[#d8b477]" /></div>
+          <div><label htmlFor="vehicle-model" className="block text-xs text-white/55">Modèle <span className="text-[#d8b477]">*</span></label><input id="vehicle-model" name="model" required maxLength={100} autoComplete="off" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[#d8b477]" /></div>
+          <div><label htmlFor="vehicle-variant" className="block text-xs text-white/55">Version <span className="text-white/30">(optionnel)</span></label><input id="vehicle-variant" name="variant" maxLength={100} autoComplete="off" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[#d8b477]" /></div>
+          <div><label htmlFor="vehicle-year" className="block text-xs text-white/55">Année <span className="text-white/30">(optionnel)</span></label><input id="vehicle-year" name="year" type="number" min="1900" max="2100" step="1" inputMode="numeric" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[#d8b477]" /></div>
+          <div><label htmlFor="vehicle-color" className="block text-xs text-white/55">Couleur <span className="text-white/30">(optionnel)</span></label><input id="vehicle-color" name="color" maxLength={100} autoComplete="off" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[#d8b477]" /></div>
+          <div><label htmlFor="vehicle-plate" className="block text-xs text-white/55">Immatriculation <span className="text-white/30">(optionnel)</span></label><input id="vehicle-plate" name="plate" maxLength={32} autoComplete="off" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[#d8b477]" /></div>
+          <div><label htmlFor="vehicle-mileage" className="block text-xs text-white/55">Kilométrage <span className="text-white/30">(optionnel)</span></label><input id="vehicle-mileage" name="mileage_km" type="number" min="0" max="2147483647" step="1" inputMode="numeric" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[#d8b477]" /></div>
+          <div className="md:col-span-2"><button type="submit" className="border border-[#d8b477] px-5 py-2.5 text-xs font-medium uppercase tracking-[0.14em] text-[#d8b477] transition-colors hover:bg-[#d8b477] hover:text-[#080a0d]">Créer un véhicule</button></div>
+        </form>
         {result.vehicles.length > 0 ? <div className="grid gap-4 md:grid-cols-2">{result.vehicles.map((vehicle) => <VehicleCard key={vehicle.id || `${vehicle.brand}-${vehicle.model}-${vehicle.created_at}`} vehicle={vehicle} />)}</div> : <EmptySection>Aucun véhicule associé à ce client.</EmptySection>}
       </section>
 
