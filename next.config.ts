@@ -4,6 +4,21 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
+        source: "/result-duo.mp4",
+        destination: "/api/service-video/duo",
+        permanent: false,
+      },
+      {
+        source: "/result-interieur.mp4",
+        destination: "/api/service-video/interior",
+        permanent: false,
+      },
+      {
+        source: "/result-exterieur.mp4",
+        destination: "/api/service-video/exterior",
+        permanent: false,
+      },
+      {
         source: "/book-online",
         destination: "/devis",
         permanent: true,
