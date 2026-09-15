@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { CrmAccessError, requireCrmAccess } from "../../../lib/auth/dal";
-import { recordJobPaymentAction, scheduleJobAction, startJobAction, transitionJobAppointment } from "../actions";
+import { recordJobPaymentAction, requestJobReviewAction, scheduleJobAction, startJobAction, transitionJobAppointment } from "../actions";
 import {
   getJobDetails,
   type ActivityLog,
@@ -217,7 +217,7 @@ export default async function JobDetailPage({ params, searchParams }: {
     notFound();
   }
 
-  const { job, customer, vehicle, lead, quote, appointment, payment, services, activities } = result;
+  const { job, customer, vehicle, lead, quote, appointment, payment, reviewRequest, services, activities } = result;
   const feedback = await searchParams;
   const scheduleStatus = Array.isArray(feedback.schedule) ? feedback.schedule[0] : feedback.schedule;
   const scheduleError = Array.isArray(feedback.schedule_error) ? feedback.schedule_error[0] : feedback.schedule_error;
@@ -225,6 +225,8 @@ export default async function JobDetailPage({ params, searchParams }: {
   const startError = Array.isArray(feedback.start_error) ? feedback.start_error[0] : feedback.start_error;
   const paymentStatus = Array.isArray(feedback.payment) ? feedback.payment[0] : feedback.payment;
   const paymentError = Array.isArray(feedback.payment_error) ? feedback.payment_error[0] : feedback.payment_error;
+  const reviewStatus = Array.isArray(feedback.review) ? feedback.review[0] : feedback.review;
+  const reviewError = Array.isArray(feedback.review_error) ? feedback.review_error[0] : feedback.review_error;
   const canSchedule = job.status === "QUOTE_ACCEPTED" &&
     !job.scheduled_at &&
     (!appointment || (appointment.status === "REQUESTED" && !appointment.scheduled_at));
@@ -235,6 +237,13 @@ export default async function JobDetailPage({ params, searchParams }: {
     typeof job.total_amount === "number" &&
     job.total_amount > 0;
   const paymentIdempotencyKey = randomUUID();
+  const canRequestReview = job.status === "PAID" &&
+    lead.lifecycle_status === "BOOKED" &&
+    !reviewRequest;
+  const reviewStateInconsistent =
+    (lead.lifecycle_status === "REVIEW_REQUESTED" && !reviewRequest) ||
+    (lead.lifecycle_status !== "REVIEW_REQUESTED" && Boolean(reviewRequest));
+  const reviewIdempotencyKey = randomUUID();
   const customerHref = customer.id && UUID_REGEX.test(customer.id)
     ? `/crm/clients/${customer.id}`
     : null;
@@ -284,6 +293,13 @@ export default async function JobDetailPage({ params, searchParams }: {
         {paymentStatus === "recorded" && <p role="status" className="border border-emerald-300/30 bg-emerald-300/5 px-4 py-3 text-sm text-emerald-200">Paiement enregistré.</p>}
         {paymentError && <p role="alert" className="border border-red-300/30 bg-red-300/5 px-4 py-3 text-sm text-red-200">{paymentError === "invalid" ? "Vérifiez le mode de paiement." : paymentError === "access" ? "Action non autorisée." : "Enregistrement du paiement momentanément indisponible."}</p>}
         {job.status === "PAID" && payment ? <div className="border border-emerald-300/30 bg-emerald-300/5 p-5"><p className="text-sm font-medium text-emerald-100">Paiement enregistré</p><p className="mt-3 text-lg text-white">{formatAmount(payment.amount)}</p><p className="mt-2 text-sm text-white/60">{paymentMethodLabels[payment.method]} · {formatDateTime(payment.received_at)}</p></div> : job.status === "PAID" ? <p role="alert" className="border border-red-300/30 bg-red-300/5 px-4 py-3 text-sm text-red-200">État de paiement historique incomplet.</p> : canRecordPayment ? <form action={recordJobPaymentAction} className="grid gap-4 border border-[#d8b477]/30 bg-[#101419] p-5 md:grid-cols-[1fr_auto] md:items-end md:p-7"><input type="hidden" name="jobId" value={normalizedJobId} /><input type="hidden" name="idempotencyKey" value={paymentIdempotencyKey} /><div><p className="text-xs text-white/55">Montant à encaisser</p><p className="mt-2 text-xl font-medium text-white">{formatAmount(job.total_amount)}</p><label htmlFor="paymentMethod" className="mt-5 block text-xs text-white/55">Mode de paiement</label><select id="paymentMethod" name="method" required defaultValue="" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[#d8b477]"><option value="" disabled>Choisir un mode</option><option value="CASH">Espèces</option><option value="CARD">Carte</option><option value="BANK_TRANSFER">Virement bancaire</option><option value="OTHER">Autre</option></select></div><button type="submit" className="border border-[#d8b477] px-5 py-2.5 text-xs font-medium uppercase tracking-[0.14em] text-[#d8b477] transition-colors hover:bg-[#d8b477] hover:text-[#080a0d]">Enregistrer le paiement</button></form> : <EmptySection>Le paiement peut être enregistré une fois la prestation terminée.</EmptySection>}
+      </section>
+
+      <section aria-labelledby="job-review" className="space-y-4">
+        <SectionHeading eyebrow="Suivi" title="Demande d&apos;avis" />
+        {reviewStatus === "requested" && <p role="status" className="border border-emerald-300/30 bg-emerald-300/5 px-4 py-3 text-sm text-emerald-200">Demande d&apos;avis enregistrée.</p>}
+        {reviewError && <p role="alert" className="border border-red-300/30 bg-red-300/5 px-4 py-3 text-sm text-red-200">{reviewError === "invalid" ? "Action invalide." : reviewError === "access" ? "Action non autorisée." : "Enregistrement de la demande momentanément indisponible."}</p>}
+        {reviewStateInconsistent ? <p role="alert" className="border border-red-300/30 bg-red-300/5 px-4 py-3 text-sm text-red-200">État de suivi historique incomplet.</p> : reviewRequest ? <div className="border border-white/10 bg-[#101419] p-5"><p className="text-sm text-white">Demande d&apos;avis enregistrée</p><p className="mt-2 text-xs text-white/40">Enregistrée le {formatDateTime(reviewRequest.requested_at) || "date non renseignée"}</p></div> : canRequestReview ? <form action={requestJobReviewAction} className="border border-[#d8b477]/30 bg-[#101419] p-5"><input type="hidden" name="jobId" value={normalizedJobId} /><input type="hidden" name="idempotencyKey" value={reviewIdempotencyKey} /><button type="submit" className="border border-[#d8b477] px-5 py-2.5 text-xs font-medium uppercase tracking-[0.14em] text-[#d8b477] transition-colors hover:bg-[#d8b477] hover:text-[#080a0d]">Demander un avis</button></form> : <EmptySection>La demande d&apos;avis peut être enregistrée une fois le paiement effectué.</EmptySection>}
       </section>
 
       <section aria-labelledby="job-vehicle" className="space-y-4">
