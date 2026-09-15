@@ -7,6 +7,7 @@ import {
   requireCrmAccess,
 } from "../../lib/auth/dal";
 import {
+  startJob,
   scheduleJob,
   transitionAppointmentStatus,
   type AppointmentTransitionStatus,
@@ -28,6 +29,10 @@ function redirectWithError(error: "invalid" | "access" | "unavailable"): never {
 
 function redirectWithScheduleError(jobId: string, error: "invalid" | "access" | "unavailable"): never {
   redirect(`/crm/jobs/${jobId}?schedule_error=${error}`);
+}
+
+function redirectWithStartError(jobId: string, error: "invalid" | "access" | "unavailable"): never {
+  redirect(`/crm/jobs/${jobId}?start_error=${error}`);
 }
 
 export async function transitionJobAppointment(formData: FormData) {
@@ -104,4 +109,35 @@ export async function scheduleJobAction(formData: FormData) {
   revalidatePath("/crm/jobs");
   revalidatePath("/crm");
   redirect(`/crm/jobs/${normalizedJobId}?schedule=created`);
+}
+
+export async function startJobAction(formData: FormData) {
+  const jobId = formData.get("jobId");
+
+  if (typeof jobId !== "string" || !UUID_REGEX.test(jobId.trim())) {
+    redirect("/crm/jobs");
+  }
+
+  const normalizedJobId = jobId.trim();
+
+  try {
+    await requireCrmAccess();
+  } catch (error) {
+    if (error instanceof CrmAccessError) {
+      if (error.code === "UNAUTHENTICATED") redirect("/crm/login");
+      if (error.code === "FORBIDDEN") redirectWithStartError(normalizedJobId, "access");
+    }
+    redirectWithStartError(normalizedJobId, "unavailable");
+  }
+
+  try {
+    await startJob(normalizedJobId);
+  } catch {
+    redirectWithStartError(normalizedJobId, "unavailable");
+  }
+
+  revalidatePath(`/crm/jobs/${normalizedJobId}`);
+  revalidatePath("/crm/jobs");
+  revalidatePath("/crm");
+  redirect(`/crm/jobs/${normalizedJobId}?started=1`);
 }

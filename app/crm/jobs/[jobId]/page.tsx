@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { CrmAccessError, requireCrmAccess } from "../../../lib/auth/dal";
-import { scheduleJobAction } from "../actions";
+import { scheduleJobAction, startJobAction } from "../actions";
 import {
   getJobDetails,
   type ActivityLog,
@@ -214,6 +214,8 @@ export default async function JobDetailPage({ params, searchParams }: {
   const feedback = await searchParams;
   const scheduleStatus = Array.isArray(feedback.schedule) ? feedback.schedule[0] : feedback.schedule;
   const scheduleError = Array.isArray(feedback.schedule_error) ? feedback.schedule_error[0] : feedback.schedule_error;
+  const started = Array.isArray(feedback.started) ? feedback.started[0] : feedback.started;
+  const startError = Array.isArray(feedback.start_error) ? feedback.start_error[0] : feedback.start_error;
   const canSchedule = job.status === "QUOTE_ACCEPTED" &&
     !job.scheduled_at &&
     (!appointment || (appointment.status === "REQUESTED" && !appointment.scheduled_at));
@@ -247,11 +249,14 @@ export default async function JobDetailPage({ params, searchParams }: {
           </div>
           <div className="border border-white/10 bg-[#101419] p-5">
             <p className="text-[10px] uppercase tracking-[0.16em] text-[#d8b477]">Opération</p>
+            {started === "1" && <p role="status" className="mt-3 border border-emerald-300/30 bg-emerald-300/5 px-3 py-2 text-sm text-emerald-200">Prestation démarrée.</p>}
+            {startError && <p role="alert" className="mt-3 border border-red-300/30 bg-red-300/5 px-3 py-2 text-sm text-red-200">{startError === "invalid" ? "Action invalide." : startError === "access" ? "Action non autorisée." : "Démarrage momentanément indisponible."}</p>}
             {job.scheduled_at && <p className="mt-3 text-sm text-white/70">Planifiée : {formatDateTime(job.scheduled_at)}</p>}
             {job.total_amount !== null && job.total_amount !== undefined && <p className="mt-2 text-sm text-[#d8b477]">Montant : {formatAmount(job.total_amount)}</p>}
             {job.started_at && <p className="mt-2 text-xs text-white/40">Démarrée : {formatDateTime(job.started_at)}</p>}
             {job.completed_at && <p className="mt-2 text-xs text-white/40">Terminée : {formatDateTime(job.completed_at)}</p>}
             {!job.scheduled_at && job.total_amount === null && !job.started_at && !job.completed_at && <p className="mt-3 text-sm text-white/35">Informations opérationnelles non renseignées.</p>}
+            {job.status === "CONFIRMED" && <form action={startJobAction} className="mt-5 border-t border-white/10 pt-4"><input type="hidden" name="jobId" value={normalizedJobId} /><button type="submit" className="border border-[#d8b477] px-4 py-2.5 text-xs font-medium uppercase tracking-[0.12em] text-[#d8b477] transition-colors hover:bg-[#d8b477] hover:text-[#080a0d]">Démarrer la prestation</button></form>}
           </div>
         </div>
         {job.notes && <p className="border border-white/10 bg-[#101419] p-5 text-sm leading-7 text-white/50">{job.notes}</p>}
