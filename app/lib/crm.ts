@@ -198,6 +198,17 @@ export type JobDetailsResult = {
   activities: ActivityLog[];
 };
 
+export type LeadDetailsResult = {
+  lead: Lead;
+  customer: Customer;
+  vehicle: Vehicle | null;
+  services: LeadService[];
+  quotes: Quote[];
+  jobs: Job[];
+  appointments: Appointment[];
+  activities: RecentActivity[];
+};
+
 export type Customer360Result = {
   customer: Customer;
   vehicles: Vehicle[];
@@ -658,6 +669,113 @@ export async function getCustomer360(
     jobs: normalizedJobs,
     appointments: normalizedAppointments,
     activities: normalizedActivities,
+  };
+}
+
+const LEAD_DETAILS_MAX_ITEMS = 50;
+
+export async function getLeadDetails(
+  leadId: string,
+): Promise<LeadDetailsResult | null> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const normalizedLeadId = leadId.trim();
+
+  if (!normalizedLeadId) {
+    throw new Error("leadId is required.");
+  }
+
+  const businessId = await getCurrentBusinessId();
+  const leadRows = (await supabaseRest<Lead[]>(
+    "leads",
+    "GET",
+    null,
+    `business_id=eq.${businessId}&id=eq.${normalizedLeadId}&select=*`,
+  )) as Lead[] | null;
+  const lead = leadRows?.[0];
+
+  if (!lead?.id) {
+    return null;
+  }
+
+  const [customerRows, vehicleRows, services, quotes, jobs, appointments, activityRows] = await Promise.all([
+    supabaseRest<Customer[]>(
+      "customers",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&id=eq.${lead.customer_id}&select=*`,
+    ),
+    lead.vehicle_id
+      ? supabaseRest<Vehicle[]>(
+          "vehicles",
+          "GET",
+          null,
+          `business_id=eq.${businessId}&id=eq.${lead.vehicle_id}&customer_id=eq.${lead.customer_id}&select=*`,
+        )
+      : Promise.resolve([]),
+    supabaseRest<LeadService[]>(
+      "lead_services",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&lead_id=eq.${normalizedLeadId}&limit=${LEAD_DETAILS_MAX_ITEMS}&order=id.desc&select=*`,
+    ),
+    supabaseRest<Quote[]>(
+      "quotes",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&lead_id=eq.${normalizedLeadId}&limit=${LEAD_DETAILS_MAX_ITEMS}&order=created_at.desc,id.desc&select=id,business_id,lead_id,quote_version,total_price,estimated_time,status,created_at,updated_at`,
+    ),
+    supabaseRest<Job[]>(
+      "jobs",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&lead_id=eq.${normalizedLeadId}&limit=${LEAD_DETAILS_MAX_ITEMS}&order=created_at.desc,id.desc&select=*`,
+    ),
+    supabaseRest<Appointment[]>(
+      "appointments",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&lead_id=eq.${normalizedLeadId}&limit=${LEAD_DETAILS_MAX_ITEMS}&order=requested_at.desc.nullslast,created_at.desc,id.desc&select=*`,
+    ),
+    supabaseRest<ActivityLog[]>(
+      "activity_log",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&lead_id=eq.${normalizedLeadId}&limit=${LEAD_DETAILS_MAX_ITEMS}&order=created_at.desc,id.desc&select=id,business_id,lead_id,customer_id,job_id,event_type,created_at`,
+    ),
+  ]);
+
+  const customer = (customerRows as Customer[] | null)?.[0];
+
+  if (!customer) {
+    throw new Error("Lead customer relationship is inconsistent.");
+  }
+
+  const activityItems = ((activityRows as ActivityLog[] | null) ?? [])
+    .filter(
+      (activity): activity is ActivityLog & { id: string; created_at: string } =>
+        Boolean(activity.id && activity.created_at),
+    )
+    .map((activity) => ({
+      id: activity.id,
+      eventType: activity.event_type,
+      createdAt: activity.created_at,
+      customerId: activity.customer_id ?? null,
+      leadId: activity.lead_id ?? null,
+      jobId: activity.job_id ?? null,
+    }));
+
+  return {
+    lead,
+    customer,
+    vehicle: (vehicleRows as Vehicle[] | null)?.[0] ?? null,
+    services: (services as LeadService[] | null) ?? [],
+    quotes: (quotes as Quote[] | null) ?? [],
+    jobs: (jobs as Job[] | null) ?? [],
+    appointments: (appointments as Appointment[] | null) ?? [],
+    activities: activityItems,
   };
 }
 
