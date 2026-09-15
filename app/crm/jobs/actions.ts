@@ -9,6 +9,7 @@ import {
 import {
   findJobPaymentReplay,
   recordJobPayment,
+  requestJobReview,
   startJob,
   scheduleJob,
   transitionAppointmentStatus,
@@ -47,6 +48,10 @@ function redirectWithStartError(jobId: string, error: "invalid" | "access" | "un
 
 function redirectWithPaymentError(jobId: string, error: "invalid" | "access" | "unavailable"): never {
   redirect(`/crm/jobs/${jobId}?payment_error=${error}`);
+}
+
+function redirectWithReviewError(jobId: string, error: "invalid" | "access" | "unavailable"): never {
+  redirect(`/crm/jobs/${jobId}?review_error=${error}`);
 }
 
 export async function transitionJobAppointment(formData: FormData) {
@@ -216,4 +221,43 @@ export async function recordJobPaymentAction(formData: FormData) {
   revalidatePath("/crm/jobs");
   revalidatePath("/crm");
   redirect(`/crm/jobs/${normalizedJobId}?payment=recorded`);
+}
+
+export async function requestJobReviewAction(formData: FormData) {
+  const jobId = formData.get("jobId");
+  const idempotencyKey = formData.get("idempotencyKey");
+
+  if (
+    typeof jobId !== "string" || !UUID_REGEX.test(jobId.trim()) ||
+    typeof idempotencyKey !== "string" || !UUID_REGEX.test(idempotencyKey.trim())
+  ) {
+    redirect("/crm/jobs");
+  }
+
+  const normalizedJobId = jobId.trim();
+
+  try {
+    await requireCrmAccess();
+  } catch (error) {
+    if (error instanceof CrmAccessError) {
+      if (error.code === "UNAUTHENTICATED") redirect("/crm/login");
+      if (error.code === "FORBIDDEN") redirectWithReviewError(normalizedJobId, "access");
+    }
+    redirectWithReviewError(normalizedJobId, "unavailable");
+  }
+
+  try {
+    await requestJobReview({
+      idempotencyKey: idempotencyKey.trim(),
+      jobId: normalizedJobId,
+    });
+  } catch {
+    redirectWithReviewError(normalizedJobId, "unavailable");
+  }
+
+  revalidatePath(`/crm/jobs/${normalizedJobId}`);
+  revalidatePath("/crm/jobs");
+  revalidatePath("/crm/pipeline");
+  revalidatePath("/crm");
+  redirect(`/crm/jobs/${normalizedJobId}?review=requested`);
 }

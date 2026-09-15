@@ -175,6 +175,15 @@ export type Payment = {
   created_at: string;
 };
 
+export type ReviewRequest = {
+  id: string;
+  business_id: string;
+  job_id: string;
+  idempotency_key: string;
+  requested_at: string;
+  created_at: string;
+};
+
 export type AppointmentTransitionStatus =
   | "REQUESTED"
   | "CONFIRMED"
@@ -213,6 +222,13 @@ export type RecordJobPaymentResult = {
   noOp: boolean;
 };
 
+export type RequestJobReviewResult = {
+  reviewRequest: ReviewRequest;
+  lead: Lead;
+  activity: ActivityLog | null;
+  noOp: boolean;
+};
+
 export type TransitionLeadStatusResult = {
   lead: Lead;
   activity: ActivityLog | null;
@@ -226,6 +242,7 @@ export type JobDetailsResult = {
   quote: Quote | null;
   appointment: Appointment | null;
   payment: Payment | null;
+  reviewRequest: ReviewRequest | null;
   services: LeadService[];
   activities: ActivityLog[];
 };
@@ -946,6 +963,7 @@ export async function getJobDetails(
     quoteRows,
     appointmentRows,
     paymentRows,
+    reviewRequestRows,
     services,
     activities,
   ] = await Promise.all([
@@ -989,6 +1007,12 @@ export async function getJobDetails(
       null,
       `business_id=eq.${businessId}&job_id=eq.${job.id}&order=received_at.desc,id.desc&limit=1&select=id,business_id,job_id,amount,method,idempotency_key,received_at,created_at`,
     ),
+    supabaseRest<ReviewRequest[]>(
+      "review_requests",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&job_id=eq.${job.id}&limit=1&select=id,business_id,job_id,idempotency_key,requested_at,created_at`,
+    ),
     supabaseRest<LeadService[]>(
       "lead_services",
       "GET",
@@ -1018,6 +1042,7 @@ export async function getJobDetails(
     quote: (quoteRows as Quote[] | null)?.[0] ?? null,
     appointment: (appointmentRows as Appointment[] | null)?.[0] ?? null,
     payment: (paymentRows as Payment[] | null)?.[0] ?? null,
+    reviewRequest: (reviewRequestRows as ReviewRequest[] | null)?.[0] ?? null,
     services: (services as LeadService[] | null) ?? [],
     activities: (activities as ActivityLog[] | null) ?? [],
   };
@@ -2520,6 +2545,68 @@ export async function recordJobPayment(input: {
   );
 
   return validateRecordJobPaymentResult(result, businessId, jobId);
+}
+
+function validateRequestJobReviewResult(
+  value: unknown,
+  businessId: string,
+  jobId: string,
+): RequestJobReviewResult {
+  if (!isRecord(value) || !isRecord(value.review_request) || !isRecord(value.lead) || typeof value.no_op !== "boolean") {
+    throw new Error("Supabase returned an invalid review request result.");
+  }
+
+  const reviewRequest = value.review_request;
+  const lead = value.lead;
+  const activity = value.activity === null || value.activity === undefined
+    ? null
+    : value.activity;
+
+  if (
+    reviewRequest.business_id !== businessId ||
+    reviewRequest.job_id !== jobId ||
+    typeof reviewRequest.id !== "string" ||
+    typeof reviewRequest.requested_at !== "string" ||
+    lead.business_id !== businessId ||
+    lead.lifecycle_status !== "REVIEW_REQUESTED" ||
+    (activity !== null && !isRecord(activity))
+  ) {
+    throw new Error("Supabase returned an inconsistent review request result.");
+  }
+
+  return {
+    reviewRequest: reviewRequest as ReviewRequest,
+    lead: lead as Lead,
+    activity: activity as ActivityLog | null,
+    noOp: value.no_op,
+  };
+}
+
+export async function requestJobReview(input: {
+  idempotencyKey: string;
+  jobId: string;
+}): Promise<RequestJobReviewResult> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const jobId = input.jobId.trim();
+  if (!jobId) {
+    throw new Error("jobId is required.");
+  }
+
+  const businessId = await getCurrentBusinessId();
+  const result = await supabaseRest<unknown>(
+    "rpc/request_job_review",
+    "POST",
+    {
+      p_business_id: businessId,
+      p_idempotency_key: input.idempotencyKey.trim(),
+      p_job_id: jobId,
+    },
+  );
+
+  return validateRequestJobReviewResult(result, businessId, jobId);
 }
 
 export async function logActivity(input: ActivityLog) {
