@@ -304,6 +304,16 @@ export type UpdateCustomerProfileResult = {
   noOp: boolean;
 };
 
+export type ManualLeadResult = {
+  leadId: string;
+  noOp: boolean;
+};
+
+export type CustomerIntakeSelection = {
+  customer: Customer;
+  vehicles: Vehicle[];
+};
+
 function normalizeEmail(value?: string | null): string | null {
   const normalized = (value || "").trim().toLowerCase();
   return normalized || null;
@@ -497,6 +507,88 @@ export async function createLead(input: Lead) {
   const businessId = await getCurrentBusinessId();
 
   return (await supabaseRest<Lead>("leads", "POST", { ...input, business_id: businessId }, "select=*")) as Lead | null;
+}
+
+export async function getCustomerForManualLead(
+  customerId: string,
+): Promise<CustomerIntakeSelection | null> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const normalizedCustomerId = customerId.trim();
+  if (!normalizedCustomerId) {
+    throw new Error("customerId is required.");
+  }
+
+  const businessId = await getCurrentBusinessId();
+  const [customerRows, vehicleRows] = await Promise.all([
+    supabaseRest<Customer[]>(
+      "customers",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&id=eq.${normalizedCustomerId}&select=id,business_id,full_name,first_name,last_name,email,phone,city,source,created_at,updated_at`,
+    ),
+    supabaseRest<Vehicle[]>(
+      "vehicles",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&customer_id=eq.${normalizedCustomerId}&order=created_at.desc,id.desc&limit=50&select=*`,
+    ),
+  ]);
+
+  const customer = (customerRows as Customer[] | null)?.[0];
+  if (!customer) {
+    return null;
+  }
+
+  return {
+    customer,
+    vehicles: (vehicleRows as Vehicle[] | null) ?? [],
+  };
+}
+
+export async function createManualLead(input: {
+  idempotencyKey: string;
+  customerId: string;
+  vehicleId?: string | null;
+  serviceName: string;
+  basePrice?: number | null;
+  estimatedTime?: string | null;
+  customerComment?: string | null;
+}): Promise<ManualLeadResult> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const businessId = await getCurrentBusinessId();
+  const result = await supabaseRest<unknown>(
+    "rpc/create_manual_lead",
+    "POST",
+    {
+      p_business_id: businessId,
+      p_idempotency_key: input.idempotencyKey.trim(),
+      p_customer_id: input.customerId.trim(),
+      p_vehicle_id: input.vehicleId?.trim() || null,
+      p_service_name: input.serviceName,
+      p_base_price: input.basePrice ?? null,
+      p_estimated_time: input.estimatedTime ?? null,
+      p_customer_comment: input.customerComment ?? null,
+    },
+  );
+
+  if (
+    !isRecord(result) ||
+    typeof result.lead_id !== "string" ||
+    typeof result.no_op !== "boolean"
+  ) {
+    throw new Error("Supabase returned an invalid manual lead result.");
+  }
+
+  return {
+    leadId: result.lead_id,
+    noOp: result.no_op,
+  };
 }
 
 export async function createLeadService(input: LeadService) {

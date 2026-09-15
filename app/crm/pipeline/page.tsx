@@ -344,7 +344,7 @@ export default async function PipelinePage({ searchParams }: {
           <h1 className="text-3xl font-semibold tracking-tight text-white md:text-5xl">Pipeline</h1>
           <p className="mt-4 max-w-xl text-sm leading-7 text-white/50">Une vue claire des opportunités, des demandes entrantes et des prochaines relances.</p>
         </div>
-        <span className="w-fit border border-white/10 px-3 py-2 text-[10px] uppercase tracking-[0.16em] text-white/35">Lecture seule</span>
+        <Link href="/crm/pipeline/new" className="w-fit border border-[#d8b477] px-3 py-2 text-[10px] uppercase tracking-[0.16em] text-[#d8b477] transition-colors hover:bg-[#d8b477] hover:text-[#080a0d]">Nouveau lead</Link>
       </section>
 
       {updated && <p role="status" className="border border-emerald-300/30 bg-emerald-300/5 px-4 py-3 text-sm text-emerald-200">Lead mis à jour.</p>}
