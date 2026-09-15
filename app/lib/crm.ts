@@ -2323,6 +2323,66 @@ export async function scheduleJob(input: {
   return validateScheduleJobResult(result, businessId, jobId);
 }
 
+export type StartJobResult = {
+  job: Job;
+  activity: ActivityLog | null;
+  noOp: boolean;
+};
+
+function validateStartJobResult(
+  value: unknown,
+  businessId: string,
+  jobId: string,
+): StartJobResult {
+  if (!isRecord(value) || !isRecord(value.job) || typeof value.no_op !== "boolean") {
+    throw new Error("Supabase returned an invalid job start result.");
+  }
+
+  const job = value.job;
+  const activity = value.activity === null || value.activity === undefined
+    ? null
+    : value.activity;
+
+  if (
+    job.id !== jobId ||
+    job.business_id !== businessId ||
+    job.status !== "IN_PROGRESS" ||
+    typeof job.started_at !== "string" ||
+    (activity !== null && !isRecord(activity))
+  ) {
+    throw new Error("Supabase returned an inconsistent job start result.");
+  }
+
+  return {
+    job: job as Job,
+    activity: activity as ActivityLog | null,
+    noOp: value.no_op,
+  };
+}
+
+export async function startJob(jobId: string): Promise<StartJobResult> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const normalizedJobId = jobId.trim();
+  if (!normalizedJobId) {
+    throw new Error("jobId is required.");
+  }
+
+  const businessId = await getCurrentBusinessId();
+  const result = await supabaseRest<unknown>(
+    "rpc/start_job",
+    "POST",
+    {
+      p_business_id: businessId,
+      p_job_id: normalizedJobId,
+    },
+  );
+
+  return validateStartJobResult(result, businessId, normalizedJobId);
+}
+
 export async function logActivity(input: ActivityLog) {
   if (!hasSupabaseWriteConfig()) {
     return null;
