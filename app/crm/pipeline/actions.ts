@@ -8,9 +8,11 @@ import {
 } from "../../lib/auth/dal";
 import {
   acceptQuoteAndCreateJob,
+  createManualLead,
   markQuoteAsSent,
   transitionLeadStatus,
   type LeadLifecycleStatus,
+  type ManualLeadResult,
 } from "../../lib/crm";
 
 const UUID_REGEX =
@@ -29,6 +31,10 @@ function redirectWithError(error: "invalid" | "access" | "unavailable"): never {
 
 function redirectWithQuoteError(error: "invalid" | "access" | "unavailable"): never {
   redirect(`/crm/pipeline?quote_error=${error}`);
+}
+
+function redirectWithManualLeadError(error: "invalid" | "access" | "unavailable"): never {
+  redirect(`/crm/pipeline/new?error=${error}`);
 }
 
 function redirectWithQuoteSendError(error: "invalid" | "access" | "unavailable"): never {
@@ -130,4 +136,75 @@ export async function markPipelineQuoteSent(formData: FormData) {
   revalidatePath("/crm");
   revalidatePath("/crm/pipeline");
   redirect("/crm/pipeline?quote_sent=1");
+}
+
+export async function createManualLeadAction(formData: FormData) {
+  const customerId = formData.get("customerId");
+  const idempotencyKey = formData.get("idempotencyKey");
+
+  if (
+    typeof customerId !== "string" || !UUID_REGEX.test(customerId.trim()) ||
+    typeof idempotencyKey !== "string" || !UUID_REGEX.test(idempotencyKey.trim())
+  ) {
+    redirectWithManualLeadError("invalid");
+  }
+
+  try {
+    await requireCrmAccess();
+  } catch (error) {
+    if (error instanceof CrmAccessError) {
+      if (error.code === "UNAUTHENTICATED") redirect("/crm/login");
+      if (error.code === "FORBIDDEN") redirectWithManualLeadError("access");
+    }
+    redirectWithManualLeadError("unavailable");
+  }
+
+  const vehicleId = formData.get("vehicleId");
+  const serviceName = formData.get("serviceName");
+  const basePriceValue = formData.get("basePrice");
+  const estimatedTime = formData.get("estimatedTime");
+  const customerComment = formData.get("customerComment");
+
+  if (
+    (vehicleId !== null && (typeof vehicleId !== "string" || (vehicleId.trim() && !UUID_REGEX.test(vehicleId.trim())))) ||
+    typeof serviceName !== "string" ||
+    typeof estimatedTime !== "string" ||
+    typeof customerComment !== "string" ||
+    typeof basePriceValue !== "string"
+  ) {
+    redirectWithManualLeadError("invalid");
+  }
+
+  const normalizedServiceName = serviceName.trim();
+  const normalizedEstimatedTime = estimatedTime.trim() || null;
+  const normalizedComment = customerComment.trim() || null;
+  const normalizedVehicleId = typeof vehicleId === "string" ? vehicleId.trim() || null : null;
+  const normalizedPrice = basePriceValue.trim() ? Number(basePriceValue) : null;
+
+  if (
+    !normalizedServiceName || normalizedServiceName.length > 200 ||
+    (normalizedEstimatedTime !== null && normalizedEstimatedTime.length > 100) ||
+    (normalizedComment !== null && normalizedComment.length > 2000) ||
+    (normalizedPrice !== null && (!Number.isFinite(normalizedPrice) || normalizedPrice < 0 || normalizedPrice > 10000000))
+  ) {
+    redirectWithManualLeadError("invalid");
+  }
+
+  let result: ManualLeadResult;
+  try {
+    result = await createManualLead({
+      idempotencyKey: idempotencyKey.trim(),
+      customerId: customerId.trim(),
+      vehicleId: normalizedVehicleId,
+      serviceName: normalizedServiceName,
+      basePrice: normalizedPrice,
+      estimatedTime: normalizedEstimatedTime,
+      customerComment: normalizedComment,
+    });
+  } catch {
+    redirectWithManualLeadError("unavailable");
+  }
+
+  revalidatePath("/crm/pipeline");
+  redirect(`/crm/pipeline/${result.leadId}`);
 }
