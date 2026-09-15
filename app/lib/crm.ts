@@ -136,6 +136,15 @@ export type ActivityLog = {
   created_at?: string;
 };
 
+export type RecentActivity = {
+  id: string;
+  eventType: string;
+  createdAt: string;
+  customerId: string | null;
+  leadId: string | null;
+  jobId: string | null;
+};
+
 export type Appointment = {
   id?: string;
   business_id: string;
@@ -1401,6 +1410,47 @@ export async function getCustomersList(
       hasNextPage,
     },
   };
+}
+
+const RECENT_ACTIVITY_DEFAULT_LIMIT = 10;
+const RECENT_ACTIVITY_MAX_LIMIT = 50;
+type RecentActivityRow = Pick<
+  ActivityLog,
+  "id" | "event_type" | "created_at" | "customer_id" | "lead_id" | "job_id"
+>;
+
+export async function getRecentActivity(input?: {
+  limit?: number;
+}): Promise<RecentActivity[]> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const businessId = await getCurrentBusinessId();
+  const limit = Number.isInteger(input?.limit) && (input?.limit ?? 0) > 0
+    ? Math.min(input?.limit as number, RECENT_ACTIVITY_MAX_LIMIT)
+    : RECENT_ACTIVITY_DEFAULT_LIMIT;
+
+  const rows = (await supabaseRest<RecentActivityRow[]>(
+    "activity_log",
+    "GET",
+    null,
+    `business_id=eq.${businessId}&order=created_at.desc,id.desc&limit=${limit}&select=id,event_type,created_at,customer_id,lead_id,job_id`,
+  )) as RecentActivityRow[] | null;
+
+  return (rows ?? [])
+    .filter(
+      (activity): activity is typeof activity & { id: string; created_at: string } =>
+        Boolean(activity.id && activity.created_at),
+    )
+    .map((activity) => ({
+      id: activity.id,
+      eventType: activity.event_type,
+      createdAt: activity.created_at,
+      customerId: activity.customer_id ?? null,
+      leadId: activity.lead_id ?? null,
+      jobId: activity.job_id ?? null,
+    }));
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

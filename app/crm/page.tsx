@@ -5,16 +5,31 @@ import {
   getCustomersList,
   getJobsList,
   getLeadsList,
+  getRecentActivity,
   type CustomerListResult,
   type JobStatus,
   type JobListResult,
   type LeadListResult,
   type LeadLifecycleStatus,
+  type RecentActivity,
 } from "../lib/crm";
 
 export const dynamic = "force-dynamic";
 
 const DASHBOARD_LIST_LIMIT = 20;
+const RECENT_ACTIVITY_LIMIT = 10;
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const activityLabels: Record<string, string> = {
+  "website.lead.created": "Nouveau lead reçu",
+  "quote.accepted": "Devis accepté",
+  "appointment.requested": "Rendez-vous demandé",
+  "appointment.confirmed": "Rendez-vous confirmé",
+  "appointment.completed": "Rendez-vous terminé",
+  "appointment.cancelled": "Rendez-vous annulé",
+  "lead.status_changed": "Statut du lead modifié",
+};
 
 const leadStatuses: LeadLifecycleStatus[] = [
   "NEW",
@@ -72,18 +87,61 @@ async function ensureCrmAccess() {
   }
 }
 
-function SectionHeading({ eyebrow, title }: {
+function SectionHeading({ eyebrow, title, headingId }: {
   eyebrow: string;
   title: string;
+  headingId?: string;
 }) {
   return (
     <div className="flex items-end justify-between border-b border-white/10 pb-4">
       <div>
         <p className="text-[10px] uppercase tracking-[0.2em] text-[#d8b477]">{eyebrow}</p>
-        <h2 className="mt-2 text-xl font-medium text-white">{title}</h2>
+        <h2 id={headingId} className="mt-2 text-xl font-medium text-white">{title}</h2>
       </div>
       <span className="text-[10px] uppercase tracking-[0.16em] text-white/25">Résultats chargés</span>
     </div>
+  );
+}
+
+function formatDateTime(value: string): string {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Date non renseignée";
+  }
+
+  return new Intl.DateTimeFormat("fr-FR", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+}
+
+function activityLabel(eventType: string): string {
+  return activityLabels[eventType] || "Activité CRM";
+}
+
+function ActivityRow({ activity }: { activity: RecentActivity }) {
+  const jobHref = activity.jobId && UUID_REGEX.test(activity.jobId)
+    ? `/crm/jobs/${activity.jobId}`
+    : null;
+  const customerHref = activity.customerId && UUID_REGEX.test(activity.customerId)
+    ? `/crm/clients/${activity.customerId}`
+    : null;
+
+  return (
+    <article className="flex flex-col gap-3 border-b border-white/10 py-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+        <p className="truncate text-sm text-white">{activityLabel(activity.eventType)}</p>
+        {(jobHref || customerHref) && (
+          <Link href={jobHref || customerHref || "#"} className="mt-1 inline-block text-xs text-[#d8b477] hover:text-white">
+            {jobHref ? "Voir la prestation" : "Voir le client"} <span aria-hidden="true">→</span>
+          </Link>
+        )}
+      </div>
+      <time dateTime={activity.createdAt} className="shrink-0 text-xs text-white/35">
+        {formatDateTime(activity.createdAt)}
+      </time>
+    </article>
   );
 }
 
@@ -128,6 +186,14 @@ export default async function CrmPage() {
   );
   const hasMoreResults = customersResult.pagination.hasNextPage ||
     leadsResult.pagination.hasNextPage || jobsResult.pagination.hasNextPage;
+  let recentActivity: RecentActivity[] = [];
+  let activityFailed = false;
+
+  try {
+    recentActivity = await getRecentActivity({ limit: RECENT_ACTIVITY_LIMIT });
+  } catch {
+    activityFailed = true;
+  }
 
   return (
     <div data-crm-route="dashboard" className="space-y-12">
@@ -201,6 +267,19 @@ export default async function CrmPage() {
               <span className="mt-6 block text-xs text-[#d8b477]">Accéder <span aria-hidden="true">→</span></span>
             </Link>
           ))}
+        </div>
+      </section>
+
+      <section aria-labelledby="recent-activity" className="space-y-4">
+        <SectionHeading eyebrow="04 / Historique" title="Activité récente" headingId="recent-activity" />
+        <div className="border border-white/10 bg-[#101419] px-5 md:px-7">
+          {activityFailed ? (
+            <p className="py-7 text-sm text-white/45">L&apos;activité récente est momentanément indisponible.</p>
+          ) : recentActivity.length === 0 ? (
+            <p className="py-7 text-sm text-white/35">Aucune activité récente.</p>
+          ) : (
+            recentActivity.map((activity) => <ActivityRow key={activity.id} activity={activity} />)
+          )}
         </div>
       </section>
 
