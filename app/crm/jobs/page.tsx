@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CrmAccessError, requireCrmAccess } from "../../lib/auth/dal";
+import { transitionJobAppointment } from "./actions";
 import {
   getJobsList,
+  type Appointment,
   type JobListItem,
   type JobStatus,
 } from "../../lib/crm";
@@ -30,6 +32,13 @@ const jobStatusLabels: Record<JobStatus, string> = {
   COMPLETED: "Terminée",
   CANCELLED: "Annulée",
   PAID: "Payée",
+};
+
+const appointmentStatusLabels: Record<Appointment["status"], string> = {
+  REQUESTED: "Demandé",
+  CONFIRMED: "Confirmé",
+  COMPLETED: "Terminé",
+  CANCELLED: "Annulé",
 };
 
 const UUID_REGEX =
@@ -102,6 +111,27 @@ function vehicleName(item: JobListItem): string | null {
   return name || "Véhicule sans désignation";
 }
 
+function appointmentActions(status: Appointment["status"]): Array<{
+  label: string;
+  targetStatus: "CONFIRMED" | "COMPLETED" | "CANCELLED";
+}> {
+  if (status === "REQUESTED") {
+    return [
+      { label: "Confirmer", targetStatus: "CONFIRMED" },
+      { label: "Annuler", targetStatus: "CANCELLED" },
+    ];
+  }
+
+  if (status === "CONFIRMED") {
+    return [
+      { label: "Terminer", targetStatus: "COMPLETED" },
+      { label: "Annuler", targetStatus: "CANCELLED" },
+    ];
+  }
+
+  return [];
+}
+
 function JobCard({ item }: { item: JobListItem }) {
   const job = item.job;
   const customerHref = UUID_REGEX.test(item.customer.id || "")
@@ -137,7 +167,7 @@ function JobCard({ item }: { item: JobListItem }) {
       </div>
       <div className="mt-5 space-y-2 border-t border-white/10 pt-4 text-xs text-white/45">
         {scheduledAt && <p>Planifiée : <span className="text-white/70">{scheduledAt}</span></p>}
-        {appointmentAt && <p>Rendez-vous : <span className="text-white/70">{appointmentAt}</span>{item.appointment?.status ? ` · ${item.appointment.status}` : ""}</p>}
+        {appointmentAt && <p>Rendez-vous : <span className="text-white/70">{appointmentAt}</span>{item.appointment?.status ? ` · ${appointmentStatusLabels[item.appointment.status]}` : ""}</p>}
         {item.quote?.status && <p>Devis : <span className="text-white/70">{item.quote.status}{quoteAmount ? ` · ${quoteAmount}` : ""}</span></p>}
         {amount && <p>Montant prestation : <span className="text-[#d8b477]">{amount}</span></p>}
         {!scheduledAt && !appointmentAt && !item.quote && !amount && <p className="text-white/30">Contexte opérationnel non renseigné</p>}
@@ -146,6 +176,19 @@ function JobCard({ item }: { item: JobListItem }) {
         <span>Créée le {formatDate(job.created_at) || "date non renseignée"}</span>
         {job.notes && <span className="max-w-[55%] truncate text-white/45">{job.notes}</span>}
       </div>
+      {item.appointment?.id && UUID_REGEX.test(item.appointment.id) && appointmentActions(item.appointment.status).length > 0 && (
+        <div className="mt-5 flex flex-wrap gap-2 border-t border-white/10 pt-4">
+          {appointmentActions(item.appointment.status).map((action) => (
+            <form key={action.targetStatus} action={transitionJobAppointment}>
+              <input type="hidden" name="appointmentId" value={item.appointment?.id || ""} />
+              <input type="hidden" name="targetStatus" value={action.targetStatus} />
+              <button type="submit" className="border border-white/15 px-3 py-2 text-xs text-white/65 transition-colors hover:border-[#d8b477] hover:text-[#d8b477]">
+                {action.label}
+              </button>
+            </form>
+          ))}
+        </div>
+      )}
     </article>
   );
 }
@@ -158,6 +201,8 @@ export default async function JobsPage({ searchParams }: {
   const params = await searchParams;
   const search = normalizeSearch(params.search);
   const status = normalizeStatus(params.status);
+  const updated = firstQueryValue(params.updated) === "1";
+  const actionError = firstQueryValue(params.error);
   let result;
   let failed = false;
 
@@ -185,6 +230,9 @@ export default async function JobsPage({ searchParams }: {
         </div>
         <span className="w-fit border border-white/10 px-3 py-2 text-[10px] uppercase tracking-[0.16em] text-white/35">Lecture seule</span>
       </section>
+
+      {updated && <p role="status" className="border border-emerald-300/30 bg-emerald-300/5 px-4 py-3 text-sm text-emerald-200">Rendez-vous mis à jour.</p>}
+      {actionError && <p role="alert" className="border border-red-300/30 bg-red-300/5 px-4 py-3 text-sm text-red-200">{actionError === "invalid" ? "Action invalide." : actionError === "access" ? "Action non autorisée." : "Action momentanément indisponible."}</p>}
 
       <section aria-labelledby="jobs-list" className="space-y-5">
         <div className="flex items-end justify-between border-b border-white/10 pb-4">
