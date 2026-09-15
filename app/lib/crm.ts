@@ -175,6 +175,20 @@ export type Payment = {
   created_at: string;
 };
 
+export type AutomationOutboxEvent = {
+  id: string;
+  business_id: string;
+  event_type: string;
+  review_request_id: string;
+  created_at: string;
+  available_at: string;
+  attempt_count: number;
+  lease_token: string | null;
+  leased_until: string | null;
+  processed_at: string | null;
+  last_error: string | null;
+};
+
 export type ReviewRequest = {
   id: string;
   business_id: string;
@@ -3126,4 +3140,119 @@ export async function logActivity(input: ActivityLog) {
   const businessId = await getCurrentBusinessId();
 
   return (await supabaseRest<ActivityLog>("activity_log", "POST", { ...input, business_id: businessId }, "select=*")) as ActivityLog | null;
+}
+
+
+function requireClaimedOutboxEvent(
+  value: unknown,
+  businessId: string,
+): AutomationOutboxEvent {
+  if (
+    !value ||
+    typeof value !== "object" ||
+    Array.isArray(value)
+  ) {
+    throw new Error("Invalid automation outbox claim response.");
+  }
+
+  const event = value as Record<string, unknown>;
+
+  if (
+    typeof event.id !== "string" ||
+    event.business_id !== businessId ||
+    typeof event.event_type !== "string" ||
+    typeof event.review_request_id !== "string" ||
+    typeof event.created_at !== "string" ||
+    typeof event.available_at !== "string" ||
+    typeof event.attempt_count !== "number" ||
+    typeof event.lease_token !== "string" ||
+    typeof event.leased_until !== "string" ||
+    event.processed_at !== null
+  ) {
+    throw new Error("Invalid automation outbox event shape.");
+  }
+
+  return event as AutomationOutboxEvent;
+}
+
+export async function claimAutomationOutbox(input: {
+  businessId: string;
+  limit?: number;
+  leaseSeconds?: number;
+}): Promise<AutomationOutboxEvent[]> {
+  const businessId = input.businessId.trim();
+  const limit = input.limit ?? 10;
+  const leaseSeconds = input.leaseSeconds ?? 300;
+
+  if (!businessId) {
+    throw new Error("businessId is required.");
+  }
+
+  const result = await supabaseRest<AutomationOutboxEvent>(
+    "rpc/claim_automation_outbox",
+    "POST",
+    {
+      p_business_id: businessId,
+      p_limit: limit,
+      p_lease_seconds: leaseSeconds,
+    },
+    undefined,
+    true,
+  );
+
+  if (!result) {
+    return [];
+  }
+
+  const rows = Array.isArray(result) ? result : [result];
+
+  return rows.map((row) => requireClaimedOutboxEvent(row, businessId));
+}
+
+export async function ackAutomationOutbox(input: {
+  businessId: string;
+  outboxId: string;
+  leaseToken: string;
+}): Promise<AutomationOutboxEvent> {
+  const result = await supabaseRest<AutomationOutboxEvent>(
+    "rpc/ack_automation_outbox",
+    "POST",
+    {
+      p_business_id: input.businessId.trim(),
+      p_outbox_id: input.outboxId.trim(),
+      p_lease_token: input.leaseToken.trim(),
+    },
+  );
+
+  if (!result || Array.isArray(result)) {
+    throw new Error("Invalid automation outbox ACK response.");
+  }
+
+  return result;
+}
+
+export async function nackAutomationOutbox(input: {
+  businessId: string;
+  outboxId: string;
+  leaseToken: string;
+  retryAfterSeconds: number;
+  error?: string | null;
+}): Promise<AutomationOutboxEvent> {
+  const result = await supabaseRest<AutomationOutboxEvent>(
+    "rpc/nack_automation_outbox",
+    "POST",
+    {
+      p_business_id: input.businessId.trim(),
+      p_outbox_id: input.outboxId.trim(),
+      p_lease_token: input.leaseToken.trim(),
+      p_retry_after_seconds: input.retryAfterSeconds,
+      p_error: input.error?.trim().slice(0, 500) || null,
+    },
+  );
+
+  if (!result || Array.isArray(result)) {
+    throw new Error("Invalid automation outbox NACK response.");
+  }
+
+  return result;
 }
