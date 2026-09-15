@@ -134,6 +134,9 @@ function appointmentActions(status: Appointment["status"]): Array<{
 
 function JobCard({ item }: { item: JobListItem }) {
   const job = item.job;
+  const jobHref = UUID_REGEX.test(job.id || "")
+    ? `/crm/jobs/${job.id}`
+    : null;
   const customerHref = UUID_REGEX.test(item.customer.id || "")
     ? `/crm/clients/${item.customer.id}`
     : null;
@@ -148,7 +151,13 @@ function JobCard({ item }: { item: JobListItem }) {
       <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
         <div className="min-w-0">
           <p className="text-[10px] uppercase tracking-[0.16em] text-[#d8b477]">{job.job_number || "Prestation"}</p>
-          <h3 className="mt-2 truncate text-base font-medium text-white">{job.title || "Prestation sans intitulé"}</h3>
+          {jobHref ? (
+            <Link href={jobHref} className="mt-2 block truncate text-base font-medium text-white hover:text-[#d8b477]">
+              {job.title || "Prestation sans intitulé"}
+            </Link>
+          ) : (
+            <h3 className="mt-2 truncate text-base font-medium text-white">{job.title || "Prestation sans intitulé"}</h3>
+          )}
         </div>
         <span className="w-fit shrink-0 border border-[#d8b477]/40 px-2.5 py-1 text-[10px] uppercase tracking-[0.12em] text-[#d8b477]">{jobStatusLabels[job.status]}</span>
       </div>
