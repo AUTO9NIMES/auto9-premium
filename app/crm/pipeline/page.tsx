@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CrmAccessError, requireCrmAccess } from "../../lib/auth/dal";
-import { acceptPipelineQuote, transitionPipelineLead } from "./actions";
+import { acceptPipelineQuote, markPipelineQuoteSent, transitionPipelineLead } from "./actions";
 import Pagination, { normalizePage } from "../components/Pagination";
 import {
   getLeadsList,
@@ -192,6 +192,11 @@ function LeadCard({ item }: { item: LeadListItem }) {
   const quoteAmount = formatAmount(item.latestQuote?.total_price);
   const appointmentDate = formatDateTime(item.latestAppointment?.requested_at);
   const quoteService = item.latestQuote ? quoteServiceName(item.latestQuote) : null;
+  const canSendQuote = Boolean(
+    item.latestQuote?.id &&
+    UUID_REGEX.test(item.latestQuote.id) &&
+    item.latestQuote.status === "DRAFT",
+  );
   const canAcceptQuote = Boolean(
     item.latestQuote?.id &&
     UUID_REGEX.test(item.latestQuote.id) &&
@@ -239,6 +244,15 @@ function LeadCard({ item }: { item: LeadListItem }) {
           <input type="hidden" name="quoteId" value={item.latestQuote.id} />
           <button type="submit" className="w-full border border-[#d8b477] px-3 py-2.5 text-xs font-medium uppercase tracking-[0.12em] text-[#d8b477] transition-colors hover:bg-[#d8b477] hover:text-[#080a0d]">
             Accepter le devis
+          </button>
+        </form>
+      )}
+
+      {canSendQuote && item.latestQuote?.id && (
+        <form action={markPipelineQuoteSent} className="mt-4 border-t border-white/10 pt-4">
+          <input type="hidden" name="quoteId" value={item.latestQuote.id} />
+          <button type="submit" className="w-full border border-white/15 px-3 py-2.5 text-xs font-medium uppercase tracking-[0.12em] text-white/70 transition-colors hover:border-[#d8b477] hover:text-[#d8b477]">
+            Marquer comme envoyé
           </button>
         </form>
       )}
@@ -294,6 +308,8 @@ export default async function PipelinePage({ searchParams }: {
   const actionError = firstQueryValue(params.error);
   const quoteUpdated = firstQueryValue(params.quote_updated) === "1";
   const quoteError = firstQueryValue(params.quote_error);
+  const quoteSent = firstQueryValue(params.quote_sent) === "1";
+  const quoteSendError = firstQueryValue(params.quote_send_error);
   let result;
   let failed = false;
 
@@ -335,6 +351,8 @@ export default async function PipelinePage({ searchParams }: {
       {actionError && <p role="alert" className="border border-red-300/30 bg-red-300/5 px-4 py-3 text-sm text-red-200">{actionError === "invalid" ? "Action invalide." : actionError === "access" ? "Action non autorisée." : "Action momentanément indisponible."}</p>}
       {quoteUpdated && <p role="status" className="border border-emerald-300/30 bg-emerald-300/5 px-4 py-3 text-sm text-emerald-200">Devis accepté. Le lead et la prestation ont été mis à jour.</p>}
       {quoteError && <p role="alert" className="border border-red-300/30 bg-red-300/5 px-4 py-3 text-sm text-red-200">{quoteError === "invalid" ? "Action invalide." : quoteError === "access" ? "Action non autorisée." : "Action momentanément indisponible."}</p>}
+      {quoteSent && <p role="status" className="border border-emerald-300/30 bg-emerald-300/5 px-4 py-3 text-sm text-emerald-200">Devis marqué comme envoyé.</p>}
+      {quoteSendError && <p role="alert" className="border border-red-300/30 bg-red-300/5 px-4 py-3 text-sm text-red-200">{quoteSendError === "invalid" ? "Action invalide." : quoteSendError === "access" ? "Action non autorisée." : "Action momentanément indisponible."}</p>}
 
       <section aria-labelledby="pipeline-board" className="border border-white/10 bg-[#101419]">
         <div className="flex items-center justify-between border-b border-white/10 px-5 py-4 md:px-7">
