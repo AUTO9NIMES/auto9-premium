@@ -215,6 +215,13 @@ export type ScheduleJobResult = {
   noOp: boolean;
 };
 
+export type RescheduleJobResult = {
+  appointment: Appointment;
+  job: Job;
+  activity: ActivityLog | null;
+  noOp: boolean;
+};
+
 export type RecordJobPaymentResult = {
   payment: Payment;
   job: Job;
@@ -291,6 +298,43 @@ export type JobListResult = {
     returned: number;
     hasNextPage: boolean;
   };
+};
+
+export type CalendarAppointmentItem = {
+  appointment: {
+    id: string;
+    customerId: string;
+    jobId: string;
+    vehicleId: string | null;
+    status: Appointment["status"];
+    requestedAt: string;
+    scheduledAt: string;
+  };
+  job: {
+    id: string;
+    jobNumber: string | null;
+    title: string | null;
+    status: JobStatus;
+    scheduledAt: string;
+  };
+  customer: {
+    id: string;
+    fullName: string;
+  };
+  vehicle: {
+    id: string;
+    brand: string | null;
+    model: string | null;
+  } | null;
+};
+
+export type CalendarMonthResult = {
+  month: string;
+  startsAt: string;
+  endsAt: string;
+  previousMonth: string;
+  nextMonth: string;
+  items: CalendarAppointmentItem[];
 };
 
 export type LeadListQueryParams = {
@@ -1589,6 +1633,377 @@ export async function getJobsList(
   };
 }
 
+
+const CALENDAR_TIME_ZONE = "Europe/Paris";
+const CALENDAR_MAX_ITEMS = 200;
+const CALENDAR_MIN_YEAR = 2000;
+const CALENDAR_MAX_YEAR = 2100;
+const CALENDAR_MONTH_REGEX = /^([0-9]{4})-(0[1-9]|1[0-2])$/;
+
+type CalendarAppointmentRow = {
+  id: string;
+  business_id: string;
+  customer_id: string;
+  lead_id: string | null;
+  quote_id: string | null;
+  job_id: string;
+  vehicle_id: string | null;
+  status: Appointment["status"];
+  requested_at: string;
+  scheduled_at: string;
+};
+
+type CalendarJobRow = {
+  id: string;
+  business_id: string;
+  customer_id: string;
+  lead_id: string;
+  quote_id: string | null;
+  vehicle_id: string | null;
+  job_number: string | null;
+  title: string | null;
+  status: JobStatus;
+  scheduled_at: string;
+};
+
+type CalendarCustomerRow = {
+  id: string;
+  business_id: string;
+  full_name: string;
+};
+
+type CalendarVehicleRow = {
+  id: string;
+  business_id: string;
+  customer_id: string;
+  brand: string | null;
+  model: string | null;
+};
+
+const calendarDateTimeFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: CALENDAR_TIME_ZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hourCycle: "h23",
+});
+
+function getCalendarDateTimeParts(date: Date) {
+  const parts = calendarDateTimeFormatter.formatToParts(date);
+  const values = new Map(
+    parts
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, Number(part.value)]),
+  );
+
+  const year = values.get("year");
+  const month = values.get("month");
+  const day = values.get("day");
+  const hour = values.get("hour");
+  const minute = values.get("minute");
+  const second = values.get("second");
+
+  if (
+    !Number.isInteger(year) ||
+    !Number.isInteger(month) ||
+    !Number.isInteger(day) ||
+    !Number.isInteger(hour) ||
+    !Number.isInteger(minute) ||
+    !Number.isInteger(second)
+  ) {
+    throw new Error("Unable to resolve Europe/Paris calendar time.");
+  }
+
+  return {
+    year: year as number,
+    month: month as number,
+    day: day as number,
+    hour: hour as number,
+    minute: minute as number,
+    second: second as number,
+  };
+}
+
+function parisLocalMidnightToInstant(
+  year: number,
+  month: number,
+): string {
+  const desiredUtcValue = Date.UTC(year, month - 1, 1, 0, 0, 0);
+  let candidateValue = desiredUtcValue;
+
+  for (let iteration = 0; iteration < 4; iteration += 1) {
+    const parts = getCalendarDateTimeParts(new Date(candidateValue));
+    const representedUtcValue = Date.UTC(
+      parts.year,
+      parts.month - 1,
+      parts.day,
+      parts.hour,
+      parts.minute,
+      parts.second,
+    );
+    const correction = desiredUtcValue - representedUtcValue;
+
+    candidateValue += correction;
+
+    if (correction === 0) {
+      break;
+    }
+  }
+
+  const candidate = new Date(candidateValue);
+  const verified = getCalendarDateTimeParts(candidate);
+
+  if (
+    verified.year !== year ||
+    verified.month !== month ||
+    verified.day !== 1 ||
+    verified.hour !== 0 ||
+    verified.minute !== 0 ||
+    verified.second !== 0
+  ) {
+    throw new Error("Unable to resolve Europe/Paris month boundary.");
+  }
+
+  return candidate.toISOString();
+}
+
+function formatCalendarMonth(year: number, month: number): string {
+  return String(year).padStart(4, "0") + "-" + String(month).padStart(2, "0");
+}
+
+function shiftCalendarMonth(
+  year: number,
+  month: number,
+  amount: number,
+): { year: number; month: number } {
+  const shifted = new Date(Date.UTC(year, month - 1 + amount, 1));
+
+  return {
+    year: shifted.getUTCFullYear(),
+    month: shifted.getUTCMonth() + 1,
+  };
+}
+
+function resolveCalendarMonth(input?: string): {
+  key: string;
+  year: number;
+  month: number;
+} {
+  const normalized = input?.trim();
+
+  if (!normalized) {
+    const current = getCalendarDateTimeParts(new Date());
+
+    return {
+      key: formatCalendarMonth(current.year, current.month),
+      year: current.year,
+      month: current.month,
+    };
+  }
+
+  const match = CALENDAR_MONTH_REGEX.exec(normalized);
+
+  if (!match) {
+    throw new Error("Calendar month has an invalid format.");
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+
+  if (
+    !Number.isInteger(year) ||
+    year < CALENDAR_MIN_YEAR ||
+    year > CALENDAR_MAX_YEAR
+  ) {
+    throw new Error("Calendar month is outside the supported range.");
+  }
+
+  return {
+    key: formatCalendarMonth(year, month),
+    year,
+    month,
+  };
+}
+
+export async function getCalendarMonth(input?: {
+  month?: string;
+}): Promise<CalendarMonthResult> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const businessId = await getCurrentBusinessId();
+  const selected = resolveCalendarMonth(input?.month);
+  const previous = shiftCalendarMonth(selected.year, selected.month, -1);
+  const next = shiftCalendarMonth(selected.year, selected.month, 1);
+  const startsAt = parisLocalMidnightToInstant(
+    selected.year,
+    selected.month,
+  );
+  const endsAt = parisLocalMidnightToInstant(next.year, next.month);
+
+  const appointmentRows = (await supabaseRest<CalendarAppointmentRow[]>(
+    "appointments",
+    "GET",
+    null,
+    "business_id=eq." + businessId +
+      "&scheduled_at=gte." + encodeURIComponent(startsAt) +
+      "&scheduled_at=lt." + encodeURIComponent(endsAt) +
+      "&order=scheduled_at.asc,id.asc" +
+      "&limit=" + (CALENDAR_MAX_ITEMS + 1) +
+      "&select=id,business_id,customer_id,lead_id,quote_id,job_id,vehicle_id,status,requested_at,scheduled_at",
+  )) as CalendarAppointmentRow[] | null;
+
+  const appointments = appointmentRows ?? [];
+
+  if (appointments.length > CALENDAR_MAX_ITEMS) {
+    throw new Error("Calendar month exceeds the supported event limit.");
+  }
+
+  if (appointments.length === 0) {
+    return {
+      month: selected.key,
+      startsAt,
+      endsAt,
+      previousMonth: formatCalendarMonth(previous.year, previous.month),
+      nextMonth: formatCalendarMonth(next.year, next.month),
+      items: [],
+    };
+  }
+
+  const jobIds = [...new Set(appointments.map((appointment) => appointment.job_id))];
+  const customerIds = [
+    ...new Set(appointments.map((appointment) => appointment.customer_id)),
+  ];
+  const vehicleIds = [
+    ...new Set(
+      appointments
+        .map((appointment) => appointment.vehicle_id)
+        .filter((vehicleId): vehicleId is string => Boolean(vehicleId)),
+    ),
+  ];
+
+  const [jobRows, customerRows, vehicleRows] = await Promise.all([
+    supabaseRest<CalendarJobRow[]>(
+      "jobs",
+      "GET",
+      null,
+      "business_id=eq." + businessId +
+        "&id=in.(" + jobIds.join(",") + ")" +
+        "&select=id,business_id,customer_id,lead_id,quote_id,vehicle_id,job_number,title,status,scheduled_at",
+    ),
+    supabaseRest<CalendarCustomerRow[]>(
+      "customers",
+      "GET",
+      null,
+      "business_id=eq." + businessId +
+        "&id=in.(" + customerIds.join(",") + ")" +
+        "&select=id,business_id,full_name",
+    ),
+    vehicleIds.length > 0
+      ? supabaseRest<CalendarVehicleRow[]>(
+          "vehicles",
+          "GET",
+          null,
+          "business_id=eq." + businessId +
+            "&id=in.(" + vehicleIds.join(",") + ")" +
+            "&select=id,business_id,customer_id,brand,model",
+        )
+      : Promise.resolve([]),
+  ]);
+
+  const jobsById = new Map(
+    ((jobRows as CalendarJobRow[] | null) ?? []).map((job) => [job.id, job]),
+  );
+  const customersById = new Map(
+    ((customerRows as CalendarCustomerRow[] | null) ?? []).map(
+      (customer) => [customer.id, customer],
+    ),
+  );
+  const vehiclesById = new Map(
+    ((vehicleRows as CalendarVehicleRow[] | null) ?? []).map(
+      (vehicle) => [vehicle.id, vehicle],
+    ),
+  );
+
+  const items = appointments.map((appointment): CalendarAppointmentItem => {
+    const job = jobsById.get(appointment.job_id);
+    const customer = customersById.get(appointment.customer_id);
+    const vehicle = appointment.vehicle_id
+      ? vehiclesById.get(appointment.vehicle_id)
+      : null;
+
+    if (
+      !appointment.id ||
+      appointment.business_id !== businessId ||
+      !appointment.requested_at ||
+      !appointment.scheduled_at ||
+      !job ||
+      job.business_id !== businessId ||
+      job.customer_id !== appointment.customer_id ||
+      job.lead_id !== appointment.lead_id ||
+      job.quote_id !== appointment.quote_id ||
+      job.vehicle_id !== appointment.vehicle_id ||
+      job.scheduled_at !== appointment.scheduled_at ||
+      !customer ||
+      customer.business_id !== businessId ||
+      !customer.full_name ||
+      (
+        appointment.vehicle_id !== null &&
+        (
+          !vehicle ||
+          vehicle.business_id !== businessId ||
+          vehicle.customer_id !== appointment.customer_id
+        )
+      )
+    ) {
+      throw new Error("Calendar relationships are inconsistent.");
+    }
+
+    return {
+      appointment: {
+        id: appointment.id,
+        customerId: appointment.customer_id,
+        jobId: appointment.job_id,
+        vehicleId: appointment.vehicle_id,
+        status: appointment.status,
+        requestedAt: appointment.requested_at,
+        scheduledAt: appointment.scheduled_at,
+      },
+      job: {
+        id: job.id,
+        jobNumber: job.job_number,
+        title: job.title,
+        status: job.status,
+        scheduledAt: job.scheduled_at,
+      },
+      customer: {
+        id: customer.id,
+        fullName: customer.full_name,
+      },
+      vehicle: vehicle
+        ? {
+            id: vehicle.id,
+            brand: vehicle.brand,
+            model: vehicle.model,
+          }
+        : null,
+    };
+  });
+
+  return {
+    month: selected.key,
+    startsAt,
+    endsAt,
+    previousMonth: formatCalendarMonth(previous.year, previous.month),
+    nextMonth: formatCalendarMonth(next.year, next.month),
+    items,
+  };
+}
+
 const LEAD_LIST_DEFAULT_PAGE = 1;
 const LEAD_LIST_DEFAULT_LIMIT = 20;
 const LEAD_LIST_MAX_LIMIT = 100;
@@ -2373,6 +2788,100 @@ export async function scheduleJob(input: {
   );
 
   return validateScheduleJobResult(result, businessId, jobId);
+}
+
+
+function validateRescheduleJobResult(
+  value: unknown,
+  businessId: string,
+  jobId: string,
+): RescheduleJobResult {
+  if (
+    !isRecord(value) ||
+    !isRecord(value.appointment) ||
+    !isRecord(value.job) ||
+    typeof value.no_op !== "boolean"
+  ) {
+    throw new Error("Supabase returned an invalid rescheduling result.");
+  }
+
+  const appointment = value.appointment;
+  const job = value.job;
+  const activity = value.activity === null || value.activity === undefined
+    ? null
+    : value.activity;
+
+  const eligibleState =
+    (appointment.status === "REQUESTED" && job.status === "SCHEDULED") ||
+    (appointment.status === "CONFIRMED" && job.status === "CONFIRMED");
+
+  const validActivity =
+    activity === null ||
+    (
+      isRecord(activity) &&
+      activity.business_id === businessId &&
+      activity.job_id === jobId &&
+      activity.event_type === "appointment.rescheduled"
+    );
+
+  if (
+    appointment.business_id !== businessId ||
+    appointment.job_id !== jobId ||
+    typeof appointment.id !== "string" ||
+    typeof appointment.requested_at !== "string" ||
+    typeof appointment.scheduled_at !== "string" ||
+    job.business_id !== businessId ||
+    job.id !== jobId ||
+    typeof job.scheduled_at !== "string" ||
+    appointment.scheduled_at !== job.scheduled_at ||
+    !eligibleState ||
+    !validActivity ||
+    (value.no_op && activity !== null) ||
+    (!value.no_op && activity === null)
+  ) {
+    throw new Error("Supabase returned an inconsistent rescheduling result.");
+  }
+
+  return {
+    appointment: appointment as Appointment,
+    job: job as Job,
+    activity: activity as ActivityLog | null,
+    noOp: value.no_op,
+  };
+}
+
+export async function rescheduleJob(input: {
+  jobId: string;
+  expectedScheduledAt: string;
+  scheduledAtLocal: string;
+}): Promise<RescheduleJobResult> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const jobId = input.jobId.trim();
+  const expectedScheduledAt = input.expectedScheduledAt.trim();
+  const scheduledAtLocal = input.scheduledAtLocal.trim();
+
+  if (!jobId || !expectedScheduledAt || !scheduledAtLocal) {
+    throw new Error(
+      "jobId, expectedScheduledAt and scheduledAtLocal are required.",
+    );
+  }
+
+  const businessId = await getCurrentBusinessId();
+  const result = await supabaseRest<unknown>(
+    "rpc/reschedule_job",
+    "POST",
+    {
+      p_business_id: businessId,
+      p_job_id: jobId,
+      p_expected_scheduled_at: expectedScheduledAt,
+      p_scheduled_at_local: scheduledAtLocal,
+    },
+  );
+
+  return validateRescheduleJobResult(result, businessId, jobId);
 }
 
 export type StartJobResult = {

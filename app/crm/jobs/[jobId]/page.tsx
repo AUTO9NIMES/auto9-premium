@@ -2,7 +2,14 @@ import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { CrmAccessError, requireCrmAccess } from "../../../lib/auth/dal";
-import { recordJobPaymentAction, requestJobReviewAction, scheduleJobAction, startJobAction, transitionJobAppointment } from "../actions";
+import {
+  recordJobPaymentAction,
+  requestJobReviewAction,
+  rescheduleJobAction,
+  scheduleJobAction,
+  startJobAction,
+  transitionJobAppointment,
+} from "../actions";
 import {
   getJobDetails,
   type ActivityLog,
@@ -92,6 +99,42 @@ function formatDateTime(value?: string | null): string | null {
     dateStyle: "medium", timeStyle: "short",
     timeZone: "Europe/Paris",
   }).format(date);
+}
+
+const parisDateTimeInputFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Europe/Paris",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+
+function formatParisDateTimeInput(value?: string | null): string | null {
+  if (!value) return null;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+
+  const parts = new Map(
+    parisDateTimeInputFormatter
+      .formatToParts(date)
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, part.value]),
+  );
+
+  const year = parts.get("year");
+  const month = parts.get("month");
+  const day = parts.get("day");
+  const hour = parts.get("hour");
+  const minute = parts.get("minute");
+
+  if (!year || !month || !day || !hour || !minute) {
+    return null;
+  }
+
+  return year + "-" + month + "-" + day + "T" + hour + ":" + minute;
 }
 
 function formatAmount(value?: number | null): string | null {
@@ -221,6 +264,7 @@ export default async function JobDetailPage({ params, searchParams }: {
   const feedback = await searchParams;
   const scheduleStatus = Array.isArray(feedback.schedule) ? feedback.schedule[0] : feedback.schedule;
   const scheduleError = Array.isArray(feedback.schedule_error) ? feedback.schedule_error[0] : feedback.schedule_error;
+  const rescheduleError = Array.isArray(feedback.reschedule_error) ? feedback.reschedule_error[0] : feedback.reschedule_error;
   const started = Array.isArray(feedback.started) ? feedback.started[0] : feedback.started;
   const startError = Array.isArray(feedback.start_error) ? feedback.start_error[0] : feedback.start_error;
   const paymentStatus = Array.isArray(feedback.payment) ? feedback.payment[0] : feedback.payment;
@@ -230,6 +274,25 @@ export default async function JobDetailPage({ params, searchParams }: {
   const canSchedule = job.status === "QUOTE_ACCEPTED" &&
     !job.scheduled_at &&
     (!appointment || (appointment.status === "REQUESTED" && !appointment.scheduled_at));
+  const canReschedule = Boolean(
+    appointment?.id &&
+    appointment.scheduled_at &&
+    job.scheduled_at &&
+    appointment.scheduled_at === job.scheduled_at &&
+    (
+      (
+        appointment.status === "REQUESTED" &&
+        job.status === "SCHEDULED"
+      ) ||
+      (
+        appointment.status === "CONFIRMED" &&
+        job.status === "CONFIRMED"
+      )
+    ),
+  );
+  const rescheduleDefaultValue = canReschedule
+    ? formatParisDateTimeInput(appointment?.scheduled_at)
+    : null;
   const canComplete = job.status === "IN_PROGRESS" &&
     appointment?.status === "CONFIRMED" &&
     Boolean(appointment.id);
@@ -334,8 +397,11 @@ export default async function JobDetailPage({ params, searchParams }: {
       <section aria-labelledby="job-appointment" className="space-y-4">
         <SectionHeading eyebrow="05 / Planning" title="Rendez-vous" />
         {scheduleStatus === "created" && <p role="status" className="border border-emerald-300/30 bg-emerald-300/5 px-4 py-3 text-sm text-emerald-200">Prestation planifiée.</p>}
+        {scheduleStatus === "rescheduled" && <p role="status" className="border border-emerald-300/30 bg-emerald-300/5 px-4 py-3 text-sm text-emerald-200">Horaire de la prestation mis à jour.</p>}
+        {rescheduleError && <p role="alert" className="border border-red-300/30 bg-red-300/5 px-4 py-3 text-sm text-red-200">{rescheduleError === "invalid" ? "Vérifiez le nouvel horaire sélectionné." : rescheduleError === "access" ? "Action non autorisée." : "Replanification refusée ou momentanément indisponible. Rechargez la page avant de réessayer."}</p>}
         {scheduleError && <p role="alert" className="border border-red-300/30 bg-red-300/5 px-4 py-3 text-sm text-red-200">{scheduleError === "invalid" ? "Vérifiez la date et l&apos;heure sélectionnées." : scheduleError === "access" ? "Action non autorisée." : "Planification momentanément indisponible."}</p>}
         {canSchedule && <form action={scheduleJobAction} className="grid gap-4 border border-[#d8b477]/30 bg-[#101419] p-5 md:grid-cols-[1fr_auto] md:items-end md:p-7"><input type="hidden" name="jobId" value={normalizedJobId} /><div><label htmlFor="scheduledAt" className="block text-xs text-white/55">Début opérationnel <span className="text-[#d8b477]">*</span></label><input id="scheduledAt" name="scheduledAt" type="datetime-local" required step="60" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[#d8b477]" /><p className="mt-2 text-[11px] text-white/35">Fuseau horaire : Europe/Paris</p></div><button type="submit" className="border border-[#d8b477] px-5 py-2.5 text-xs font-medium uppercase tracking-[0.14em] text-[#d8b477] transition-colors hover:bg-[#d8b477] hover:text-[#080a0d]">Planifier</button></form>}
+        {canReschedule && appointment?.scheduled_at && rescheduleDefaultValue && <form action={rescheduleJobAction} className="grid gap-4 border border-white/10 bg-[#101419] p-5 md:grid-cols-[1fr_auto] md:items-end md:p-7"><input type="hidden" name="jobId" value={normalizedJobId} /><input type="hidden" name="expectedScheduledAt" value={appointment.scheduled_at} /><div><label htmlFor="rescheduledAt" className="block text-xs text-white/55">Nouvel horaire opérationnel <span className="text-[#d8b477]">*</span></label><input id="rescheduledAt" name="scheduledAt" type="datetime-local" required step="60" defaultValue={rescheduleDefaultValue} className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[#d8b477]" /><p className="mt-2 text-[11px] text-white/35">Fuseau horaire : Europe/Paris · l&apos;horaire demandé initialement reste inchangé.</p></div><button type="submit" className="border border-[#d8b477] px-5 py-2.5 text-xs font-medium uppercase tracking-[0.14em] text-[#d8b477] transition-colors hover:bg-[#d8b477] hover:text-[#080a0d]">Replanifier</button></form>}
         {appointment ? <div className="border border-white/10 bg-[#101419] p-5"><p className="text-sm font-medium text-white">{statusLabel(appointment.status, appointmentStatusLabels)}</p><p className="mt-2 text-sm text-white/55">Demandé le {formatDateTime(appointment.requested_at) || "date non renseignée"}</p>{appointment.scheduled_at ? <p className="mt-2 text-sm text-white/70">Planifié le {formatDateTime(appointment.scheduled_at)}</p> : <p className="mt-2 text-xs text-white/35">Non planifié</p>}{appointment.confirmed_at && <p className="mt-2 text-xs text-white/40">Confirmé le {formatDateTime(appointment.confirmed_at)}</p>}{appointment.completed_at && <p className="mt-2 text-xs text-white/40">Terminé le {formatDateTime(appointment.completed_at)}</p>}{appointment.cancelled_at && <p className="mt-2 text-xs text-white/40">Annulé le {formatDateTime(appointment.cancelled_at)}</p>}{appointment.notes && <p className="mt-4 text-sm leading-6 text-white/45">{appointment.notes}</p>}</div> : <EmptySection>Aucun rendez-vous associé à cette prestation.</EmptySection>}
       </section>
 
