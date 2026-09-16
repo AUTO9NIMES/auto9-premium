@@ -314,6 +314,34 @@ export type JobListResult = {
   };
 };
 
+export type AutomationOutboxDisplayStatus =
+  | "PENDING"
+  | "RETRY"
+  | "LEASED"
+  | "PROCESSED";
+
+export type AutomationOutboxListQueryParams = {
+  page?: number;
+  limit?: number;
+  status?: AutomationOutboxDisplayStatus;
+  eventType?: string;
+};
+
+export type AutomationOutboxListItem = {
+  event: AutomationOutboxEvent;
+  status: AutomationOutboxDisplayStatus;
+};
+
+export type AutomationOutboxListResult = {
+  items: AutomationOutboxListItem[];
+  pagination: {
+    page: number;
+    limit: number;
+    returned: number;
+    hasNextPage: boolean;
+  };
+};
+
 export type CalendarAppointmentItem = {
   appointment: {
     id: string;
@@ -1643,6 +1671,122 @@ export async function getJobsList(
       limit,
       returned: items.length,
       hasNextPage,
+    },
+  };
+}
+
+
+const AUTOMATION_OUTBOX_LIST_DEFAULT_PAGE = 1;
+const AUTOMATION_OUTBOX_LIST_DEFAULT_LIMIT = 20;
+const AUTOMATION_OUTBOX_LIST_MAX_LIMIT = 100;
+
+function getAutomationOutboxDisplayStatus(
+  event: AutomationOutboxEvent,
+  now: Date,
+): AutomationOutboxDisplayStatus {
+  if (event.processed_at) {
+    return "PROCESSED";
+  }
+
+  const leasedUntil = event.leased_until
+    ? new Date(event.leased_until)
+    : null;
+
+  const hasActiveLease =
+    Boolean(event.lease_token) &&
+    leasedUntil !== null &&
+    !Number.isNaN(leasedUntil.getTime()) &&
+    leasedUntil.getTime() > now.getTime();
+
+  if (hasActiveLease) {
+    return "LEASED";
+  }
+
+  if (event.last_error) {
+    return "RETRY";
+  }
+
+  return "PENDING";
+}
+
+export async function getAutomationOutboxList(
+  input: AutomationOutboxListQueryParams,
+): Promise<AutomationOutboxListResult> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const businessId = await getCurrentBusinessId();
+
+  const page =
+    Number.isInteger(input.page) && (input.page ?? 0) > 0
+      ? Math.max(1, input.page as number)
+      : AUTOMATION_OUTBOX_LIST_DEFAULT_PAGE;
+
+  const limit =
+    Number.isInteger(input.limit) && (input.limit ?? 0) > 0
+      ? Math.min(
+          Math.max(1, input.limit as number),
+          AUTOMATION_OUTBOX_LIST_MAX_LIMIT,
+        )
+      : AUTOMATION_OUTBOX_LIST_DEFAULT_LIMIT;
+
+  const normalizedEventType = input.eventType?.trim() || null;
+  const now = new Date();
+  const nowIso = encodeURIComponent(now.toISOString());
+
+  const filters = [
+    `business_id=eq.${businessId}`,
+    normalizedEventType
+      ? `event_type=eq.${encodeURIComponent(normalizedEventType)}`
+      : null,
+  ].filter((value): value is string => Boolean(value));
+
+  if (input.status === "PROCESSED") {
+    filters.push("processed_at=not.is.null");
+  } else if (input.status === "LEASED") {
+    filters.push("processed_at=is.null");
+    filters.push("lease_token=not.is.null");
+    filters.push(`leased_until=gt.${nowIso}`);
+  } else if (input.status === "RETRY") {
+    filters.push("processed_at=is.null");
+    filters.push("last_error=not.is.null");
+    filters.push(
+      `or=(lease_token.is.null,leased_until.lte.${nowIso})`,
+    );
+  } else if (input.status === "PENDING") {
+    filters.push("processed_at=is.null");
+    filters.push("last_error=is.null");
+    filters.push(
+      `or=(lease_token.is.null,leased_until.lte.${nowIso})`,
+    );
+  }
+
+  const offset = (page - 1) * limit;
+
+  const rows = (await supabaseRest<AutomationOutboxEvent[]>(
+    "automation_outbox",
+    "GET",
+    null,
+    `${filters.join("&")}&order=created_at.desc,id.desc&offset=${offset}&limit=${limit + 1}&select=*`,
+  )) as AutomationOutboxEvent[] | null;
+
+  const events = (rows ?? []).filter(
+    (event): event is AutomationOutboxEvent => Boolean(event?.id),
+  );
+
+  const pageEvents = events.slice(0, limit);
+
+  return {
+    items: pageEvents.map((event) => ({
+      event,
+      status: getAutomationOutboxDisplayStatus(event, now),
+    })),
+    pagination: {
+      page,
+      limit,
+      returned: pageEvents.length,
+      hasNextPage: events.length > limit,
     },
   };
 }
