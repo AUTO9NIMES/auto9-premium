@@ -112,18 +112,31 @@ function vehicleName(item: JobListItem): string | null {
   return name || "Véhicule sans désignation";
 }
 
-function appointmentActions(status: Appointment["status"]): Array<{
+function appointmentActions(
+  appointment: Appointment,
+  job: JobListItem["job"],
+): Array<{
   label: string;
   targetStatus: "CONFIRMED" | "COMPLETED" | "CANCELLED";
 }> {
-  if (status === "REQUESTED") {
+  if (appointment.status === "REQUESTED") {
+    const canConfirm =
+      job.status === "SCHEDULED" &&
+      typeof appointment.scheduled_at === "string" &&
+      appointment.scheduled_at.length > 0 &&
+      typeof job.scheduled_at === "string" &&
+      job.scheduled_at.length > 0 &&
+      appointment.scheduled_at === job.scheduled_at;
+
     return [
-      { label: "Confirmer", targetStatus: "CONFIRMED" },
+      ...(canConfirm
+        ? [{ label: "Confirmer", targetStatus: "CONFIRMED" as const }]
+        : []),
       { label: "Annuler", targetStatus: "CANCELLED" },
     ];
   }
 
-  if (status === "CONFIRMED") {
+  if (appointment.status === "CONFIRMED") {
     return [
       { label: "Terminer", targetStatus: "COMPLETED" },
       { label: "Annuler", targetStatus: "CANCELLED" },
@@ -186,9 +199,9 @@ function JobCard({ item }: { item: JobListItem }) {
         <span>Créée le {formatDate(job.created_at) || "date non renseignée"}</span>
         {job.notes && <span className="max-w-[55%] truncate text-white/45">{job.notes}</span>}
       </div>
-      {item.appointment?.id && UUID_REGEX.test(item.appointment.id) && appointmentActions(item.appointment.status).length > 0 && (
+      {item.appointment?.id && UUID_REGEX.test(item.appointment.id) && appointmentActions(item.appointment, job).length > 0 && (
         <div className="mt-5 flex flex-wrap gap-2 border-t border-white/10 pt-4">
-          {appointmentActions(item.appointment.status).map((action) => (
+          {appointmentActions(item.appointment, job).map((action) => (
             <form key={action.targetStatus} action={transitionJobAppointment}>
               <input type="hidden" name="appointmentId" value={item.appointment?.id || ""} />
               <input type="hidden" name="targetStatus" value={action.targetStatus} />
