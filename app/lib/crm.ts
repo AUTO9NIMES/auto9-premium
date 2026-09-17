@@ -186,6 +186,7 @@ export type AutomationOutboxEvent = {
   lease_token: string | null;
   leased_until: string | null;
   processed_at: string | null;
+  quarantined_at: string | null;
   last_error: string | null;
 };
 
@@ -318,6 +319,7 @@ export type AutomationOutboxDisplayStatus =
   | "PENDING"
   | "RETRY"
   | "LEASED"
+  | "QUARANTINED"
   | "PROCESSED";
 
 export type AutomationOutboxListQueryParams = {
@@ -1688,6 +1690,10 @@ function getAutomationOutboxDisplayStatus(
     return "PROCESSED";
   }
 
+  if (event.quarantined_at) {
+    return "QUARANTINED";
+  }
+
   const leasedUntil = event.leased_until
     ? new Date(event.leased_until)
     : null;
@@ -1744,18 +1750,24 @@ export async function getAutomationOutboxList(
 
   if (input.status === "PROCESSED") {
     filters.push("processed_at=not.is.null");
+  } else if (input.status === "QUARANTINED") {
+    filters.push("processed_at=is.null");
+    filters.push("quarantined_at=not.is.null");
   } else if (input.status === "LEASED") {
     filters.push("processed_at=is.null");
+    filters.push("quarantined_at=is.null");
     filters.push("lease_token=not.is.null");
     filters.push(`leased_until=gt.${nowIso}`);
   } else if (input.status === "RETRY") {
     filters.push("processed_at=is.null");
+    filters.push("quarantined_at=is.null");
     filters.push("last_error=not.is.null");
     filters.push(
       `or=(lease_token.is.null,leased_until.lte.${nowIso})`,
     );
   } else if (input.status === "PENDING") {
     filters.push("processed_at=is.null");
+    filters.push("quarantined_at=is.null");
     filters.push("last_error=is.null");
     filters.push(
       `or=(lease_token.is.null,leased_until.lte.${nowIso})`,
