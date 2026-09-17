@@ -12,6 +12,7 @@ import { supabaseRest } from "./supabase";
 const CLAIM_LIMIT = 10;
 const LEASE_SECONDS = 300;
 const RETRY_AFTER_SECONDS = 300;
+const MIN_DELIVERY_LEASE_REMAINING_MS = 30_000;
 
 type WorkerResult = {
   claimed: number;
@@ -248,7 +249,18 @@ export async function processAutomationOutbox(): Promise<WorkerResult> {
   let settlementFailures = 0;
 
   for (const event of events) {
-    if (!event.lease_token) {
+    if (!event.lease_token || !event.leased_until) {
+      settlementFailures += 1;
+      continue;
+    }
+
+    const leasedUntilMs = Date.parse(event.leased_until);
+    const leaseRemainingMs = leasedUntilMs - Date.now();
+
+    if (
+      !Number.isFinite(leasedUntilMs) ||
+      leaseRemainingMs < MIN_DELIVERY_LEASE_REMAINING_MS
+    ) {
       settlementFailures += 1;
       continue;
     }
