@@ -18,6 +18,7 @@ type WorkerResult = {
   claimed: number;
   acknowledged: number;
   retried: number;
+  quarantined: number;
   settlementFailures: number;
 };
 
@@ -246,6 +247,7 @@ export async function processAutomationOutbox(): Promise<WorkerResult> {
 
   let acknowledged = 0;
   let retried = 0;
+  let quarantined = 0;
   let settlementFailures = 0;
 
   for (const event of events) {
@@ -284,7 +286,7 @@ export async function processAutomationOutbox(): Promise<WorkerResult> {
       }
     } catch (error) {
       try {
-        await nackAutomationOutbox({
+        const settled = await nackAutomationOutbox({
           businessId,
           outboxId: event.id,
           leaseToken: event.lease_token,
@@ -292,7 +294,11 @@ export async function processAutomationOutbox(): Promise<WorkerResult> {
           error: safeWorkerError(error),
         });
 
-        retried += 1;
+        if (settled.quarantined_at) {
+          quarantined += 1;
+        } else {
+          retried += 1;
+        }
       } catch {
         // Keep processing the rest of the claimed batch. This event remains
         // leased until expiry and can then be reclaimed safely.
@@ -305,6 +311,7 @@ export async function processAutomationOutbox(): Promise<WorkerResult> {
     claimed: events.length,
     acknowledged,
     retried,
+    quarantined,
     settlementFailures,
   };
 }

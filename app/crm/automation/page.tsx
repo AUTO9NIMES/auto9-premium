@@ -17,6 +17,7 @@ const outboxStatuses: AutomationOutboxDisplayStatus[] = [
   "PENDING",
   "RETRY",
   "LEASED",
+  "QUARANTINED",
   "PROCESSED",
 ];
 
@@ -24,6 +25,7 @@ const outboxStatusLabels: Record<AutomationOutboxDisplayStatus, string> = {
   PENDING: "À traiter",
   RETRY: "Nouvel essai",
   LEASED: "En traitement",
+  QUARANTINED: "En quarantaine",
   PROCESSED: "Traité",
 };
 
@@ -91,6 +93,10 @@ function statusClass(status: AutomationOutboxDisplayStatus): string {
     return "border-amber-300/30 text-amber-200";
   }
 
+  if (status === "QUARANTINED") {
+    return "border-red-300/30 text-red-200";
+  }
+
   return "border-white/15 text-white/55";
 }
 
@@ -100,6 +106,7 @@ function OutboxCard({ item }: { item: AutomationOutboxListItem }) {
   const availableAt = formatDateTime(event.available_at);
   const leasedUntil = formatDateTime(event.leased_until);
   const processedAt = formatDateTime(event.processed_at);
+  const quarantinedAt = formatDateTime(event.quarantined_at);
 
   return (
     <article className="border border-white/10 bg-[#101419] p-5 transition-colors hover:border-[#d8b477]/50">
@@ -166,6 +173,13 @@ function OutboxCard({ item }: { item: AutomationOutboxListItem }) {
           <p>
             Traité :{" "}
             <span className="text-emerald-200">{processedAt}</span>
+          </p>
+        )}
+
+        {quarantinedAt && (
+          <p>
+            Quarantaine :{" "}
+            <span className="text-red-200">{quarantinedAt}</span>
           </p>
         )}
       </div>
