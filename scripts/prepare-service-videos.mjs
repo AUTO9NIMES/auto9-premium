@@ -28,6 +28,12 @@ const assets = [
     minBytes: 3_500_000,
     primary: "https://d2jqrm6oza8nb6.cloudfront.net/datasets/e4aca184-6768-4faf-9db7-f35551cf1abe.mp4?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiYTQzYjU4MjhjNDY5ZGEwZCIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTkxOTAxNn0.znZymHO2vvkovZ5aKlhiEhmbc7oPR0G1h6l65G1e_IA",
   },
+  {
+    name: "Polissage carrosserie",
+    filename: "service-polissage.mp4",
+    minBytes: 3_000_000,
+    primary: "https://d2jqrm6oza8nb6.cloudfront.net/datasets/e83f596a-38f5-4ef0-8d6b-b298c191daca.mp4?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiMjM0ZWFlYmE0N2E4MDBkMSIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTg2MzA5OH0.TbgpvgUonEhTXTm0aYLf-A2Z6HFSobRQ8jPpZVvaTls",
+  },
 ];
 
 const productionOrigins = [
