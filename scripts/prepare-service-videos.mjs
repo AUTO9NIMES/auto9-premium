@@ -34,6 +34,12 @@ const assets = [
     minBytes: 3_000_000,
     primary: "https://d2jqrm6oza8nb6.cloudfront.net/datasets/e83f596a-38f5-4ef0-8d6b-b298c191daca.mp4?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiMjM0ZWFlYmE0N2E4MDBkMSIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTg2MzA5OH0.TbgpvgUonEhTXTm0aYLf-A2Z6HFSobRQ8jPpZVvaTls",
   },
+  {
+    name: "Rénovation jantes",
+    filename: "service-jantes.mp4",
+    minBytes: 2_800_000,
+    primary: "https://d2jqrm6oza8nb6.cloudfront.net/datasets/1bb2fd59-d294-47c3-8958-2d29545274df.mp4?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiZTQ5MjljZDY5ZjFiZmVlNiIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTg5ODQ1NH0.QE802iGkRNeTfolxItmuFTNt8OaMnE7PfQiEX6jI_TA",
+  },
 ];
 
 const productionOrigins = [
