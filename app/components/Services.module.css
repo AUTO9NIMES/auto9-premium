@@ -229,8 +229,8 @@
   transform: translateY(-50%);
 }
 
-.prev { left: 1%; }
-.next { right: 1%; }
+.prev { left: 18px; }
+.next { right: 18px; }
 
 .controls {
   position: relative;
