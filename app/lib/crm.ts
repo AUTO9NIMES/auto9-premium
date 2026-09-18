@@ -187,6 +187,15 @@ export type AutomationOutboxEvent = {
   leased_until: string | null;
   processed_at: string | null;
   quarantined_at: string | null;
+  provider_message_id: string | null;
+  provider_accepted_at: string | null;
+  delivery_recipient_email: string | null;
+  delivery_customer_name: string | null;
+  delivery_review_url: string | null;
+  delivery_sender_email: string | null;
+  delivery_subject: string | null;
+  delivery_text: string | null;
+  delivery_html: string | null;
   last_error: string | null;
 };
 
@@ -3323,7 +3332,37 @@ function requireClaimedOutboxEvent(
     typeof event.attempt_count !== "number" ||
     typeof event.lease_token !== "string" ||
     typeof event.leased_until !== "string" ||
-    event.processed_at !== null
+    event.processed_at !== null ||
+    !(
+      (event.provider_message_id === null &&
+        event.provider_accepted_at === null) ||
+      (typeof event.provider_message_id === "string" &&
+        event.provider_message_id.length > 0 &&
+        typeof event.provider_accepted_at === "string")
+    ) ||
+    !(
+      (event.delivery_recipient_email === null &&
+        event.delivery_customer_name === null &&
+        event.delivery_review_url === null &&
+        event.delivery_sender_email === null &&
+        event.delivery_subject === null &&
+        event.delivery_text === null &&
+        event.delivery_html === null) ||
+      (typeof event.delivery_recipient_email === "string" &&
+        event.delivery_recipient_email.length > 0 &&
+        typeof event.delivery_customer_name === "string" &&
+        event.delivery_customer_name.length > 0 &&
+        typeof event.delivery_review_url === "string" &&
+        event.delivery_review_url.length > 0 &&
+        typeof event.delivery_sender_email === "string" &&
+        event.delivery_sender_email.length > 0 &&
+        typeof event.delivery_subject === "string" &&
+        event.delivery_subject.length > 0 &&
+        typeof event.delivery_text === "string" &&
+        event.delivery_text.length > 0 &&
+        typeof event.delivery_html === "string" &&
+        event.delivery_html.length > 0)
+    )
   ) {
     throw new Error("Invalid automation outbox event shape.");
   }
@@ -3363,6 +3402,120 @@ export async function claimAutomationOutbox(input: {
   const rows = Array.isArray(result) ? result : [result];
 
   return rows.map((row) => requireClaimedOutboxEvent(row, businessId));
+}
+
+export async function recordAutomationOutboxDeliverySnapshot(input: {
+  businessId: string;
+  outboxId: string;
+  leaseToken: string;
+  recipientEmail: string;
+  customerName: string;
+  reviewUrl: string;
+  senderEmail: string;
+  subject: string;
+  text: string;
+  html: string;
+}): Promise<AutomationOutboxEvent> {
+  const businessId = input.businessId.trim();
+  const outboxId = input.outboxId.trim();
+  const leaseToken = input.leaseToken.trim();
+  const recipientEmail = input.recipientEmail.trim();
+  const customerName = input.customerName.trim();
+  const reviewUrl = input.reviewUrl.trim();
+  const senderEmail = input.senderEmail.trim();
+  const subject = input.subject.trim();
+  const text = input.text;
+  const html = input.html;
+
+  if (
+    !businessId ||
+    !outboxId ||
+    !leaseToken ||
+    !recipientEmail ||
+    !customerName ||
+    !reviewUrl ||
+    !senderEmail ||
+    !subject ||
+    !text ||
+    !html
+  ) {
+    throw new Error("Delivery snapshot fields are required.");
+  }
+
+  const result = await supabaseRest<AutomationOutboxEvent>(
+    "rpc/record_automation_outbox_delivery_snapshot",
+    "POST",
+    {
+      p_business_id: businessId,
+      p_outbox_id: outboxId,
+      p_lease_token: leaseToken,
+      p_recipient_email: recipientEmail,
+      p_customer_name: customerName,
+      p_review_url: reviewUrl,
+      p_sender_email: senderEmail,
+      p_subject: subject,
+      p_text: text,
+      p_html: html,
+    },
+  );
+
+  if (
+    !result ||
+    Array.isArray(result) ||
+    result.id !== outboxId ||
+    result.business_id !== businessId ||
+    result.delivery_recipient_email !== recipientEmail ||
+    result.delivery_customer_name !== customerName ||
+    result.delivery_review_url !== reviewUrl ||
+    result.delivery_sender_email !== senderEmail ||
+    result.delivery_subject !== subject ||
+    result.delivery_text !== text ||
+    result.delivery_html !== html
+  ) {
+    throw new Error("Invalid automation outbox delivery snapshot response.");
+  }
+
+  return result;
+}
+
+export async function recordAutomationOutboxProviderAcceptance(input: {
+  businessId: string;
+  outboxId: string;
+  leaseToken: string;
+  providerMessageId: string;
+}): Promise<AutomationOutboxEvent> {
+  const businessId = input.businessId.trim();
+  const outboxId = input.outboxId.trim();
+  const leaseToken = input.leaseToken.trim();
+  const providerMessageId = input.providerMessageId.trim();
+
+  if (!businessId || !outboxId || !leaseToken || !providerMessageId) {
+    throw new Error("Provider acceptance identity is required.");
+  }
+
+  const result = await supabaseRest<AutomationOutboxEvent>(
+    "rpc/record_automation_outbox_provider_acceptance",
+    "POST",
+    {
+      p_business_id: businessId,
+      p_outbox_id: outboxId,
+      p_lease_token: leaseToken,
+      p_provider_message_id: providerMessageId,
+    },
+  );
+
+  if (
+    !result ||
+    Array.isArray(result) ||
+    result.id !== outboxId ||
+    result.business_id !== businessId ||
+    result.provider_message_id !== providerMessageId ||
+    typeof result.provider_accepted_at !== "string"
+  ) {
+    throw new Error("Invalid automation outbox provider acceptance response.");
+  }
+
+  return result;
 }
 
 export async function ackAutomationOutbox(input: {
