@@ -105,7 +105,7 @@ function ResultCard({
           muted
           loop
           playsInline
-          preload="metadata"
+          preload="auto"
           className="h-full w-full object-cover opacity-80 transition duration-700 group-hover:scale-110 group-hover:opacity-100"
         />
 
