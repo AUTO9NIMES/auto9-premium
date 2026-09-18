@@ -1,403 +1,224 @@
 "use client";
 
-import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./Services.module.css";
-
-const DUO_VIDEO = "/result-duo.mp4";
-const INTERIOR_VIDEO = "/result-interieur.mp4";
-const EXTERIOR_VIDEO = "/result-exterieur.mp4";
 
 const services = [
   {
-    name: "Formule Duo",
-    tag: "Best seller",
+    id: "duo",
+    eyebrow: "Formule",
+    name: "Formule DUO",
+    priceLabel: "À partir de",
     price: "169 €",
-    text: "Intérieur + extérieur, avec nettoyage moteur offert.",
+    video: "/result-duo.mp4",
+    poster: "/services/duo-card.png",
     href: "/devis?service=duo",
-    image: "/services/duo-card.png",
-    video: DUO_VIDEO,
-    videoStart: 0,
-    videoDuration: 4,
-    highlights: [
-      { icon: "sparkles", title: "Intérieur", subtitle: "complet" },
-      { icon: "car", title: "Extérieur", subtitle: "complet" },
-      { icon: "engine", title: "Nettoyage moteur", subtitle: "OFFERT" },
-    ],
-    details: [
-      "Aspiration complète de l’habitacle",
-      "Nettoyage des plastiques et du tableau de bord",
-      "Nettoyage des vitres intérieures",
-      "Nettoyage des tapis",
-      "Parfum d’ambiance",
-      "Pré-lavage de la carrosserie",
-      "Démoustiquage",
-      "Décontamination ferreuse",
-      "Lavage microfibre",
-      "Nettoyage des jantes",
-      "Séchage complet",
-      "Brillant pneus",
-      "Nettoyage moteur offert",
-    ],
+    features: ["Intérieur + extérieur", "Nettoyage moteur offert", "Expérience complète"],
   },
   {
+    id: "interieur",
+    eyebrow: "Formule",
     name: "Intérieur",
-    tag: "Confort",
+    priceLabel: "À partir de",
     price: "89 €",
-    text: "Un habitacle propre, sain et soigné jusque dans les détails.",
+    video: "/result-interieur.mp4",
+    poster: "/services/interieur-card.jpg",
     href: "/devis?service=interieur",
-    image: "/services/interieur-card.jpg",
-    video: INTERIOR_VIDEO,
-    videoStart: 0,
-    videoDuration: 4,
-    highlights: [
-      { icon: "seat", title: "Sièges", subtitle: "& tapis" },
-      { icon: "air", title: "Dépoussiérage", subtitle: "complet" },
-      { icon: "shield", title: "Finitions", subtitle: "soignées" },
-    ],
-    details: [
-      "Aspiration complète",
-      "Nettoyage des plastiques",
-      "Nettoyage du tableau de bord",
-      "Nettoyage des vitres intérieures",
-      "Nettoyage des tapis",
-      "Parfum d’ambiance",
-    ],
+    features: ["Habitacle complet", "Aspiration & plastiques", "Finition premium"],
   },
   {
+    id: "exterieur",
+    eyebrow: "Formule",
     name: "Extérieur",
-    tag: "Brillance",
+    priceLabel: "À partir de",
     price: "89 €",
-    text: "Une carrosserie propre, brillante et des finitions soignées.",
+    video: "/result-exterieur.mp4",
+    poster: "/services/exterieur-card.jpg",
     href: "/devis?service=exterieur",
-    image: "/services/exterieur-card.jpg",
-    video: EXTERIOR_VIDEO,
-    videoStart: 0,
-    videoDuration: 4,
-    highlights: [
-      { icon: "wash", title: "Lavage", subtitle: "haute pression" },
-      { icon: "sparkles", title: "Finition", subtitle: "brillante" },
-      { icon: "wheel", title: "Jantes", subtitle: "nettoyées" },
-    ],
-    details: [
-      "Pré-lavage",
-      "Démoustiquage",
-      "Décontamination ferreuse",
-      "Lavage microfibre",
-      "Nettoyage des jantes",
-      "Séchage complet",
-      "Brillant pneus",
-    ],
+    features: ["Prélavage mousse", "Jantes & carrosserie", "Séchage microfibre"],
   },
-];
-
-const premiumServices = [
   {
     id: "phares",
-    tag: "Restauration",
+    eyebrow: "Restauration",
     name: "Rénovation phares",
-    price: "À partir de 69 €",
-    text: "Restauration des optiques ternis ou opaques pour retrouver transparence, éclat et une finition protégée.",
+    priceLabel: "À partir de",
+    price: "69 €",
+    video: "/service-phares.mp4",
+    poster: "/services/phares-card.jpg",
     href: "/demande-speciale?type=phares",
-    cta: "Demander cette prestation",
-    video: "/phares/mercedes-renovation-phares-auto9-nimes.mp4",
-    image: "/services/phares-card.jpg",
-    end: 4.9,
+    features: ["Transparence retrouvée", "Optiques rénovés", "Finition protégée"],
   },
   {
     id: "polissage",
-    tag: "Correction",
+    eyebrow: "Correction",
     name: "Polissage carrosserie",
+    priceLabel: "Tarif",
     price: "Sur devis",
-    text: "Correction des défauts visuels pour retrouver profondeur, netteté des reflets et brillance de la peinture.",
+    video: "/service-polissage.mp4",
+    poster: "/services/polissage-card.jpg",
     href: "/demande-speciale?type=polissage",
-    cta: "Demander un devis",
-    video: null,
-    image: "/services/polissage-card.jpg",
-    end: 6.5,
+    features: ["Correction visuelle", "Profondeur des reflets", "Brillance"],
   },
   {
     id: "jantes",
-    tag: "Esthétique",
+    eyebrow: "Esthétique",
     name: "Rénovation jantes",
+    priceLabel: "Tarif",
     price: "Sur devis",
-    text: "Remise en état esthétique des jantes selon leurs défauts pour retrouver une finition nette et homogène.",
+    video: "/service-jantes.mp4",
+    poster: "/services/jantes-card.jpg",
     href: "/demande-speciale?type=jantes",
-    cta: "Demander un devis",
-    video: null,
-    image: "/services/jantes-card.jpg",
-    end: 6.8,
+    features: ["Remise en état", "Finition homogène", "Détail premium"],
   },
-];
+] as const;
 
-type MainService = (typeof services)[number];
+function wrappedDistance(index: number, active: number, length: number) {
+  let distance = index - active;
+  if (distance > length / 2) distance -= length;
+  if (distance < -length / 2) distance += length;
+  return distance;
+}
 
 export function Services() {
   const router = useRouter();
-  const [activePremiumId, setActivePremiumId] = useState("phares");
-  const [cinematic, setCinematic] = useState<MainService | null>(null);
-  const [premiumVideoFailed, setPremiumVideoFailed] = useState(false);
-  const premiumVideoRef = useRef<HTMLVideoElement>(null);
-  const cinematicVideoRef = useRef<HTMLVideoElement>(null);
-  const activePremium = useMemo(
-    () => premiumServices.find((service) => service.id === activePremiumId) ?? premiumServices[0],
-    [activePremiumId],
-  );
+  const [active, setActive] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+  const videos = useRef<(HTMLVideoElement | null)[]>([]);
+  const pointerStart = useRef<number | null>(null);
 
   useEffect(() => {
-    setPremiumVideoFailed(false);
-  }, [activePremiumId]);
-
-  const playPremium = () => {
-    const video = premiumVideoRef.current;
-    if (!video || !activePremium.video || premiumVideoFailed) return;
-    video.muted = true;
-    video.defaultMuted = true;
-    video.playsInline = true;
-    void video.play().catch(() => setPremiumVideoFailed(true));
-  };
+    const update = () => setIsMobile(window.innerWidth <= 900);
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
 
   useEffect(() => {
-    const video = premiumVideoRef.current;
-    if (!video || !activePremium.video) return;
+    videos.current.forEach((video, index) => {
+      if (!video) return;
+      if (index === active) {
+        video.muted = true;
+        video.defaultMuted = true;
+        video.playsInline = true;
+        void video.play().catch(() => undefined);
+      } else {
+        video.pause();
+      }
+    });
+  }, [active]);
 
-    const play = () => {
-      video.muted = true;
-      video.defaultMuted = true;
-      video.playsInline = true;
-      video.currentTime = 0;
-      void video.play().catch(() => setPremiumVideoFailed(true));
-    };
-
-    if (video.readyState >= 2) play();
-    else {
-      video.addEventListener("loadeddata", play, { once: true });
-      video.addEventListener("canplay", play, { once: true });
-    }
-
-    return () => {
-      video.removeEventListener("loadeddata", play);
-      video.removeEventListener("canplay", play);
-    };
-  }, [activePremium]);
-
-  useEffect(() => {
-    if (!cinematic) return;
-    const video = cinematicVideoRef.current;
-    if (!video) return;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const play = () => {
-      video.muted = true;
-      video.defaultMuted = true;
-      video.playsInline = true;
-      video.currentTime = cinematic.videoStart;
-      void video.play().catch(() => router.push(cinematic.href));
-    };
-
-    if (video.readyState >= 2) play();
-    else {
-      video.addEventListener("loadeddata", play, { once: true });
-      video.addEventListener("canplay", play, { once: true });
-    }
-
-    const fallback = window.setTimeout(() => router.push(cinematic.href), (cinematic.videoDuration + 2.5) * 1000);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.clearTimeout(fallback);
-      video.removeEventListener("loadeddata", play);
-      video.removeEventListener("canplay", play);
-    };
-  }, [cinematic, router]);
-
-  const loopPremium = () => {
-    const video = premiumVideoRef.current;
-    if (!video || !activePremium.video) return;
-    if (video.currentTime >= activePremium.end) {
-      video.currentTime = 0;
-      void video.play().catch(() => setPremiumVideoFailed(true));
-    }
-  };
-
-  const progressCinematic = () => {
-    const video = cinematicVideoRef.current;
-    if (!video || !cinematic) return;
-    if (video.currentTime >= cinematic.videoStart + cinematic.videoDuration) {
-      video.pause();
-      router.push(cinematic.href);
-    }
+  const move = (delta: number) => {
+    setActive((current) => (current + delta + services.length) % services.length);
   };
 
   return (
     <section id="services" className={styles.section} aria-labelledby="services-title">
-      <div className={styles.container}>
-        <header className={styles.heading} data-motion-reveal>
-          <p className={styles.eyebrow}>Nos prestations</p>
-          <h2 id="services-title">Choisissez votre <span>niveau de soin.</span></h2>
-          <p className={styles.intro}>Trois formules claires, pensées pour rendre à votre véhicule un aspect propre, soigné et valorisant.</p>
-        </header>
-
-        <div className={styles.grid}>
-          {services.map((service, index) => (
-            <article data-motion-reveal data-motion-delay={index * 90} key={service.name} className={`${styles.card} ${service.name === "Formule Duo" ? styles.featured : ""}`}>
-              <div className={styles.overview}>
-                <div className={styles.photo}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={service.image} alt={service.name} loading="lazy" />
-                </div>
-                <div className={styles.copy}>
-                  <span className={styles.tag}>{service.tag}</span>
-                  <h3>{service.name}</h3>
-                  <p className={styles.description}>{service.text}</p>
-                  <div className={styles.price}><span>À partir de</span><strong>{service.price}</strong></div>
-                </div>
-              </div>
-              <button type="button" className={styles.action} onClick={() => setCinematic(service)}>
-                Choisir cette prestation <span aria-hidden="true">→</span>
-              </button>
-              <details className={styles.details}>
-                <summary>Voir le détail des prestations <span aria-hidden="true">+</span></summary>
-                <div className={styles.expanded}>
-                  <div className={styles.highlights}>
-                    {service.highlights.map((item) => (
-                      <div key={item.title}><ServiceIcon type={item.icon} /><span>{item.title} <strong>{item.subtitle}</strong></span></div>
-                    ))}
-                  </div>
-                  <ul>{service.details.map((detail) => <li key={detail}>{detail}</li>)}</ul>
-                </div>
-              </details>
-            </article>
-          ))}
-        </div>
-
-        <header className={styles.premiumHeading} data-motion-reveal>
-          <div><p className={styles.eyebrow}>Expertise & rénovation</p><h2>Pour aller plus loin.</h2></div>
-          <p className={styles.intro}>Survolez une prestation pour découvrir le soin en action. Sur mobile, touchez simplement la prestation.</p>
-        </header>
-
-        <div className={styles.premiumExperience}>
-          <div className={styles.premiumSelector}>
-            {premiumServices.map((service, index) => (
-              <button
-                key={service.id}
-                type="button"
-                className={`${styles.premiumChoice} ${activePremiumId === service.id ? styles.premiumChoiceActive : ""}`}
-                onMouseEnter={() => setActivePremiumId(service.id)}
-                onFocus={() => setActivePremiumId(service.id)}
-                onClick={() => setActivePremiumId(service.id)}
-                aria-pressed={activePremiumId === service.id}
-              >
-                <span className={styles.premiumIndex}>0{index + 1}</span>
-                <span className={styles.premiumChoiceText}>
-                  <small>{service.tag}</small>
-                  <strong>{service.name}</strong>
-                  <em>{service.price}</em>
-                </span>
-                <span className={styles.premiumArrow} aria-hidden="true">↗</span>
-              </button>
-            ))}
-          </div>
-
-          <div className={styles.premiumStageWrap}>
-            <div className={styles.premiumStage} aria-live="polite" onClick={playPremium}>
-              {activePremium.video && !premiumVideoFailed ? (
-                <video
-                  ref={premiumVideoRef}
-                  key={activePremium.video}
-                  className={styles.premiumVideo}
-                  src={activePremium.video}
-                  poster={activePremium.image}
-                  muted
-                  autoPlay
-                  playsInline
-                  preload="auto"
-                  onLoadedData={playPremium}
-                  onCanPlay={playPremium}
-                  onTimeUpdate={loopPremium}
-                  onError={() => setPremiumVideoFailed(true)}
-                />
-              ) : (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  key={activePremium.image}
-                  className={`${styles.premiumVideo} ${styles.premiumFallbackImage}`}
-                  src={activePremium.image}
-                  alt=""
-                  aria-hidden="true"
-                />
-              )}
-              <div className={styles.premiumShade} />
-              <div className={styles.premiumStageTitle}>
-                <span>{activePremium.tag}</span>
-                <strong>{activePremium.name}</strong>
-                <em>{activePremium.price}</em>
-              </div>
-            </div>
-            <div className={styles.premiumDetail}>
-              <p>{activePremium.text}</p>
-              <Link href={activePremium.href} className={styles.premiumAction}>{activePremium.cta}<span aria-hidden="true">→</span></Link>
-            </div>
-          </div>
-        </div>
+      <div className={styles.heading} data-motion-reveal>
+        <p className={styles.eyebrow}>AUTO 9</p>
+        <h2 id="services-title">Nos prestations</h2>
+        <p>Faites glisser pour découvrir nos services.</p>
       </div>
 
-      {cinematic && (
-        <div className={styles.cinematicOverlay} role="dialog" aria-modal="true" aria-label={`${cinematic.name} en action`}>
-          <div className={styles.cinematicFrame}>
-            <video
-              ref={cinematicVideoRef}
-              key={`${cinematic.name}-${cinematic.videoStart}`}
-              className={styles.cinematicVideo}
-              src={cinematic.video}
-              poster={cinematic.image}
-              muted
-              autoPlay
-              playsInline
-              preload="auto"
-              onLoadedData={() => {
-                const video = cinematicVideoRef.current;
-                if (!video) return;
-                video.currentTime = cinematic.videoStart;
-                void video.play().catch(() => router.push(cinematic.href));
-              }}
-              onCanPlay={() => {
-                const video = cinematicVideoRef.current;
-                if (!video) return;
-                void video.play().catch(() => router.push(cinematic.href));
-              }}
-              onError={() => router.push(cinematic.href)}
-              onTimeUpdate={progressCinematic}
-            />
-            <div className={styles.cinematicShade} />
-            <div className={styles.cinematicTitle}>{cinematic.name}</div>
-          </div>
+      <div
+        className={styles.stage}
+        onPointerDown={(event) => {
+          pointerStart.current = event.clientX;
+          event.currentTarget.setPointerCapture?.(event.pointerId);
+        }}
+        onPointerUp={(event) => {
+          if (pointerStart.current === null) return;
+          const delta = event.clientX - pointerStart.current;
+          pointerStart.current = null;
+          if (Math.abs(delta) > 42) move(delta < 0 ? 1 : -1);
+        }}
+        onPointerCancel={() => {
+          pointerStart.current = null;
+        }}
+      >
+        <button type="button" className={`${styles.arrow} ${styles.prev}`} onClick={() => move(-1)} aria-label="Prestation précédente">‹</button>
+
+        <div className={styles.deck}>
+          {services.map((service, index) => {
+            const distance = wrappedDistance(index, active, services.length);
+            const abs = Math.abs(distance);
+            const x = distance === 0 ? 0 : distance * (isMobile ? 118 : abs === 1 ? 305 : 505);
+            const z = distance === 0 ? 70 : abs === 1 ? -65 : -150;
+            const rotate = distance * (isMobile ? -14 : -20);
+            const scale = distance === 0 ? 1 : abs === 1 ? (isMobile ? 0.84 : 0.83) : 0.72;
+            const opacity = distance === 0 ? 1 : abs === 1 ? (isMobile ? 0.62 : 0.72) : isMobile ? 0.08 : 0.38;
+
+            return (
+              <article
+                key={service.id}
+                className={`${styles.card} ${distance === 0 ? styles.active : ""}`}
+                style={{
+                  transform: `translate(-50%, -50%) translateX(${x}px) translateZ(${z}px) rotateY(${rotate}deg) scale(${scale})`,
+                  opacity,
+                  zIndex: 100 - abs,
+                  pointerEvents: abs <= 2 ? "auto" : "none",
+                }}
+                onClick={() => {
+                  if (index !== active) setActive(index);
+                }}
+              >
+                <video
+                  ref={(node) => {
+                    videos.current[index] = node;
+                  }}
+                  className={styles.video}
+                  src={service.video}
+                  poster={service.poster}
+                  muted
+                  loop
+                  playsInline
+                  preload={index === active ? "auto" : "metadata"}
+                />
+                <div className={styles.shade} />
+                <div className={styles.cardContent}>
+                  <span className={styles.cardEyebrow}>{service.eyebrow}</span>
+                  <h3>{service.name}</h3>
+                  <div className={styles.price}>
+                    <span>{service.priceLabel}</span>
+                    <strong>{service.price}</strong>
+                  </div>
+                  <div className={styles.features}>
+                    {service.features.map((feature) => <span key={feature}>{feature}</span>)}
+                  </div>
+                  <button
+                    type="button"
+                    className={styles.action}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      router.push(service.href);
+                    }}
+                  >
+                    Découvrir <span aria-hidden="true">→</span>
+                  </button>
+                </div>
+              </article>
+            );
+          })}
         </div>
-      )}
+
+        <button type="button" className={`${styles.arrow} ${styles.next}`} onClick={() => move(1)} aria-label="Prestation suivante">›</button>
+      </div>
+
+      <div className={styles.controls}>
+        <div className={styles.hint}><span>←</span><span className={styles.dragIcon}>☝</span><span>Glissez ou utilisez les flèches</span><span>→</span></div>
+        <div className={styles.dots} aria-label="Navigation des prestations">
+          {services.map((service, index) => (
+            <button
+              key={service.id}
+              type="button"
+              className={`${styles.dot} ${index === active ? styles.dotActive : ""}`}
+              onClick={() => setActive(index)}
+              aria-label={`Voir ${service.name}`}
+              aria-pressed={index === active}
+            />
+          ))}
+        </div>
+      </div>
     </section>
   );
-}
-
-function ServiceIcon({ type }: { type: string }) {
-  const common = {
-    width: 20,
-    height: 20,
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: 1.7,
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-  };
-
-  if (type === "sparkles") return <svg {...common}><path d="m12 3 1.3 3.7L17 8l-3.7 1.3L12 13l-1.3-3.7L7 8l3.7-1.3L12 3Z" /><path d="m18.5 13.5.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2Z" /><path d="m5 13 .9 2.6L8.5 16l-2.6.9L5 19.5l-.9-2.6L1.5 16l2.6-.4L5 13Z" /></svg>;
-  if (type === "car") return <svg {...common}><path d="M5 16h14l-1.4-6.1A2 2 0 0 0 15.7 8H8.3a2 2 0 0 0-1.9 1.9L5 16Z" /><path d="M4 16v3M20 16v3M7 19h10M7.5 13h.01M16.5 13h.01" /></svg>;
-  if (type === "engine") return <svg {...common}><path d="M7 8h8l2 2h3v7h-3l-2 2H7l-2-2H3v-7h2l2-2Z" /><path d="M9 5v3M13 5v3M9 13h4" /></svg>;
-  if (type === "seat") return <svg {...common}><path d="M8 4v8a3 3 0 0 0 3 3h5v5" /><path d="M8 7h5v5H8M5 20h12" /></svg>;
-  if (type === "air") return <svg {...common}><path d="M4 8h9a2 2 0 1 0-2-2M3 12h14a2 2 0 1 1-2 2M4 16h7" /></svg>;
-  if (type === "shield") return <svg {...common}><path d="M12 3 5 6v5c0 4.6 2.9 8 7 10 4.1-2 7-5.4 7-10V6l-7-3Z" /><path d="m9.5 12 1.7 1.7 3.5-3.7" /></svg>;
-  if (type === "wash") return <svg {...common}><path d="M7 5h10M8 8h8M5 12c1.2 0 2 .8 2 2s-.8 2-2 2-2-.8-2-2 .8-2 2-2Zm14 0c1.2 0 2 .8 2 2s-.8 2-2 2-2-.8-2-2 .8-2 2-2Z" /><path d="M9 14h6M8 19h8" /></svg>;
-  return <svg {...common}><circle cx="12" cy="12" r="7" /><circle cx="12" cy="12" r="2.2" /><path d="M12 5v5M18 9l-4 2M18 15l-4-2M12 19v-5M6 15l4-2M6 9l4 2" /></svg>;
 }
