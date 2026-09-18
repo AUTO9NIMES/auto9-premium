@@ -27,7 +27,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          error: "Le service d’envoi n’est pas configuré.",
+          error: "Le service d’envoi est temporairement indisponible.",
         },
         {
           status: 500,
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          error: "L’adresse de réception AUTO 9 n’est pas configurée.",
+          error: "Le service d’envoi est temporairement indisponible.",
         },
         {
           status: 500,
@@ -210,10 +210,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Une erreur est survenue.",
+        error: "Impossible d’envoyer la réservation pour le moment.",
       },
       {
         status: 500,

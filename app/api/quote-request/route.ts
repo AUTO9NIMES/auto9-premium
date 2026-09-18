@@ -135,7 +135,7 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            "La clé Resend n’est pas configurée.",
+            "Le service d’envoi est temporairement indisponible.",
         },
         {
           status: 500,
@@ -151,7 +151,7 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            "L’adresse de réception AUTO 9 n’est pas configurée.",
+            "Le service d’envoi est temporairement indisponible.",
         },
         {
           status: 500,
@@ -746,7 +746,6 @@ Référence de la demande : ${requestId}`,
       return NextResponse.json(
         {
           error:
-            emailError.message ||
             "Les photos ont été envoyées, mais l’e-mail n’a pas pu être transmis.",
         },
         {
@@ -789,14 +788,9 @@ Référence de la demande : ${requestId}`,
       error
     );
 
-    const message =
-      error instanceof Error
-        ? error.message
-        : "Une erreur inconnue est survenue.";
-
     return NextResponse.json(
       {
-        error: message,
+        error: "Impossible d’envoyer la demande pour le moment.",
       },
       {
         status: 500,
