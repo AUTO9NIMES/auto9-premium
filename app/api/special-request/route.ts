@@ -101,7 +101,7 @@ export async function POST(request: Request) {
         {
           success: false,
           error:
-            "Le service d’envoi n’est pas configuré.",
+            "Le service d’envoi est temporairement indisponible.",
         },
         {
           status: 500,
@@ -118,7 +118,7 @@ export async function POST(request: Request) {
         {
           success: false,
           error:
-            "L’adresse de réception AUTO 9 n’est pas configurée.",
+            "Le service d’envoi est temporairement indisponible.",
         },
         {
           status: 500,
@@ -719,15 +719,10 @@ export async function POST(request: Request) {
       error
     );
 
-    const message =
-      error instanceof Error
-        ? error.message
-        : "Une erreur inconnue est survenue.";
-
     return NextResponse.json(
       {
         success: false,
-        error: message,
+        error: "Impossible d’envoyer la demande pour le moment.",
       },
       {
         status: 500,
