@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { startTransition, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./Services.module.css";
 
@@ -95,6 +95,10 @@ export function Services() {
   }, []);
 
   useEffect(() => {
+    services.forEach((service) => router.prefetch(service.href));
+  }, [router]);
+
+  useEffect(() => {
     videos.current.forEach((video, index) => {
       if (!video) return;
       if (index === active) {
@@ -111,6 +115,12 @@ export function Services() {
 
   const move = (delta: number) => {
     setActive((current) => (current + delta + services.length) % services.length);
+  };
+
+  const openService = (href: string) => {
+    startTransition(() => {
+      router.push(href);
+    });
   };
 
   return (
@@ -198,7 +208,7 @@ export function Services() {
                     className={styles.action}
                     onClick={(event) => {
                       event.stopPropagation();
-                      router.push(service.href);
+                      openService(service.href);
                     }}
                   >
                     Découvrir <span aria-hidden="true">→</span>
