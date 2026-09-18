@@ -313,7 +313,7 @@ export function Services() {
                   muted
                   autoPlay
                   playsInline
-                  preload="metadata"
+                  preload="auto"
                   onLoadedData={playPremium}
                   onCanPlay={playPremium}
                   onTimeUpdate={loopPremium}
@@ -356,7 +356,7 @@ export function Services() {
               muted
               autoPlay
               playsInline
-              preload="metadata"
+              preload="auto"
               onLoadedData={() => {
                 const video = cinematicVideoRef.current;
                 if (!video) return;
