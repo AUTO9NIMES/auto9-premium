@@ -19,8 +19,8 @@ const assets = [
   {
     name: "Intérieur",
     filename: "result-interieur.mp4",
-    minBytes: 4_500_000,
-    primary: "https://d2jqrm6oza8nb6.cloudfront.net/datasets/be0ecb91-2612-40ad-9ba9-6b46474576c1.mp4?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiYmRjZjY5NTdiZjFmMzBkNSIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTkwNDM0M30.jMQNu_KO2FTs9Cde569tiegUOTj0ssbHLEts36Js23g",
+    minBytes: 3_000_000,
+    primary: "https://d2jqrm6oza8nb6.cloudfront.net/datasets/89117c6c-7993-4407-b1c7-76f23459432c.mp4?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiNWJmNGMxMWZjZjE0ZTFhYSIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTg3MDg3OX0.PThxxh1cZHSobxDwklu3tpJaA7hoJk5xNRPHFqtrJjM",
   },
 ];
 
