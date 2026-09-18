@@ -4,6 +4,8 @@ import {
   claimAutomationOutbox,
   getJobDetails,
   nackAutomationOutbox,
+  recordAutomationOutboxDeliverySnapshot,
+  recordAutomationOutboxProviderAcceptance,
   type AutomationOutboxEvent,
 } from "./crm";
 import { resolveCurrentBusinessContext } from "./business";
@@ -32,6 +34,10 @@ type ReviewDelivery = {
   recipientEmail: string;
   customerName: string;
   reviewUrl: string;
+  senderEmail: string;
+  subject: string;
+  text: string;
+  html: string;
 };
 
 function requireReviewDeliveryConfig(): ReviewDeliveryConfig {
@@ -97,7 +103,7 @@ function safeWorkerError(error: unknown): string {
 async function resolveReviewDelivery(
   event: AutomationOutboxEvent,
   businessId: string,
-  reviewUrl: string,
+  config: ReviewDeliveryConfig,
 ): Promise<ReviewDelivery> {
   const reviewRequestRows = await supabaseRest<{
     id: string;
@@ -142,36 +148,22 @@ async function resolveReviewDelivery(
     throw new Error("Review delivery recipient is missing.");
   }
 
+  const customerName =
+    details.customer.full_name.trim() || "Client AUTO 9";
+  const reviewUrl = config.reviewUrl;
+
   return {
     recipientEmail,
-    customerName: details.customer.full_name.trim() || "Client AUTO 9",
+    customerName,
     reviewUrl,
-  };
-}
-
-async function deliverReviewRequest(
-  event: AutomationOutboxEvent,
-  businessId: string,
-  config: ReviewDeliveryConfig,
-): Promise<void> {
-  const delivery = await resolveReviewDelivery(
-    event,
-    businessId,
-    config.reviewUrl,
-  );
-
-  const resend = new Resend(config.resendApiKey);
-
-  const { data, error } = await resend.emails.send({
-    from: config.senderEmail,
-    to: [delivery.recipientEmail],
+    senderEmail: config.senderEmail,
     subject: "Votre avis compte pour AUTO 9",
     text: [
-      `Bonjour ${delivery.customerName},`,
+      `Bonjour ${customerName},`,
       "",
       "Merci d’avoir fait confiance à AUTO 9.",
       "Si vous avez quelques instants, vous pouvez partager votre expérience sur Google :",
-      delivery.reviewUrl,
+      reviewUrl,
       "",
       "Merci et à bientôt,",
       "L’équipe AUTO 9",
@@ -179,14 +171,14 @@ async function deliverReviewRequest(
     html: `
       <div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:0 auto;color:#111827;">
         <h1 style="font-size:24px;">Merci pour votre confiance</h1>
-        <p>Bonjour ${escapeHtml(delivery.customerName)},</p>
+        <p>Bonjour ${escapeHtml(customerName)},</p>
         <p>
           Merci d’avoir fait confiance à AUTO 9.
           Si vous avez quelques instants, vous pouvez partager votre expérience sur Google.
         </p>
         <p style="margin:28px 0;">
           <a
-            href="${escapeHtml(delivery.reviewUrl)}"
+            href="${escapeHtml(reviewUrl)}"
             style="display:inline-block;padding:14px 22px;border-radius:999px;background:#111827;color:#ffffff;text-decoration:none;font-weight:700;"
           >
             Donner mon avis
@@ -195,6 +187,81 @@ async function deliverReviewRequest(
         <p>Merci et à bientôt,<br />L’équipe AUTO 9</p>
       </div>
     `,
+  };
+}
+
+async function deliverReviewRequest(
+  event: AutomationOutboxEvent,
+  businessId: string,
+  config: ReviewDeliveryConfig,
+): Promise<string> {
+  let delivery: ReviewDelivery;
+
+  if (
+    event.delivery_recipient_email &&
+    event.delivery_customer_name &&
+    event.delivery_review_url &&
+    event.delivery_sender_email &&
+    event.delivery_subject &&
+    event.delivery_text &&
+    event.delivery_html
+  ) {
+    delivery = {
+      recipientEmail: event.delivery_recipient_email,
+      customerName: event.delivery_customer_name,
+      reviewUrl: event.delivery_review_url,
+      senderEmail: event.delivery_sender_email,
+      subject: event.delivery_subject,
+      text: event.delivery_text,
+      html: event.delivery_html,
+    };
+  } else {
+    const resolved = await resolveReviewDelivery(event, businessId, config);
+
+    const snapshotted = await recordAutomationOutboxDeliverySnapshot({
+      businessId,
+      outboxId: event.id,
+      leaseToken: event.lease_token!,
+      recipientEmail: resolved.recipientEmail,
+      customerName: resolved.customerName,
+      reviewUrl: resolved.reviewUrl,
+      senderEmail: resolved.senderEmail,
+      subject: resolved.subject,
+      text: resolved.text,
+      html: resolved.html,
+    });
+
+    if (
+      !snapshotted.delivery_recipient_email ||
+      !snapshotted.delivery_customer_name ||
+      !snapshotted.delivery_review_url ||
+      !snapshotted.delivery_sender_email ||
+      !snapshotted.delivery_subject ||
+      !snapshotted.delivery_text ||
+      !snapshotted.delivery_html
+    ) {
+      throw new Error("Delivery snapshot is incomplete.");
+    }
+
+    delivery = {
+      recipientEmail: snapshotted.delivery_recipient_email,
+      customerName: snapshotted.delivery_customer_name,
+      reviewUrl: snapshotted.delivery_review_url,
+      senderEmail: snapshotted.delivery_sender_email,
+      subject: snapshotted.delivery_subject,
+      text: snapshotted.delivery_text,
+      html: snapshotted.delivery_html,
+    };
+  }
+
+  const resend = new Resend(config.resendApiKey);
+
+  const { data, error } = await resend.emails.send({
+    from: delivery.senderEmail,
+    to: [delivery.recipientEmail],
+    subject: delivery.subject,
+    text: delivery.text,
+    html: delivery.html,
   }, {
     // Stable outbox identity protects the delivery/ACK crash window.
     // Resend currently retains idempotency keys for a bounded period,
@@ -205,6 +272,8 @@ async function deliverReviewRequest(
   if (error || !data?.id) {
     throw new Error("Review delivery provider rejected the request.");
   }
+
+  return data.id;
 }
 
 function escapeHtml(value: string): string {
@@ -220,11 +289,10 @@ async function deliverEvent(
   event: AutomationOutboxEvent,
   businessId: string,
   config: ReviewDeliveryConfig,
-): Promise<void> {
+): Promise<string> {
   switch (event.event_type) {
     case "review.requested.v1":
-      await deliverReviewRequest(event, businessId, config);
-      return;
+      return deliverReviewRequest(event, businessId, config);
 
     default:
       throw new Error(`Unsupported automation event type: ${event.event_type}`);
@@ -268,7 +336,24 @@ export async function processAutomationOutbox(): Promise<WorkerResult> {
     }
 
     try {
-      await deliverEvent(event, businessId, config);
+      if (!event.provider_accepted_at || !event.provider_message_id) {
+        const providerMessageId = await deliverEvent(event, businessId, config);
+
+        try {
+          await recordAutomationOutboxProviderAcceptance({
+            businessId,
+            outboxId: event.id,
+            leaseToken: event.lease_token,
+            providerMessageId,
+          });
+        } catch {
+          // The provider may already have accepted the delivery. Do not NACK:
+          // the lease expires naturally and the stable provider idempotency key
+          // remains the fallback for this unresolved acceptance window.
+          settlementFailures += 1;
+          continue;
+        }
+      }
 
       try {
         await ackAutomationOutbox({
@@ -279,9 +364,9 @@ export async function processAutomationOutbox(): Promise<WorkerResult> {
 
         acknowledged += 1;
       } catch {
-        // Delivery may already have happened. Do not NACK here: the lease
-        // expires naturally and the event can replay under at-least-once
-        // semantics.
+        // A durable provider acceptance may already exist. Do not NACK here:
+        // the lease expires naturally, then replay skips provider delivery and
+        // retries only the ACK under at-least-once semantics.
         settlementFailures += 1;
       }
     } catch (error) {
