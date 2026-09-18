@@ -22,6 +22,12 @@ const assets = [
     minBytes: 3_000_000,
     primary: "https://d2jqrm6oza8nb6.cloudfront.net/datasets/89117c6c-7993-4407-b1c7-76f23459432c.mp4?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiNWJmNGMxMWZjZjE0ZTFhYSIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTg3MDg3OX0.PThxxh1cZHSobxDwklu3tpJaA7hoJk5xNRPHFqtrJjM",
   },
+  {
+    name: "Rénovation phares",
+    filename: "service-phares.mp4",
+    minBytes: 3_500_000,
+    primary: "https://d2jqrm6oza8nb6.cloudfront.net/datasets/e4aca184-6768-4faf-9db7-f35551cf1abe.mp4?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiYTQzYjU4MjhjNDY5ZGEwZCIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc4OTkxOTAxNn0.znZymHO2vvkovZ5aKlhiEhmbc7oPR0G1h6l65G1e_IA",
+  },
 ];
 
 const productionOrigins = [
