@@ -11,8 +11,8 @@ const services = [
     name: "Formule DUO",
     priceLabel: "À partir de",
     price: "169 €",
-    video: "/result-duo.mp4",
-    poster: "/services/duo-card.png",
+    video: "/media/services-v2/duo.mp4",
+    poster: "/media/services-v2/duo.jpg",
     href: "/devis?service=duo",
     features: ["Intérieur + extérieur", "Nettoyage moteur offert", "Expérience complète"],
   },
@@ -22,8 +22,8 @@ const services = [
     name: "Intérieur",
     priceLabel: "À partir de",
     price: "89 €",
-    video: "/result-interieur.mp4",
-    poster: "/services/interieur-card.jpg",
+    video: "/media/services-v2/interieur.mp4",
+    poster: "/media/services-v2/interieur.jpg",
     href: "/devis?service=interieur",
     features: ["Habitacle complet", "Aspiration & plastiques", "Finition premium"],
   },
@@ -33,8 +33,8 @@ const services = [
     name: "Extérieur",
     priceLabel: "À partir de",
     price: "89 €",
-    video: "/result-exterieur.mp4",
-    poster: "/services/exterieur-card.jpg",
+    video: "/media/services-v2/exterieur.mp4",
+    poster: "/media/services-v2/exterieur.jpg",
     href: "/devis?service=exterieur",
     features: ["Prélavage mousse", "Jantes & carrosserie", "Séchage microfibre"],
   },
@@ -44,8 +44,8 @@ const services = [
     name: "Rénovation phares",
     priceLabel: "À partir de",
     price: "69 €",
-    video: "/service-phares.mp4",
-    poster: "/services/phares-card.jpg",
+    video: "/media/services-v2/phares.mp4",
+    poster: "/media/services-v2/phares.jpg",
     href: "/demande-speciale?type=phares",
     features: ["Transparence retrouvée", "Optiques rénovés", "Finition protégée"],
   },
@@ -55,8 +55,8 @@ const services = [
     name: "Polissage carrosserie",
     priceLabel: "Tarif",
     price: "Sur devis",
-    video: "/service-polissage.mp4",
-    poster: "/services/polissage-card.jpg",
+    video: "/media/services-v2/polissage.mp4",
+    poster: "/media/services-v2/polissage.jpg",
     href: "/demande-speciale?type=polissage",
     features: ["Correction visuelle", "Profondeur des reflets", "Brillance"],
   },
@@ -66,8 +66,8 @@ const services = [
     name: "Rénovation jantes",
     priceLabel: "Tarif",
     price: "Sur devis",
-    video: "/service-jantes.mp4",
-    poster: "/services/jantes-card.jpg",
+    video: "/media/services-v2/jantes.mp4",
+    poster: "/media/services-v2/jantes.jpg",
     href: "/demande-speciale?type=jantes",
     features: ["Remise en état", "Finition homogène", "Détail premium"],
   },
@@ -101,6 +101,7 @@ export function Services() {
         video.muted = true;
         video.defaultMuted = true;
         video.playsInline = true;
+        video.currentTime = 0;
         void video.play().catch(() => undefined);
       } else {
         video.pause();
@@ -136,7 +137,14 @@ export function Services() {
           pointerStart.current = null;
         }}
       >
-        <button type="button" className={`${styles.arrow} ${styles.prev}`} onClick={() => move(-1)} aria-label="Prestation précédente">‹</button>
+        <button
+          type="button"
+          className={`${styles.arrow} ${styles.prev}`}
+          onPointerDown={(event) => event.stopPropagation()}
+          onPointerUp={(event) => event.stopPropagation()}
+          onClick={(event) => { event.stopPropagation(); move(-1); }}
+          aria-label="Prestation précédente"
+        >‹</button>
 
         <div className={styles.deck}>
           {services.map((service, index) => {
@@ -201,7 +209,14 @@ export function Services() {
           })}
         </div>
 
-        <button type="button" className={`${styles.arrow} ${styles.next}`} onClick={() => move(1)} aria-label="Prestation suivante">›</button>
+        <button
+          type="button"
+          className={`${styles.arrow} ${styles.next}`}
+          onPointerDown={(event) => event.stopPropagation()}
+          onPointerUp={(event) => event.stopPropagation()}
+          onClick={(event) => { event.stopPropagation(); move(1); }}
+          aria-label="Prestation suivante"
+        >›</button>
       </div>
 
       <div className={styles.controls}>
