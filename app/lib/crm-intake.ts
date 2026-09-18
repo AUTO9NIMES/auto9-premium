@@ -3,6 +3,7 @@ import { hasSupabaseWriteConfig, supabaseRest } from "./supabase";
 
 export type WebsiteLeadDraft = {
   submissionId: string;
+  websiteSubmissionFingerprint: string;
   customerName: string;
   customerPhone: string;
   customerEmail?: string;
@@ -72,6 +73,8 @@ export async function persistWebsiteLead(
     {
       p_business_id: businessContext.businessId,
       p_submission_id: submissionId,
+      p_submission_fingerprint:
+        draft.websiteSubmissionFingerprint,
       p_customer_name: customerName,
       p_customer_phone: customerPhone,
       p_customer_email: customerEmail || null,
