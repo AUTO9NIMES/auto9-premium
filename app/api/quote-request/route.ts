@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import { put } from "@vercel/blob";
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
@@ -310,12 +312,56 @@ export async function POST(
       }
     }
 
+    const preparedPhotos =
+      await Promise.all(
+        photos.map(
+          async (photo) => {
+            const bytes =
+              Buffer.from(
+                await photo.arrayBuffer()
+              );
+
+            const contentHash =
+              createHash("sha256")
+                .update(bytes)
+                .digest("hex");
+
+            return {
+              name: photo.name,
+              type: photo.type,
+              bytes,
+              contentHash,
+            };
+          }
+        )
+      );
+
+    const submissionFingerprint =
+      createHash("sha256")
+        .update(rawPayload)
+        .update("\0")
+        .update(
+          JSON.stringify(
+            preparedPhotos.map(
+              (photo) => ({
+                name: photo.name,
+                type: photo.type,
+                contentHash:
+                  photo.contentHash,
+              })
+            )
+          )
+        )
+        .digest("hex");
+
     /* ===================================================== */
     /* CRM — ATOMIC WEBSITE INTAKE                           */
     /* ===================================================== */
 
     await persistWebsiteLead({
       submissionId,
+      websiteSubmissionFingerprint:
+        submissionFingerprint,
       customerName: payload.customerName,
       customerPhone: payload.customerPhone,
       customerCity: payload.customerCity,
@@ -354,7 +400,7 @@ export async function POST(
 
     const uploadedPhotos =
       await Promise.all(
-        photos.map(
+        preparedPhotos.map(
           async (
             photo,
             index
@@ -363,15 +409,18 @@ export async function POST(
               await put(
                 `quote-requests/${requestId}/${
                   index + 1
-                }-${safeFileName(
+                }-${photo.contentHash}-${safeFileName(
                   photo.name
                 )}`,
-                photo,
+                photo.bytes,
                 {
                   access:
                     "public",
 
                   addRandomSuffix:
+                    false,
+
+                  allowOverwrite:
                     true,
 
                   contentType:
@@ -481,7 +530,8 @@ export async function POST(
       data: emailData,
       error: emailError,
     } =
-      await resend.emails.send({
+      await resend.emails.send(
+        {
         from:
           senderEmail,
 
@@ -735,7 +785,12 @@ Référence de la demande : ${requestId}`,
 
           </div>
         `,
-      });
+        },
+        {
+          idempotencyKey:
+            `website-quote/${submissionId}`,
+        }
+      );
 
     if (emailError) {
       console.error(
