@@ -15,9 +15,11 @@ import {
   findCrmQuoteReplay,
   markQuoteAsSent,
   transitionLeadStatus,
+  updateDraftQuoteAmount,
   type LeadLifecycleStatus,
   type CrmQuoteResult,
   type ManualLeadResult,
+  type UpdateDraftQuoteAmountResult,
 } from "../../lib/crm";
 
 const UUID_REGEX =
@@ -348,4 +350,104 @@ export async function createCrmQuoteAction(formData: FormData) {
   revalidatePath("/crm/pipeline");
   revalidatePath("/crm");
   redirect(`/crm/pipeline/${result.leadId}`);
+}
+
+const DECIMAL_AMOUNT_REGEX = /^\d+(?:\.\d{1,2})?$/;
+
+function redirectWithQuoteAmountError(
+  leadId: string,
+  error: "invalid" | "conflict" | "not_found" | "lifecycle" | "access" | "unavailable",
+): never {
+  redirect(`/crm/pipeline/${leadId}?quote_amount_error=${error}`);
+}
+
+export async function updateDraftQuoteAmountAction(formData: FormData) {
+  const leadId = formData.get("leadId");
+  const quoteId = formData.get("quoteId");
+  const expectedTotalPriceValue = formData.get("expectedTotalPrice");
+  const totalPriceValue = formData.get("totalPrice");
+
+  if (
+    typeof leadId !== "string" || !UUID_REGEX.test(leadId.trim()) ||
+    typeof quoteId !== "string" || !UUID_REGEX.test(quoteId.trim()) ||
+    typeof expectedTotalPriceValue !== "string" ||
+    typeof totalPriceValue !== "string"
+  ) {
+    redirect("/crm/pipeline");
+  }
+
+  const normalizedLeadId = leadId.trim();
+  const normalizedQuoteId = quoteId.trim();
+
+  try {
+    await requireCrmAccess();
+  } catch (error) {
+    if (error instanceof CrmAccessError) {
+      if (error.code === "UNAUTHENTICATED") redirect("/crm/login");
+      if (error.code === "FORBIDDEN") redirectWithQuoteAmountError(normalizedLeadId, "access");
+    }
+    redirectWithQuoteAmountError(normalizedLeadId, "unavailable");
+  }
+
+  const trimmedExpectedTotalPrice = expectedTotalPriceValue.trim();
+  const trimmedTotalPrice = totalPriceValue.trim();
+
+  // Historical DRAFT quotes may legitimately carry zero or null totals; the
+  // expected amount only mirrors what the operator saw when the form loaded.
+  const expectedTotalPrice = trimmedExpectedTotalPrice === ""
+    ? null
+    : Number(trimmedExpectedTotalPrice);
+  const totalPrice = Number(trimmedTotalPrice);
+
+  if (
+    (trimmedExpectedTotalPrice !== "" && (
+      !DECIMAL_AMOUNT_REGEX.test(trimmedExpectedTotalPrice) ||
+      !Number.isFinite(expectedTotalPrice as number) ||
+      (expectedTotalPrice as number) < 0 ||
+      (expectedTotalPrice as number) > 10000000
+    )) ||
+    !DECIMAL_AMOUNT_REGEX.test(trimmedTotalPrice) ||
+    !Number.isFinite(totalPrice) ||
+    totalPrice <= 0 ||
+    totalPrice > 10000000
+  ) {
+    redirectWithQuoteAmountError(normalizedLeadId, "invalid");
+  }
+
+  let result: UpdateDraftQuoteAmountResult;
+  try {
+    result = await updateDraftQuoteAmount({
+      quoteId: normalizedQuoteId,
+      expectedTotalPrice,
+      totalPrice,
+    });
+  } catch {
+    redirectWithQuoteAmountError(normalizedLeadId, "unavailable");
+  }
+
+  revalidatePath(`/crm/pipeline/${result.leadId ?? normalizedLeadId}`);
+  revalidatePath("/crm/pipeline");
+  revalidatePath("/crm");
+
+  if (result.status === "updated") {
+    redirect(`/crm/pipeline/${normalizedLeadId}?quote_amount=updated`);
+  }
+
+  if (result.status === "no_op") {
+    redirect(`/crm/pipeline/${normalizedLeadId}?quote_amount=noop`);
+  }
+
+  if (result.status === "conflict") {
+    redirectWithQuoteAmountError(normalizedLeadId, "conflict");
+  }
+
+  if (result.status === "not_found") {
+    redirectWithQuoteAmountError(normalizedLeadId, "not_found");
+  }
+
+  if (result.status === "invalid_lifecycle") {
+    redirectWithQuoteAmountError(normalizedLeadId, "lifecycle");
+  }
+
+  redirectWithQuoteAmountError(normalizedLeadId, "invalid");
 }

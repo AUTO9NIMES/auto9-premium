@@ -911,6 +911,72 @@ export async function createCrmQuote(input: {
   };
 }
 
+export type UpdateDraftQuoteAmountStatus =
+  | "updated"
+  | "no_op"
+  | "conflict"
+  | "not_found"
+  | "invalid_lifecycle"
+  | "invalid_amount";
+
+export type UpdateDraftQuoteAmountResult = {
+  status: UpdateDraftQuoteAmountStatus;
+  quoteId: string;
+  leadId: string | null;
+  totalPrice: number | null;
+  noOp: boolean;
+};
+
+const UPDATE_DRAFT_QUOTE_AMOUNT_STATUSES = new Set<string>([
+  "updated",
+  "no_op",
+  "conflict",
+  "not_found",
+  "invalid_lifecycle",
+  "invalid_amount",
+]);
+
+export async function updateDraftQuoteAmount(input: {
+  quoteId: string;
+  expectedTotalPrice: number | null;
+  totalPrice: number;
+}): Promise<UpdateDraftQuoteAmountResult> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const businessId = await getCurrentBusinessId();
+  const result = await supabaseRest<unknown>(
+    "rpc/update_draft_quote_amount",
+    "POST",
+    {
+      p_business_id: businessId,
+      p_quote_id: input.quoteId.trim(),
+      p_expected_total_price: input.expectedTotalPrice,
+      p_total_price: input.totalPrice,
+    },
+  );
+
+  if (
+    !isRecord(result) ||
+    typeof result.status !== "string" ||
+    !UPDATE_DRAFT_QUOTE_AMOUNT_STATUSES.has(result.status) ||
+    typeof result.quote_id !== "string" ||
+    (result.lead_id !== undefined && result.lead_id !== null && typeof result.lead_id !== "string") ||
+    (result.total_price !== undefined && result.total_price !== null && typeof result.total_price !== "number")
+  ) {
+    throw new Error("Supabase returned an invalid draft quote amount result.");
+  }
+
+  return {
+    status: result.status as UpdateDraftQuoteAmountStatus,
+    quoteId: result.quote_id,
+    leadId: (result.lead_id as string | null | undefined) ?? null,
+    totalPrice: (result.total_price as number | null | undefined) ?? null,
+    noOp: result.status === "no_op",
+  };
+}
+
 export async function findCustomerVehicleReplay(input: {
   customerId: string;
   idempotencyKey: string;
