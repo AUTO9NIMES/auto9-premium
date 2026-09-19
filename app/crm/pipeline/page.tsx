@@ -150,7 +150,7 @@ function quoteServiceName(quote: Quote): string | null {
 
 function leadActions(status: LeadLifecycleStatus): Array<{
   label: string;
-  targetStatus: "QUALIFIED" | "CONTACTED" | "QUOTE_SENT" | "CLOSED_LOST";
+  targetStatus: "QUALIFIED" | "CONTACTED" | "CLOSED_LOST";
 }> {
   if (status === "NEW") {
     return [
@@ -168,7 +168,6 @@ function leadActions(status: LeadLifecycleStatus): Array<{
 
   if (status === "CONTACTED") {
     return [
-      { label: "Marquer devis envoyé", targetStatus: "QUOTE_SENT" },
       { label: "Clôturer", targetStatus: "CLOSED_LOST" },
     ];
   }
@@ -195,7 +194,8 @@ function LeadCard({ item }: { item: LeadListItem }) {
   const canSendQuote = Boolean(
     item.latestQuote?.id &&
     UUID_REGEX.test(item.latestQuote.id) &&
-    item.latestQuote.status === "DRAFT",
+    item.latestQuote.status === "DRAFT" &&
+    lead.lifecycle_status === "CONTACTED",
   );
   const canAcceptQuote = Boolean(
     item.latestQuote?.id &&
