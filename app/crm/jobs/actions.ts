@@ -72,6 +72,7 @@ export async function transitionJobAppointment(formData: FormData) {
 
   const appointmentId = formData.get("appointmentId");
   const targetStatus = formData.get("targetStatus");
+  const jobId = formData.get("jobId");
 
   if (
     typeof appointmentId !== "string" ||
@@ -93,6 +94,16 @@ export async function transitionJobAppointment(formData: FormData) {
   }
 
   revalidatePath("/crm/jobs");
+
+  // Return the operator to the invoking job detail page when a valid job id
+  // was supplied; otherwise fall back to the jobs list. jobId is validated as
+  // a UUID and only ever builds a fixed server-controlled CRM path.
+  if (typeof jobId === "string" && UUID_REGEX.test(jobId.trim())) {
+    const normalizedJobId = jobId.trim();
+    revalidatePath(`/crm/jobs/${normalizedJobId}`);
+    redirect(`/crm/jobs/${normalizedJobId}?updated=1`);
+  }
+
   redirect("/crm/jobs?updated=1");
 }
 
