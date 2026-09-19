@@ -28,7 +28,6 @@ const UUID_REGEX =
 const manualTargetStatuses = new Set<LeadLifecycleStatus>([
   "QUALIFIED",
   "CONTACTED",
-  "QUOTE_SENT",
   "CLOSED_LOST",
 ]);
 
