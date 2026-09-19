@@ -2,6 +2,11 @@ import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { CrmAccessError, requireCrmAccess } from "../../../lib/auth/dal";
+import {
+  buildWhatsAppLink,
+  toMailtoHref,
+  toTelHref,
+} from "../../../lib/contact";
 import { createCustomerVehicleAction, updateCustomerProfileAction } from "./actions";
 import {
   getCustomer360,
@@ -121,6 +126,31 @@ function formatCustomerName(result: Customer360Result): string {
     .join(" ");
 
   return name || customer.full_name.trim() || "Identité non renseignée";
+}
+
+const contactLinkClass =
+  "border border-white/15 px-3 py-2 text-xs text-white/65 transition-colors hover:border-[#d8b477] hover:text-[#d8b477]";
+
+function ContactActions({ phone, email, whatsappMessage }: {
+  phone?: string | null;
+  email?: string | null;
+  whatsappMessage: string;
+}) {
+  const telHref = toTelHref(phone);
+  const mailtoHref = toMailtoHref(email);
+  const whatsappHref = buildWhatsAppLink(phone, whatsappMessage);
+
+  if (!telHref && !mailtoHref && !whatsappHref) {
+    return null;
+  }
+
+  return (
+    <div className="mt-4 flex flex-wrap gap-2 border-t border-white/10 pt-4">
+      {telHref && <a href={telHref} className={contactLinkClass}>Appeler</a>}
+      {mailtoHref && <a href={mailtoHref} className={contactLinkClass}>Email</a>}
+      {whatsappHref && <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className={contactLinkClass}>WhatsApp</a>}
+    </div>
+  );
 }
 
 function formatVehicle(vehicle: Vehicle): string {
@@ -307,6 +337,7 @@ export default async function Customer360Page({ params, searchParams }: {
           <div>
             <h1 className="text-3xl font-semibold tracking-tight text-white md:text-5xl">{displayName}</h1>
             {contactDetails.length > 0 && <p className="mt-4 text-sm text-white/50">{contactDetails.join(" · ")}</p>}
+            <ContactActions phone={customer.phone} email={customer.email} whatsappMessage={`Bonjour ${displayName}, AUTO 9 ici.`} />
           </div>
           {formatDate(customer.created_at) && <p className="text-xs text-white/35">Client depuis le {formatDate(customer.created_at)}</p>}
         </div>

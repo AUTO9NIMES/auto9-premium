@@ -3,6 +3,8 @@
 import { useMemo, useState, type ChangeEvent } from "react";
 import { useSearchParams } from "next/navigation";
 
+import { site } from "../lib/site";
+
 type PremiumServiceId = "phares" | "polissage" | "jantes";
 type VehicleId = "citadine" | "berline" | "suv" | "utilitaire";
 
@@ -132,7 +134,7 @@ export function PremiumQuoteConfigurator() {
     .filter(Boolean)
     .join("\n");
 
-  const whatsappLink = `https://wa.me/?text=${encodeURIComponent(
+  const whatsappLink = `${site.whatsapp}?text=${encodeURIComponent(
     whatsappMessage,
   )}`;
 

@@ -3,6 +3,11 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { CrmAccessError, requireCrmAccess } from "../../../lib/auth/dal";
 import {
+  buildWhatsAppLink,
+  toMailtoHref,
+  toTelHref,
+} from "../../../lib/contact";
+import {
   recordJobPaymentAction,
   requestJobReviewAction,
   rescheduleJobAction,
@@ -152,6 +157,31 @@ function customerName(customer: JobDetailsResult["customer"]): string {
     .filter((value): value is string => Boolean(value?.trim()))
     .join(" ");
   return name || customer.full_name.trim() || "Identité non renseignée";
+}
+
+const contactLinkClass =
+  "border border-white/15 px-3 py-2 text-xs text-white/65 transition-colors hover:border-[#d8b477] hover:text-[#d8b477]";
+
+function ContactActions({ phone, email, whatsappMessage }: {
+  phone?: string | null;
+  email?: string | null;
+  whatsappMessage: string;
+}) {
+  const telHref = toTelHref(phone);
+  const mailtoHref = toMailtoHref(email);
+  const whatsappHref = buildWhatsAppLink(phone, whatsappMessage);
+
+  if (!telHref && !mailtoHref && !whatsappHref) {
+    return null;
+  }
+
+  return (
+    <div className="mt-4 flex flex-wrap gap-2 border-t border-white/10 pt-4">
+      {telHref && <a href={telHref} className={contactLinkClass}>Appeler</a>}
+      {mailtoHref && <a href={mailtoHref} className={contactLinkClass}>Email</a>}
+      {whatsappHref && <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className={contactLinkClass}>WhatsApp</a>}
+    </div>
+  );
 }
 
 function vehicleName(vehicle: Vehicle): string {
@@ -310,6 +340,12 @@ export default async function JobDetailPage({ params, searchParams }: {
   const customerHref = customer.id && UUID_REGEX.test(customer.id)
     ? `/crm/clients/${customer.id}`
     : null;
+  const jobDisplayName = customerName(customer);
+  const jobServiceName = services[0]?.service_name?.trim() || "";
+  const jobWhatsAppMessage = [
+    `Bonjour ${jobDisplayName},`,
+    `AUTO 9 — au sujet de votre prestation${jobServiceName ? ` ${jobServiceName}` : ""}${vehicle ? ` sur votre ${vehicleName(vehicle)}` : ""}.`,
+  ].join(" ");
 
   return (
     <div data-crm-route="jobs" className="space-y-12">
@@ -334,6 +370,7 @@ export default async function JobDetailPage({ params, searchParams }: {
             <p className="text-[10px] uppercase tracking-[0.16em] text-[#d8b477]">Client</p>
             {customerHref ? <Link href={customerHref} className="mt-3 block text-lg font-medium text-white hover:text-[#d8b477]">{customerName(customer)}</Link> : <p className="mt-3 text-lg font-medium text-white">{customerName(customer)}</p>}
             {[customer.email, customer.phone, customer.city].filter((value): value is string => Boolean(value?.trim())).map((value) => <p key={value} className="mt-2 text-sm text-white/45">{value}</p>)}
+            <ContactActions phone={customer.phone} email={customer.email} whatsappMessage={jobWhatsAppMessage} />
           </div>
           <div className="border border-white/10 bg-[#101419] p-5">
             <p className="text-[10px] uppercase tracking-[0.16em] text-[#d8b477]">Opération</p>
