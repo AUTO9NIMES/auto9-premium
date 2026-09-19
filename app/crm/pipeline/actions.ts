@@ -13,6 +13,7 @@ import {
   createCrmQuote,
   findManualLeadWithCustomerReplay,
   findCrmQuoteReplay,
+  issueQuoteShareToken,
   markQuoteAsSent,
   transitionLeadStatus,
   updateDraftQuoteAmount,
@@ -21,6 +22,7 @@ import {
   type ManualLeadResult,
   type UpdateDraftQuoteAmountResult,
 } from "../../lib/crm";
+import { publicQuoteUrl } from "../../lib/site";
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -146,6 +148,56 @@ export async function markPipelineQuoteSent(formData: FormData) {
   revalidatePath("/crm");
   revalidatePath("/crm/pipeline");
   redirect("/crm/pipeline?quote_sent=1");
+}
+
+function redirectWithQuoteShareError(
+  leadId: string,
+  error: "invalid" | "access" | "unavailable",
+): never {
+  redirect(`/crm/pipeline/${leadId}?quote_share_error=${error}`);
+}
+
+export async function sharePipelineQuote(formData: FormData) {
+  const leadId = formData.get("leadId");
+  const quoteId = formData.get("quoteId");
+
+  if (
+    typeof leadId !== "string" ||
+    !UUID_REGEX.test(leadId.trim()) ||
+    typeof quoteId !== "string" ||
+    !UUID_REGEX.test(quoteId.trim())
+  ) {
+    redirect("/crm/pipeline?error=invalid");
+  }
+
+  const normalizedLeadId = leadId.trim();
+  const normalizedQuoteId = quoteId.trim();
+
+  try {
+    await requireCrmAccess();
+  } catch (error) {
+    if (error instanceof CrmAccessError) {
+      if (error.code === "UNAUTHENTICATED") redirect("/crm/login");
+      if (error.code === "FORBIDDEN") redirectWithQuoteShareError(normalizedLeadId, "access");
+    }
+    redirectWithQuoteShareError(normalizedLeadId, "unavailable");
+  }
+
+  let shareUrl: string;
+  try {
+    const result = await issueQuoteShareToken(normalizedQuoteId);
+    shareUrl = publicQuoteUrl(result.token);
+  } catch {
+    redirectWithQuoteShareError(normalizedLeadId, "unavailable");
+  }
+
+  revalidatePath("/crm");
+  revalidatePath("/crm/pipeline");
+  revalidatePath(`/crm/pipeline/${normalizedLeadId}`);
+
+  redirect(
+    `/crm/pipeline/${normalizedLeadId}?quote_shared=${encodeURIComponent(shareUrl!)}`,
+  );
 }
 
 export async function createManualLeadAction(formData: FormData) {

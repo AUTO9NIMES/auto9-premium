@@ -2831,6 +2831,157 @@ export async function markQuoteAsSent(
   };
 }
 
+export type IssueQuoteShareTokenResult = {
+  quote: Quote;
+  token: string;
+  transitioned: boolean;
+};
+
+export async function issueQuoteShareToken(
+  quoteId: string,
+): Promise<IssueQuoteShareTokenResult> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const normalizedQuoteId = quoteId.trim();
+  if (!normalizedQuoteId) {
+    throw new Error("quoteId is required.");
+  }
+
+  const businessId = await getCurrentBusinessId();
+  const result = await supabaseRest<unknown>(
+    "rpc/issue_quote_share_token",
+    "POST",
+    {
+      p_business_id: businessId,
+      p_quote_id: normalizedQuoteId,
+    },
+  );
+
+  if (
+    !isRecord(result) ||
+    !isRecord(result.quote) ||
+    typeof result.token !== "string" ||
+    !/^[0-9a-f]{32}$/.test(result.token) ||
+    typeof result.transitioned !== "boolean"
+  ) {
+    throw new Error("Supabase returned an invalid quote share token result.");
+  }
+
+  return {
+    quote: result.quote as Quote,
+    token: result.token,
+    transitioned: result.transitioned,
+  };
+}
+
+export type PublicQuote = {
+  businessName: string;
+  customerName: string | null;
+  vehicleName: string | null;
+  serviceNames: string[];
+  totalPrice: number | null;
+  estimatedTime: string | null;
+  status: Quote["status"];
+  createdAt: string | null;
+};
+
+export async function getPublicQuoteByToken(
+  token: string,
+): Promise<PublicQuote | null> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const normalizedToken = token.trim();
+  if (!/^[0-9a-f]{32}$/.test(normalizedToken)) {
+    return null;
+  }
+
+  let result: unknown;
+  try {
+    result = await supabaseRest<unknown>(
+      "rpc/get_public_quote_by_token",
+      "POST",
+      { p_token: normalizedToken },
+    );
+  } catch {
+    // Unknown / rotated / DRAFT tokens surface as an RPC error; the public
+    // page treats them uniformly as unavailable without leaking detail.
+    return null;
+  }
+
+  if (!isRecord(result)) {
+    throw new Error("Supabase returned an invalid public quote result.");
+  }
+
+  const serviceNames = Array.isArray(result.service_names)
+    ? result.service_names.filter(
+        (value): value is string => typeof value === "string" && value.trim().length > 0,
+      )
+    : [];
+
+  return {
+    businessName: typeof result.business_name === "string" ? result.business_name : "AUTO 9",
+    customerName:
+      (typeof result.customer_name === "string" && result.customer_name.trim()
+        ? result.customer_name
+        : null) ??
+      (typeof result.customer_full_name_fallback === "string" &&
+      result.customer_full_name_fallback.trim()
+        ? result.customer_full_name_fallback
+        : null),
+    vehicleName:
+      typeof result.vehicle_name === "string" && result.vehicle_name.trim()
+        ? result.vehicle_name
+        : null,
+    serviceNames,
+    totalPrice: typeof result.total_price === "number" ? result.total_price : null,
+    estimatedTime:
+      typeof result.estimated_time === "string" && result.estimated_time.trim()
+        ? result.estimated_time
+        : null,
+    status: result.status as Quote["status"],
+    createdAt: typeof result.created_at === "string" ? result.created_at : null,
+  };
+}
+
+export async function acceptPublicQuoteByToken(
+  token: string,
+): Promise<AcceptQuoteAndCreateJobResult> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const normalizedToken = token.trim();
+  if (!/^[0-9a-f]{32}$/.test(normalizedToken)) {
+    throw new Error("token is required.");
+  }
+
+  const result = await supabaseRest<unknown>(
+    "rpc/accept_public_quote_by_token",
+    "POST",
+    {
+      p_token: normalizedToken,
+      p_source: "public_quote_share",
+    },
+  );
+
+  // The delegated canonical acceptance returns the 026 result shape. Validate
+  // the minimal envelope defensively before returning.
+  if (
+    !isRecord(result) ||
+    !isRecord(result.quote) ||
+    !isRecord(result.lead) ||
+    !isRecord(result.job)
+  ) {
+    throw new Error("Supabase returned an invalid public quote acceptance result.");
+  }
+
+  return result as unknown as AcceptQuoteAndCreateJobResult;
+}
+
 function validateTransitionLeadResult(
   value: unknown,
   businessId: string,
