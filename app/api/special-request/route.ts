@@ -1,6 +1,10 @@
+import { createHash } from "node:crypto";
+
 import { put } from "@vercel/blob";
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+
+import { persistWebsiteLead } from "../../lib/crm-intake";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -274,21 +278,131 @@ export async function POST(request: Request) {
     }
 
     /* ===================================================== */
+    /* BUFFER / HASH PHOTOS                                  */
+    /*                                                       */
+    /* Chaque photo est bufférisée une seule fois, puis     */
+    /* hashée en SHA-256. Le buffer est réutilisé pour      */
+    /* l'upload Blob : le stream File n'est jamais consommé */
+    /* deux fois.                                            */
+    /* ===================================================== */
+
+    const preparedPhotos =
+      await Promise.all(
+        photos.map(async (photo) => {
+          const bytes = Buffer.from(
+            await photo.arrayBuffer()
+          );
+
+          const contentHash =
+            createHash("sha256")
+              .update(bytes)
+              .digest("hex");
+
+          return {
+            name: photo.name,
+            type: photo.type,
+            bytes,
+            contentHash,
+          };
+        })
+      );
+
+    /* ===================================================== */
+    /* IDENTIFIANT CANONIQUE                                 */
+    /* ===================================================== */
+
+    const submissionId = crypto.randomUUID();
+
+    /* ===================================================== */
+    /* EMPREINTE DE SOUMISSION (SHA-256)                     */
+    /*                                                       */
+    /* Lie le contenu logique de la demande et l'identité/  */
+    /* le contenu ordonné des photos. Aucun timestamp ni    */
+    /* valeur aléatoire dans l'empreinte.                   */
+    /* ===================================================== */
+
+    const submissionFingerprint =
+      createHash("sha256")
+        .update(rawPayload)
+        .update("\0")
+        .update(
+          JSON.stringify(
+            preparedPhotos.map((photo) => ({
+              name: photo.name,
+              type: photo.type,
+              contentHash: photo.contentHash,
+            }))
+          )
+        )
+        .digest("hex");
+
+    /* ===================================================== */
+    /* CRM — INTAKE CANONIQUE (029)                          */
+    /*                                                       */
+    /* Persisté AVANT tout effet externe (Blob/email).      */
+    /* Si cette étape échoue : aucune photo n'est envoyée,  */
+    /* aucun e-mail n'est émis.                             */
+    /* ===================================================== */
+
+    try {
+      await persistWebsiteLead({
+        submissionId,
+        websiteSubmissionFingerprint:
+          submissionFingerprint,
+        customerName: payload.customerName,
+        customerPhone: payload.customerPhone,
+        customerCity: payload.customerCity,
+        serviceId: payload.type,
+        serviceName: payload.serviceName,
+        vehicleName: payload.vehicleName,
+        customerComment: [
+          payload.detail?.trim(),
+          payload.customerComment?.trim(),
+        ]
+          .filter(
+            (value): value is string =>
+              Boolean(value)
+          )
+          .join("\n\n"),
+        totalPrice: 0,
+        source: "website_special_request",
+        sourcePage: "/demande-speciale",
+      });
+    } catch (error) {
+      console.error(
+        "SPECIAL REQUEST : persistance CRM impossible",
+        error
+      );
+
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Le service d’envoi est temporairement indisponible.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    /* ===================================================== */
     /* IDENTIFIANT                                           */
     /* ===================================================== */
 
-    const requestId =
-      `${Date.now()}-${crypto
-        .randomUUID()
-        .slice(0, 8)}`;
+    const requestId = submissionId;
 
     /* ===================================================== */
     /* UPLOAD VERCEL BLOB — OIDC                             */
+    /*                                                       */
+    /* Chemins déterministes dérivés de submissionId, de    */
+    /* l'ordre de la photo et de son hash de contenu :      */
+    /* rejouer la même demande réécrit le même objet.       */
     /* ===================================================== */
 
     const uploadedPhotos =
       await Promise.all(
-        photos.map(
+        preparedPhotos.map(
           async (photo, index) => {
             const cleanName =
               safeFileName(
@@ -299,11 +413,12 @@ export async function POST(request: Request) {
             const blob = await put(
               `special-requests/${payload.type}/${requestId}/${
                 index + 1
-              }-${cleanName}`,
-              photo,
+              }-${photo.contentHash}-${cleanName}`,
+              photo.bytes,
               {
                 access: "public",
-                addRandomSuffix: true,
+                addRandomSuffix: false,
+                allowOverwrite: true,
                 contentType:
                   photo.type ||
                   "application/octet-stream",
@@ -665,16 +780,22 @@ export async function POST(request: Request) {
       new Resend(resendApiKey);
 
     const emailResult =
-      await resend.emails.send({
-        from: senderEmail,
+      await resend.emails.send(
+        {
+          from: senderEmail,
 
-        to: destinationEmail,
+          to: destinationEmail,
 
-        subject:
-          `Nouvelle demande ${serviceLabel} — ${customerName}`,
+          subject:
+            `Nouvelle demande ${serviceLabel} — ${customerName}`,
 
-        html,
-      });
+          html,
+        },
+        {
+          idempotencyKey:
+            `website-special-request/${submissionId}`,
+        }
+      );
 
     if (emailResult.error) {
       console.error(
