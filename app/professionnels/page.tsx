@@ -38,6 +38,8 @@ const steps = [
 export default function ProfessionnelsPage() {
   const [form, setForm] = useState({
     garage: "",
+    phone: "",
+    email: "",
     date: "",
     time: "",
     vehicle: "",
@@ -51,6 +53,7 @@ export default function ProfessionnelsPage() {
 
   const ready =
     form.garage.trim().length > 1 &&
+    form.phone.replace(/\D/g, "").length >= 8 &&
     form.date.trim().length > 0 &&
     form.time.trim().length > 0 &&
     form.vehicle.trim().length > 1 &&
@@ -74,6 +77,8 @@ export default function ProfessionnelsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           garage: form.garage.trim(),
+          phone: form.phone.trim(),
+          email: form.email.trim(),
           date: form.date,
           time: form.time,
           vehicle: form.vehicle.trim(),
@@ -88,7 +93,7 @@ export default function ProfessionnelsPage() {
       }
 
       setSuccess(true);
-      setForm({ garage: "", date: "", time: "", vehicle: "", plate: "", service: "" });
+      setForm({ garage: "", phone: "", email: "", date: "", time: "", vehicle: "", plate: "", service: "" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Une erreur est survenue pendant l’envoi.");
     } finally {
@@ -136,6 +141,17 @@ export default function ProfessionnelsPage() {
                 <div>
                   <label className="mb-3 block text-xs font-black uppercase tracking-[0.25em] text-white/60">Véhicule / Modèle *</label>
                   <input required type="text" name="vehicle" value={form.vehicle} onChange={handleChange} placeholder="Ex : Peugeot 3008" className={fieldClass} />
+                </div>
+              </div>
+
+              <div className="grid gap-6 md:grid-cols-2">
+                <div>
+                  <label className="mb-3 block text-xs font-black uppercase tracking-[0.25em] text-white/60">Téléphone *</label>
+                  <input required type="tel" name="phone" value={form.phone} onChange={handleChange} placeholder="Ex : 06 12 34 56 78" autoComplete="tel" className={fieldClass} />
+                </div>
+                <div>
+                  <label className="mb-3 block text-xs font-black uppercase tracking-[0.25em] text-white/60">Email professionnel</label>
+                  <input type="email" name="email" value={form.email} onChange={handleChange} placeholder="Ex : contact@garage.fr" autoComplete="email" className={fieldClass} />
                 </div>
               </div>
 
