@@ -261,6 +261,7 @@ export function QuoteConfigurator() {
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerCity, setCustomerCity] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
 
   const [servicePlace, setServicePlace] =
     useState<ServicePlace>("domicile");
@@ -627,6 +628,7 @@ export function QuoteConfigurator() {
           customerName: customerName.trim(),
           customerPhone: customerPhone.trim(),
           customerCity: customerCity.trim(),
+          customerEmail: customerEmail.trim(),
           servicePlace,
           servicePlaceLabel: servicePlaceLabel[servicePlace],
           availabilityDateTime,
@@ -1228,6 +1230,18 @@ export function QuoteConfigurator() {
                       inputMode="tel"
                       autoComplete="tel"
                       className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm outline-none transition placeholder:text-white/30 focus:border-[#0057FF] focus:shadow-[0_0_22px_rgba(0,87,255,.12)]"
+                    />
+
+                    <input
+                      value={customerEmail}
+                      onChange={(event) =>
+                        setCustomerEmail(event.target.value)
+                      }
+                      type="email"
+                      placeholder="Email (pour recevoir votre devis)"
+                      inputMode="email"
+                      autoComplete="email"
+                      className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm outline-none transition placeholder:text-white/30 focus:border-[#0057FF] focus:shadow-[0_0_22px_rgba(0,87,255,.12)] sm:col-span-2"
                     />
 
                     <input

@@ -30,6 +30,7 @@ type PremiumAddon = {
 type QuotePayload = {
   customerName: string;
   customerPhone: string;
+  customerEmail?: string;
   customerCity: string;
 
   servicePlace: string;
@@ -85,6 +86,18 @@ function validatePayload(
 
   if (!payload.customerPhone?.trim()) {
     return "Le numéro de téléphone est obligatoire.";
+  }
+
+  const suppliedEmail =
+    typeof payload.customerEmail === "string"
+      ? payload.customerEmail.trim()
+      : "";
+
+  if (
+    suppliedEmail &&
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(suppliedEmail)
+  ) {
+    return "L’adresse email semble invalide.";
   }
 
   if (
@@ -364,6 +377,7 @@ export async function POST(
         submissionFingerprint,
       customerName: payload.customerName,
       customerPhone: payload.customerPhone,
+      customerEmail: payload.customerEmail,
       customerCity: payload.customerCity,
       servicePlace: payload.servicePlace,
       servicePlaceLabel: payload.servicePlaceLabel,
@@ -635,6 +649,15 @@ Référence de la demande : ${requestId}`,
                     payload.customerPhone
                   )}
                 </a>
+              </p>
+
+              <p>
+                <strong>Email :</strong>
+
+                ${escapeHtml(
+                  payload.customerEmail?.trim() ||
+                    "Non renseigné"
+                )}
               </p>
 
               <p>
