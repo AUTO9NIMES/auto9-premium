@@ -169,6 +169,7 @@ export function Services() {
             return (
               <article
                 key={service.id}
+                data-service={service.id}
                 className={`${styles.card} ${distance === 0 ? styles.active : ""}`}
                 style={{
                   transform: `translate(-50%, -50%) translateX(${x}px) translateZ(${z}px) rotateY(${rotate}deg) scale(${scale})`,
