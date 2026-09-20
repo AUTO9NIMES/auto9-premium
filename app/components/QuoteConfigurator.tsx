@@ -263,6 +263,10 @@ export function QuoteConfigurator() {
   const [customerCity, setCustomerCity] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
 
+  const [vehicleBrand, setVehicleBrand] = useState("");
+  const [vehicleModel, setVehicleModel] = useState("");
+  const [vehiclePlate, setVehiclePlate] = useState("");
+
   const [servicePlace, setServicePlace] =
     useState<ServicePlace>("domicile");
 
@@ -328,6 +332,12 @@ export function QuoteConfigurator() {
 
   const contactReady =
     customerName.trim().length > 1 && customerPhone.trim().length >= 8;
+
+  const vehicleReady =
+    vehicleBrand.trim().length > 0 && vehicleModel.trim().length > 0;
+  const vehicleIdentity = [vehicleBrand.trim(), vehicleModel.trim()]
+    .filter(Boolean)
+    .join(" ");
 
   const canRequestAvailability = availabilityDateTime.trim().length > 0;
 
@@ -421,7 +431,9 @@ export function QuoteConfigurator() {
     `Date et heure souhaitées : ${formattedAvailabilityDateTime}`,
     "",
     `Formule : ${currentService.premiumName}`,
-    `Véhicule : ${currentVehicle.name}`,
+    `Véhicule : ${vehicleIdentity || "Non renseigné"}`,
+    `Catégorie : ${currentVehicle.name}`,
+    vehiclePlate.trim() ? `Immatriculation : ${vehiclePlate.trim()}` : "",
     `Prix estimé : ${totalPrice}€${
       hasQuoteAddon ? " + devis complémentaire" : ""
     }`,
@@ -606,7 +618,7 @@ export function QuoteConfigurator() {
   }
 
   async function handleQuoteRequest() {
-    if (!canRequestAvailability || isSubmitting) return;
+    if (!contactReady || !vehicleReady || !canRequestAvailability || isSubmitting) return;
 
     setIsSubmitting(true);
     setSubmitError("");
@@ -637,6 +649,9 @@ export function QuoteConfigurator() {
           serviceName: currentService.premiumName,
           vehicleId: selectedVehicle,
           vehicleName: currentVehicle.name,
+          vehicleBrand: vehicleBrand.trim(),
+          vehicleModel: vehicleModel.trim(),
+          vehiclePlate: vehiclePlate.trim(),
           basePrice,
           selectedOptions,
           selectedPremiumAddons: selectedPremiumAddonItems.map((addon) => ({
@@ -1254,6 +1269,38 @@ export function QuoteConfigurator() {
                       className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm outline-none transition placeholder:text-white/30 focus:border-[#0057FF] focus:shadow-[0_0_22px_rgba(0,87,255,.12)] sm:col-span-2"
                     />
 
+                    <label className="grid gap-2 text-sm text-white/60">
+                      Marque du véhicule *
+                      <input
+                        value={vehicleBrand}
+                        onChange={(event) => setVehicleBrand(event.target.value)}
+                        required
+                        placeholder="Ex. BMW"
+                        className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[#0057FF] focus:shadow-[0_0_22px_rgba(0,87,255,.12)]"
+                      />
+                    </label>
+
+                    <label className="grid gap-2 text-sm text-white/60">
+                      Modèle du véhicule *
+                      <input
+                        value={vehicleModel}
+                        onChange={(event) => setVehicleModel(event.target.value)}
+                        required
+                        placeholder="Ex. Série 3"
+                        className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[#0057FF] focus:shadow-[0_0_22px_rgba(0,87,255,.12)]"
+                      />
+                    </label>
+
+                    <label className="grid gap-2 text-sm text-white/60 sm:col-span-2">
+                      Immatriculation (optionnel)
+                      <input
+                        value={vehiclePlate}
+                        onChange={(event) => setVehiclePlate(event.target.value)}
+                        placeholder="Ex. AB-123-CD"
+                        className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[#0057FF] focus:shadow-[0_0_22px_rgba(0,87,255,.12)]"
+                      />
+                    </label>
+
                     <div className="rounded-xl border border-white/10 bg-black/25 p-4 text-sm sm:col-span-2">
                       <p className="text-white/45">Créneau demandé</p>
 
@@ -1299,8 +1346,20 @@ export function QuoteConfigurator() {
                       <div className="mt-4 space-y-3 text-sm">
                         <SummaryLine
                           label="Véhicule"
+                          value={vehicleIdentity || "À renseigner"}
+                        />
+
+                        <SummaryLine
+                          label="Catégorie"
                           value={currentVehicle.name}
                         />
+
+                        {vehiclePlate.trim() && (
+                          <SummaryLine
+                            label="Immatriculation"
+                            value={vehiclePlate.trim()}
+                          />
+                        )}
 
                         <SummaryLine
                           label="Prestation"
@@ -1457,7 +1516,7 @@ export function QuoteConfigurator() {
               type="button"
               onClick={handleQuoteRequest}
               disabled={
-                !contactReady || !canRequestAvailability || isSubmitting
+                !contactReady || !vehicleReady || !canRequestAvailability || isSubmitting
               }
               className="rounded-full bg-white px-5 py-3 text-[10px] font-black uppercase tracking-[0.14em] text-black shadow-[0_12px_30px_rgba(255,255,255,.1)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#DDEBFF] disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:translate-y-0 lg:px-9 lg:py-5 lg:text-sm"
             >

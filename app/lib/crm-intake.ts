@@ -16,6 +16,9 @@ export type WebsiteLeadDraft = {
   serviceName?: string;
   vehicleId?: string;
   vehicleName?: string;
+  vehicleBrand?: string;
+  vehicleModel?: string;
+  vehiclePlate?: string;
   basePrice?: number;
   selectedOptions?: string[];
   selectedPremiumAddons?: Array<{
@@ -55,10 +58,27 @@ export async function persistWebsiteLead(
   const customerPhone = (draft.customerPhone || "").trim();
   const customerEmail = (draft.customerEmail || "").trim();
 
+  // These two existing forms still send a free-form vehicle name.
+  // Keep it as the model only; never infer a brand from free-form text or
+  // use the pricing category as the configurator's exact vehicle identity.
+  const usesLegacyVehicleName =
+    draft.source === "website_pro_booking" ||
+    draft.source === "website_special_request";
+  const legacyVehicleName = usesLegacyVehicleName
+    ? (draft.vehicleName || "").trim()
+    : "";
+  const vehicleBrand = (draft.vehicleBrand || "").trim();
+  const vehicleModel = (draft.vehicleModel ?? legacyVehicleName).trim();
+  const vehiclePlate = (draft.vehiclePlate || "").trim();
+
   if (!submissionId || !customerName || !customerPhone) {
     throw new Error(
       "submissionId, customerName and customerPhone are required",
     );
+  }
+
+  if (!vehicleModel || (!usesLegacyVehicleName && !vehicleBrand)) {
+    throw new Error("vehicleModel is required; vehicleBrand is required outside legacy intake");
   }
 
   if (!hasSupabaseWriteConfig()) {
@@ -86,6 +106,9 @@ export async function persistWebsiteLead(
       p_customer_comment: draft.customerComment || null,
       p_vehicle_name: draft.vehicleName || null,
       p_vehicle_type: draft.vehicleId || null,
+      p_vehicle_brand: vehicleBrand || null,
+      p_vehicle_model: vehicleModel,
+      p_vehicle_plate: vehiclePlate || null,
       p_service_name: draft.serviceName || "Prestation",
       p_service_slug: draft.serviceId || null,
       p_base_price: draft.basePrice ?? null,
