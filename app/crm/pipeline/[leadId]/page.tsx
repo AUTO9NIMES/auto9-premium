@@ -175,7 +175,8 @@ export default async function LeadDetailPage({ params, searchParams }: {
 
   // A quote can be shared when it is an editable DRAFT (issuance transitions it
   // to SENT atomically) or already coherently SENT on a QUOTE_SENT lead.
-  const shareableDraftQuote = eligibleDraftQuote ?? null;
+  const shareableDraftQuote =
+    lead.lifecycle_status === "CONTACTED" ? eligibleDraftQuote ?? null : null;
   const shareableSentQuote = quotes.find((quote) =>
     quote.status === "SENT" && lead.lifecycle_status === "QUOTE_SENT"
   ) ?? null;
