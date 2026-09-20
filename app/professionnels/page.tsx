@@ -35,6 +35,17 @@ const steps = [
   "Préparation des véhicules avec suivi qualité",
 ];
 
+const proService = {
+  name: "Prépa livraison",
+  price: 100,
+};
+
+const proAddons = [
+  { id: "sieges", name: "Sièges", price: 30 },
+  { id: "plastiques", name: "Rénovation plastiques", price: 15 },
+  { id: "polissage", name: "Polissage 1 élément", price: 30 },
+] as const;
+
 export default function ProfessionnelsPage() {
   const [form, setForm] = useState({
     garage: "",
@@ -44,7 +55,7 @@ export default function ProfessionnelsPage() {
     time: "",
     vehicle: "",
     plate: "",
-    service: "",
+    addons: [] as string[],
   });
 
   const [sending, setSending] = useState(false);
@@ -56,12 +67,28 @@ export default function ProfessionnelsPage() {
     form.phone.replace(/\D/g, "").length >= 8 &&
     form.date.trim().length > 0 &&
     form.time.trim().length > 0 &&
-    form.vehicle.trim().length > 1 &&
-    form.service.trim().length > 0;
+    form.vehicle.trim().length > 1;
 
-  function handleChange(event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
+  function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
   }
+
+  function toggleAddon(addonId: string) {
+    setForm((current) => ({
+      ...current,
+      addons: current.addons.includes(addonId)
+        ? current.addons.filter((id) => id !== addonId)
+        : [...current.addons, addonId],
+    }));
+  }
+
+  const selectedAddons = proAddons.filter((addon) =>
+    form.addons.includes(addon.id),
+  );
+
+  const totalPrice =
+    proService.price +
+    selectedAddons.reduce((sum, addon) => sum + addon.price, 0);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -83,7 +110,13 @@ export default function ProfessionnelsPage() {
           time: form.time,
           vehicle: form.vehicle.trim(),
           plate: form.plate.trim(),
-          service: form.service,
+          service: `${proService.name} — ${proService.price} €`,
+          addons: selectedAddons.map((addon) => ({
+            id: addon.id,
+            name: addon.name,
+            price: addon.price,
+          })),
+          totalPrice,
         }),
       });
 
@@ -93,7 +126,7 @@ export default function ProfessionnelsPage() {
       }
 
       setSuccess(true);
-      setForm({ garage: "", phone: "", email: "", date: "", time: "", vehicle: "", plate: "", service: "" });
+      setForm({ garage: "", phone: "", email: "", date: "", time: "", vehicle: "", plate: "", addons: [] });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Une erreur est survenue pendant l’envoi.");
     } finally {
@@ -171,16 +204,58 @@ export default function ProfessionnelsPage() {
                   <label className="mb-3 block text-xs font-black uppercase tracking-[0.25em] text-white/60">Immatriculation</label>
                   <input type="text" name="plate" value={form.plate} onChange={handleChange} placeholder="Ex : AB-123-CD" className={`${fieldClass} uppercase`} />
                 </div>
+
                 <div>
                   <label className="mb-3 block text-xs font-black uppercase tracking-[0.25em] text-white/60">Prestation *</label>
-                  <select required name="service" value={form.service} onChange={handleChange} className={fieldClass}>
-                    <option value="" className="bg-[#111]">Choisir une prestation</option>
-                    <option value="Intérieur + Extérieur" className="bg-[#111]">Intérieur + Extérieur</option>
-                    <option value="Intérieur" className="bg-[#111]">Intérieur</option>
-                    <option value="Extérieur" className="bg-[#111]">Extérieur</option>
-                    <option value="Formule Livraison — 100 €" className="bg-[#111]">Formule Livraison — 100 €</option>
-                    <option value="Autre" className="bg-[#111]">Autre</option>
-                  </select>
+                  <div className="flex min-h-[58px] items-center justify-between rounded-2xl border border-[#438dff]/35 bg-[linear-gradient(135deg,rgba(18,104,255,.16),rgba(5,10,18,.9))] px-5 py-4 shadow-[0_0_26px_rgba(38,113,240,.08)]">
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-[0.18em] text-[#91bbfa]">Prépa livraison</p>
+                      <p className="mt-1 text-xs text-white/40">Intérieur + extérieur</p>
+                    </div>
+                    <strong className="text-2xl font-black tracking-[-0.04em] text-white">100 €</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+                  <div>
+                    <label className="block text-xs font-black uppercase tracking-[0.25em] text-white/60">Suppléments</label>
+                    <p className="mt-2 text-xs text-white/35">Cumulables — cochez tout ce dont le véhicule a besoin.</p>
+                  </div>
+
+                  <div className="rounded-full border border-[#438dff]/30 bg-[#1268ff]/10 px-4 py-2 text-sm font-bold text-white/70">
+                    Total <span className="ml-2 text-lg font-black text-white">{totalPrice} €</span>
+                  </div>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {proAddons.map((addon) => {
+                    const checked = form.addons.includes(addon.id);
+
+                    return (
+                      <label
+                        key={addon.id}
+                        className={`group flex cursor-pointer items-center justify-between gap-4 rounded-2xl border px-5 py-4 transition duration-200 ${
+                          checked
+                            ? "border-[#6daaff]/70 bg-[#1268ff]/15 shadow-[0_0_26px_rgba(38,113,240,.12)]"
+                            : "border-[#438dff]/20 bg-[#050a12]/70 hover:border-[#6daaff]/45"
+                        }`}
+                      >
+                        <span className="flex min-w-0 items-center gap-3">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleAddon(addon.id)}
+                            className="h-5 w-5 shrink-0 accent-[#2677ef]"
+                          />
+                          <span className="text-sm font-bold text-white/75 group-hover:text-white">{addon.name}</span>
+                        </span>
+
+                        <strong className="shrink-0 text-sm font-black text-[#91bbfa]">+{addon.price} €</strong>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -264,7 +339,7 @@ export default function ProfessionnelsPage() {
 
               <div className="mt-6 rounded-[1.5rem] border border-[#438dff]/20 bg-[#0b1628]/55 p-6">
                 <p className="text-xs font-black uppercase tracking-[0.25em] text-[#91bbfa]">En supplément</p>
-                <p className="mt-3 leading-relaxed text-white/60">Shampoing sièges · Rénovation phares · Lustrage · Rénovation plastiques</p>
+                <p className="mt-3 leading-relaxed text-white/60">Sièges +30 € · Rénovation plastiques +15 € · Polissage 1 élément +30 €</p>
               </div>
             </div>
           </section>
