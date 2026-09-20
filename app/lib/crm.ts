@@ -1367,7 +1367,7 @@ export async function getLeadDetails(
       "quotes",
       "GET",
       null,
-      `business_id=eq.${businessId}&lead_id=eq.${normalizedLeadId}&limit=${LEAD_DETAILS_MAX_ITEMS}&order=created_at.desc,id.desc&select=id,business_id,lead_id,quote_version,total_price,estimated_time,status,created_at,updated_at`,
+      `business_id=eq.${businessId}&lead_id=eq.${normalizedLeadId}&limit=${LEAD_DETAILS_MAX_ITEMS}&order=created_at.desc,id.desc&select=id,business_id,lead_id,quote_version,total_price,estimated_time,status,payload_json,created_at,updated_at`,
     ),
     supabaseRest<Job[]>(
       "jobs",
