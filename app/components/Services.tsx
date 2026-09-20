@@ -180,22 +180,27 @@ export function Services() {
                   if (index !== active) setActive(index);
                 }}
               >
-                <video
-                  ref={(node) => {
-                    videos.current[index] = node;
-                  }}
-                  className={styles.video}
-                  src={service.video}
-                  poster={service.poster}
-                  muted
-                  loop
-                  playsInline
-                  preload={index === active ? "auto" : "metadata"}
-                />
-                <div className={styles.shade} />
+                <div className={styles.media}>
+                  <video
+                    ref={(node) => {
+                      videos.current[index] = node;
+                    }}
+                    className={styles.video}
+                    src={service.video}
+                    poster={service.poster}
+                    muted
+                    loop
+                    playsInline
+                    preload={index === active ? "auto" : "metadata"}
+                  />
+                  <div className={styles.mediaShade} />
+                  <div className={styles.mediaTitle}>
+                    <span className={styles.cardEyebrow}>{service.eyebrow}</span>
+                    <h3>{service.name}</h3>
+                  </div>
+                </div>
+
                 <div className={styles.cardContent}>
-                  <span className={styles.cardEyebrow}>{service.eyebrow}</span>
-                  <h3>{service.name}</h3>
                   <div className={styles.price}>
                     <span>{service.priceLabel}</span>
                     <strong>{service.price}</strong>
