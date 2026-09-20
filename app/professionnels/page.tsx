@@ -201,7 +201,7 @@ export default function ProfessionnelsPage() {
 
               <div className="grid gap-6 md:grid-cols-2">
                 <div>
-                  <label className="mb-3 block text-xs font-black uppercase tracking-[0.25em] text-white/60">Immatriculation</label>
+                  <label className="mb-3 block text-xs font-black uppercase tracking-[0.25em] text-white/60">Immatriculation <span className="normal-case tracking-normal text-white/30">(facultatif)</span></label>
                   <input type="text" name="plate" value={form.plate} onChange={handleChange} placeholder="Ex : AB-123-CD" className={`${fieldClass} uppercase`} />
                 </div>
 
