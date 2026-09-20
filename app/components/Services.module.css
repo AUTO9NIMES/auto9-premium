@@ -122,12 +122,12 @@
   left: 0;
   display: block;
   width: 100%;
-  height: 56%;
+  height: 65%;
   object-fit: cover;
-  object-position: center 42%;
+  object-position: center 40%;
   background: #071019;
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 78%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 0%, #000 78%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 88%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 88%, transparent 100%);
 }
 
 .shade {
@@ -330,8 +330,10 @@
 
   .video {
     top: 0;
-    height: 54%;
+    height: 61%;
     object-position: center 42%;
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 86%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 86%, transparent 100%);
   }
 
   .cardContent h3 { font-size: 30px; }
