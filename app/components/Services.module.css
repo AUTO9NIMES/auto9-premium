@@ -60,7 +60,7 @@
   position: relative;
   z-index: 2;
   width: min(1420px, 98vw);
-  height: 560px;
+  height: 590px;
   margin: 0 auto;
   perspective: 1800px;
   touch-action: pan-y;
@@ -78,8 +78,8 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 390px;
-  height: 500px;
+  width: 404px;
+  height: 540px;
   overflow: hidden;
   border: 1px solid rgba(160, 210, 255, .22);
   border-radius: 28px;
@@ -116,103 +116,173 @@
   pointer-events: none;
 }
 
-.video {
+.media {
   position: absolute;
-  top: 0;
-  left: 0;
-  display: block;
-  width: 100%;
-  height: 65%;
-  object-fit: cover;
-  object-position: center 40%;
+  inset: 0 0 auto;
+  height: 61%;
+  overflow: hidden;
   background: #071019;
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 88%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 0%, #000 88%, transparent 100%);
 }
 
-.shade {
+.video {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(1,6,12,.97) 4%, rgba(1,6,12,.58) 38%, rgba(2,8,14,.08) 70%, rgba(2,8,14,.24));
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 42%;
+  background: #071019;
+  transition: transform .7s cubic-bezier(.22,.75,.2,1), filter .5s ease;
+}
+
+.active .video {
+  transform: scale(1.015);
+}
+
+.mediaShade {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to bottom, rgba(0,0,0,.03) 0%, rgba(0,0,0,.02) 56%, rgba(1,6,12,.7) 88%, rgba(1,6,12,.98) 100%);
   pointer-events: none;
+}
+
+.mediaTitle {
+  position: absolute;
+  z-index: 2;
+  right: 26px;
+  bottom: 17px;
+  left: 26px;
+  text-shadow: 0 8px 26px rgba(0,0,0,.85);
+}
+
+.cardEyebrow {
+  display: block;
+  margin-bottom: 6px;
+  color: #65b9ff;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: .28em;
+  text-transform: uppercase;
+}
+
+.mediaTitle h3 {
+  max-width: 345px;
+  margin: 0;
+  color: #fff;
+  font-size: 37px;
+  font-weight: 880;
+  line-height: .94;
+  letter-spacing: -.05em;
 }
 
 .cardContent {
   position: absolute;
   z-index: 2;
-  right: 27px;
-  bottom: 26px;
-  left: 27px;
-}
-
-.cardEyebrow {
-  display: block;
-  margin-bottom: 7px;
-  color: #8abfff;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: .24em;
-  text-transform: uppercase;
-}
-
-.cardContent h3 {
-  max-width: 330px;
-  margin: 0;
-  font-size: 35px;
-  font-weight: 850;
-  line-height: .98;
-  letter-spacing: -.045em;
-  text-shadow: 0 7px 24px rgba(0,0,0,.72);
+  top: 61%;
+  right: 26px;
+  bottom: 22px;
+  left: 26px;
+  display: flex;
+  flex-direction: column;
+  padding-top: 12px;
 }
 
 .price {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
-  margin-top: 11px;
-  color: #c3ced9;
-  font-size: 14px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  margin: 0;
+}
+
+.price > span {
+  color: #8ec7f7;
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: .01em;
 }
 
 .price strong {
+  margin-top: -2px;
   color: #fff;
-  font-size: 24px;
-  letter-spacing: -.025em;
+  font-size: 50px;
+  font-weight: 900;
+  line-height: .98;
+  letter-spacing: -.045em;
+  text-shadow:
+    0 0 14px rgba(71,174,255,.32),
+    0 0 34px rgba(26,138,255,.18);
+  white-space: nowrap;
+}
+
+.card[data-service="polissage"] .price strong,
+.card[data-service="jantes"] .price strong {
+  margin-top: 2px;
+  font-size: 34px;
+  letter-spacing: -.035em;
+}
+
+.card:not(.active) .price strong {
+  font-size: 34px;
+  text-shadow: none;
+}
+
+.card:not(.active)[data-service="polissage"] .price strong,
+.card:not(.active)[data-service="jantes"] .price strong {
+  font-size: 27px;
 }
 
 .features {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin: 15px 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin: 12px 0 13px;
 }
 
 .features span {
-  padding: 7px 9px;
-  border: 1px solid rgba(255,255,255,.14);
-  border-radius: 999px;
-  background: rgba(4,12,20,.5);
-  color: #d9e2eb;
-  font-size: 10px;
-  backdrop-filter: blur(7px);
+  display: grid;
+  min-height: 43px;
+  place-items: center;
+  padding: 6px 7px;
+  border: 1px solid rgba(123,194,255,.22);
+  border-radius: 11px;
+  background: linear-gradient(180deg, rgba(9,23,36,.72), rgba(3,10,17,.78));
+  color: #dce8f2;
+  font-size: 9px;
+  font-weight: 620;
+  line-height: 1.15;
+  text-align: center;
+  backdrop-filter: blur(8px);
 }
 
 .action {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 14px;
   width: 100%;
-  height: 44px;
-  border: 1px solid rgba(100,190,255,.68);
+  height: 48px;
+  margin-top: auto;
+  border: 1px solid rgba(76,183,255,.82);
   border-radius: 999px;
-  background: rgba(3,12,21,.54);
+  background: linear-gradient(180deg, rgba(7,25,40,.78), rgba(2,10,18,.88));
   color: #fff;
   font: inherit;
   font-size: 13px;
-  font-weight: 750;
-  box-shadow: inset 0 0 20px rgba(26,138,255,.12), 0 0 24px rgba(26,138,255,.09);
+  font-weight: 820;
+  letter-spacing: .01em;
+  box-shadow:
+    inset 0 0 24px rgba(26,138,255,.12),
+    0 0 24px rgba(26,138,255,.08);
   cursor: pointer;
+}
+
+.active .action {
+  box-shadow:
+    inset 0 0 26px rgba(26,138,255,.18),
+    0 0 28px rgba(26,138,255,.13);
 }
 
 .arrow {
@@ -311,36 +381,47 @@
 
   .stage {
     width: 100vw;
-    height: 520px;
+    height: 535px;
   }
 
   .card {
-    width: min(78vw, 360px);
-    height: 455px;
+    width: min(82vw, 360px);
+    height: 472px;
     border-radius: 22px;
   }
 
   .active::after { border-radius: 22px; }
 
-  .cardContent {
-    right: 20px;
-    bottom: 20px;
-    left: 20px;
+  .media {
+    height: 59%;
   }
 
   .video {
-    top: 0;
-    height: 61%;
     object-position: center 42%;
-    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 86%, transparent 100%);
-    mask-image: linear-gradient(to bottom, #000 0%, #000 86%, transparent 100%);
   }
 
-  .cardContent h3 { font-size: 30px; }
-  .price { margin-top: 9px; font-size: 12px; }
-  .price strong { font-size: 22px; }
-  .features { gap: 6px; margin: 12px 0; }
-  .features span { padding: 6px 8px; font-size: 9px; }
+  .mediaTitle {
+    right: 20px;
+    bottom: 14px;
+    left: 20px;
+  }
+
+  .mediaTitle h3 { font-size: 31px; }
+
+  .cardContent {
+    top: 59%;
+    right: 20px;
+    bottom: 18px;
+    left: 20px;
+    padding-top: 10px;
+  }
+
+  .price > span { font-size: 11px; }
+  .price strong { font-size: 39px; }
+  .card[data-service="polissage"] .price strong,
+  .card[data-service="jantes"] .price strong { font-size: 29px; }
+  .features { gap: 5px; margin: 10px 0 11px; }
+  .features span { min-height: 36px; padding: 5px 6px; font-size: 8px; }
   .action { height: 42px; font-size: 12px; }
   .arrow { display: none; }
   .hint { font-size: 10px; }
@@ -348,9 +429,10 @@
 
 @media (max-width: 480px) {
   .section { min-height: 650px; padding-top: 32px; }
-  .stage { height: 500px; }
-  .card { width: 80vw; max-width: 335px; height: 438px; }
-  .cardContent h3 { font-size: 28px; }
+  .stage { height: 510px; }
+  .card { width: 84vw; max-width: 335px; height: 448px; }
+  .mediaTitle h3 { font-size: 28px; }
+  .price strong { font-size: 36px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
