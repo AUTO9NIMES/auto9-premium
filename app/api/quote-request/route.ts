@@ -44,6 +44,9 @@ type QuotePayload = {
 
   vehicleId: string;
   vehicleName: string;
+  vehicleBrand: string;
+  vehicleModel: string;
+  vehiclePlate?: string;
 
   basePrice: number;
   selectedOptions: string[];
@@ -80,6 +83,22 @@ function safeFileName(fileName: string) {
 function validatePayload(
   payload: QuotePayload
 ) {
+  if (
+    typeof payload?.vehicleBrand !== "string" ||
+    !payload.vehicleBrand.trim() ||
+    typeof payload.vehicleModel !== "string" ||
+    !payload.vehicleModel.trim()
+  ) {
+    return "La marque et le modèle du véhicule sont obligatoires.";
+  }
+
+  if (
+    payload.vehiclePlate !== undefined &&
+    typeof payload.vehiclePlate !== "string"
+  ) {
+    return "L’immatriculation du véhicule est invalide.";
+  }
+
   if (!payload.customerName?.trim()) {
     return "Le nom du client est obligatoire.";
   }
@@ -388,6 +407,9 @@ export async function POST(
       serviceName: payload.serviceName,
       vehicleId: payload.vehicleId,
       vehicleName: payload.vehicleName,
+      vehicleBrand: payload.vehicleBrand.trim(),
+      vehicleModel: payload.vehicleModel.trim(),
+      vehiclePlate: payload.vehiclePlate?.trim(),
       basePrice: payload.basePrice,
       selectedOptions: payload.selectedOptions,
       selectedPremiumAddons:
@@ -537,8 +559,13 @@ export async function POST(
     const resend =
       new Resend(resendApiKey);
 
+    const vehicleIdentity =
+      `${payload.vehicleBrand.trim()} ${payload.vehicleModel.trim()}`;
+    const vehicleDescription =
+      `${vehicleIdentity} (${payload.vehicleName})`;
+
     const subject =
-      `Nouvelle demande AUTO 9 — ${payload.customerName} — ${payload.vehicleName}`;
+      `Nouvelle demande AUTO 9 — ${payload.customerName} — ${vehicleDescription}`;
 
     const {
       data: emailData,
@@ -554,7 +581,9 @@ export async function POST(
 
         subject,
 
-        text: `${payload.reservationMessage}
+        text: `Véhicule : ${vehicleDescription}
+${payload.vehiclePlate?.trim() ? `Immatriculation : ${payload.vehiclePlate.trim()}\n` : ""}
+${payload.reservationMessage}
 
 Photos :
 ${
@@ -715,9 +744,15 @@ Référence de la demande : ${requestId}`,
                 <strong>Véhicule :</strong>
 
                 ${escapeHtml(
-                  payload.vehicleName
+                  vehicleDescription
                 )}
               </p>
+
+              ${payload.vehiclePlate?.trim() ? `
+              <p>
+                <strong>Immatriculation :</strong>
+                ${escapeHtml(payload.vehiclePlate.trim())}
+              </p>` : ""}
 
               <p>
                 <strong>
