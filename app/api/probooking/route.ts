@@ -7,6 +7,15 @@ import { persistWebsiteLead } from "../../lib/crm-intake";
 
 export const runtime = "nodejs";
 
+const PRO_SERVICE_NAME = "Prépa livraison";
+const PRO_SERVICE_PRICE = 100;
+
+const PRO_ADDONS = [
+  { id: "sieges", name: "Sièges", price: 30 },
+  { id: "plastiques", name: "Rénovation plastiques", price: 15 },
+  { id: "polissage", name: "Polissage 1 élément", price: 30 },
+] as const;
+
 function escapeHtml(value: unknown) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -61,15 +70,14 @@ export async function POST(request: Request) {
       time,
       vehicle,
       plate,
-      service,
+      addons,
     } = body;
 
     if (
       !garage?.trim() ||
       !date?.trim() ||
       !time?.trim() ||
-      !vehicle?.trim() ||
-      !service?.trim()
+      !vehicle?.trim()
     ) {
       return NextResponse.json(
         {
@@ -118,6 +126,36 @@ export async function POST(request: Request) {
       );
     }
 
+    const requestedAddonIds = Array.isArray(addons)
+      ? addons
+          .map((addon: unknown) =>
+            typeof addon === "string"
+              ? addon
+              : addon &&
+                  typeof addon === "object" &&
+                  "id" in addon &&
+                  typeof (addon as { id?: unknown }).id === "string"
+                ? (addon as { id: string }).id
+                : ""
+          )
+          .filter(Boolean)
+      : [];
+
+    const selectedAddons = PRO_ADDONS.filter((addon) =>
+      requestedAddonIds.includes(addon.id)
+    );
+
+    const selectedAddonLabels = selectedAddons.map(
+      (addon) => addon.name + " (+" + addon.price + " €)"
+    );
+
+    const totalPrice =
+      PRO_SERVICE_PRICE +
+      selectedAddons.reduce((sum, addon) => sum + addon.price, 0);
+
+    const serviceLabel =
+      PRO_SERVICE_NAME + " — " + PRO_SERVICE_PRICE + " €";
+
     /* ===================================================== */
     /* IDENTIFIANT CANONIQUE                                 */
     /* ===================================================== */
@@ -144,7 +182,8 @@ export async function POST(request: Request) {
               typeof plate === "string"
                 ? plate.trim()
                 : "",
-            service: service.trim(),
+            service: serviceLabel,
+            addons: selectedAddons.map((addon) => addon.id),
             time: time.trim(),
             vehicle: vehicle.trim(),
           })
@@ -168,14 +207,16 @@ export async function POST(request: Request) {
         customerPhone: trimmedPhone,
         customerEmail: trimmedEmail || undefined,
         vehicleName: vehicle,
-        serviceName: service,
+        serviceName: PRO_SERVICE_NAME,
+        basePrice: PRO_SERVICE_PRICE,
+        selectedOptions: selectedAddonLabels,
         availabilityDateTime:
           `${date.trim()}T${time.trim()}`,
         customerComment:
           typeof plate === "string" && plate.trim()
             ? `Immatriculation : ${plate.trim()}`
             : undefined,
-        totalPrice: 0,
+        totalPrice,
         source: "website_pro_booking",
         sourcePage: "/professionnels",
       });
@@ -287,7 +328,14 @@ export async function POST(request: Request) {
                     "Immatriculation",
                     plate?.trim() || "Non renseignée"
                   )}
-                  ${emailRow("Prestation", service)}
+                  ${emailRow("Prestation", serviceLabel)}
+                  ${emailRow(
+                    "Suppléments",
+                    selectedAddonLabels.length
+                      ? selectedAddonLabels.join(" · ")
+                      : "Aucun"
+                  )}
+                  ${emailRow("Total", String(totalPrice) + " €")}
                 </div>
               </div>
 
