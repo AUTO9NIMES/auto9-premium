@@ -3,9 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireCrmAccess } from "../../lib/auth/dal";
-import { resolveCurrentBusinessContext } from "../../lib/business";
-import { upsertCustomer } from "../../lib/crm";
-import { supabaseRest } from "../../lib/supabase";
+import { deleteCustomerIfSafe, upsertCustomer } from "../../lib/crm";
+
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function value(formData: FormData, key: string) {
   return String(formData.get(key) || "").trim();
@@ -43,24 +44,34 @@ export async function deleteV2Customer(formData: FormData) {
   await requireCrmAccess();
 
   const customerId = value(formData, "customerId");
-  if (!customerId) redirect("/crm-v2/clients?error=delete");
+  const confirmation = formData.get("confirm");
 
-  const { businessId } = await resolveCurrentBusinessContext();
-
-  const [leads, jobs] = await Promise.all([
-    supabaseRest<Array<{ id: string }>>("leads", "GET", null, `business_id=eq.${businessId}&customer_id=eq.${customerId}&select=id&limit=1`),
-    supabaseRest<Array<{ id: string }>>("jobs", "GET", null, `business_id=eq.${businessId}&customer_id=eq.${customerId}&select=id&limit=1`),
-  ]);
-
-  if ((Array.isArray(leads) && leads.length) || (Array.isArray(jobs) && jobs.length)) {
-    redirect("/crm-v2/clients?error=linked");
+  if (!UUID_REGEX.test(customerId) || confirmation !== "DELETE") {
+    redirect("/crm-v2/clients?error=invalid");
   }
 
-  await supabaseRest("customer_identifiers", "DELETE", null, `business_id=eq.${businessId}&customer_id=eq.${customerId}`);
-  await supabaseRest("vehicles", "DELETE", null, `business_id=eq.${businessId}&customer_id=eq.${customerId}`);
-  await supabaseRest("customers", "DELETE", null, `business_id=eq.${businessId}&id=eq.${customerId}`);
+  let result;
+
+  try {
+    result = await deleteCustomerIfSafe(customerId);
+  } catch {
+    redirect("/crm-v2/clients?error=unavailable");
+  }
+
+  if (result === "PROTECTED") {
+    redirect("/crm-v2/clients?error=protected");
+  }
+
+  if (result === "NOT_FOUND") {
+    redirect("/crm-v2/clients?error=not_found");
+  }
+
+  if (result !== "DELETED") {
+    redirect("/crm-v2/clients?error=unavailable");
+  }
 
   revalidatePath("/crm-v2");
   revalidatePath("/crm-v2/clients");
+  revalidatePath(`/crm-v2/clients/${customerId}`);
   redirect("/crm-v2/clients?deleted=1");
 }

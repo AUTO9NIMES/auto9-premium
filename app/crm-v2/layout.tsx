@@ -18,8 +18,11 @@ async function ensureCrmAccess() {
 
 const nav = [
   ["Pilotage", "/crm-v2"],
+  ["Chiffre d’affaires", "/crm-v2/revenue"],
   ["Pipeline", "/crm-v2/pipeline"],
   ["Clients", "/crm-v2/clients"],
+  ["Abonnements", "/crm-v2/subscriptions"],
+  ["Emails", "/crm-v2/emails"],
   ["Calendrier", "/crm-v2/calendar"],
 ];
 

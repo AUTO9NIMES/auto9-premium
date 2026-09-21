@@ -26,7 +26,7 @@ function parisMonthKey(value: string | Date) {
 function MiniEvent({ item }: { item: CalendarAppointmentItem }) {
   const when = new Date(item.appointment.scheduledAt);
   return (
-    <Link href={`/crm/jobs/${item.job.id}`} className="group flex items-center gap-3 rounded-xl border border-white/8 bg-white/[0.025] p-3 transition hover:border-cyan-300/25 hover:bg-cyan-300/[0.04]">
+    <Link href="/crm-v2/calendar" className="group flex items-center gap-3 rounded-xl border border-white/8 bg-white/[0.025] p-3 transition hover:border-cyan-300/25 hover:bg-cyan-300/[0.04]">
       <div className="w-14 shrink-0 text-center">
         <p className="text-[10px] uppercase text-white/35">{day.format(when)}</p>
         <p className="mt-1 text-xs font-semibold text-cyan-200">{hour.format(when)}</p>
@@ -41,6 +41,21 @@ function MiniEvent({ item }: { item: CalendarAppointmentItem }) {
 
 export default async function CrmV2Dashboard() {
   const { businessId } = await resolveCurrentBusinessContext();
+  let subscriptionsDue = 0;
+  try {
+    const subscriptionRows = await supabaseRest<Array<{ next_due_on: string; active: boolean }>>(
+      "crm_subscriptions",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&active=eq.true&select=next_due_on,active`,
+    );
+    const current = monthKey();
+    subscriptionsDue = ((subscriptionRows as Array<{ next_due_on: string; active: boolean }> | null) ?? [])
+      .filter((item) => item.next_due_on?.startsWith(current)).length;
+  } catch {
+    subscriptionsDue = 0;
+  }
+
   const [metrics, calendar, paymentsRaw] = await Promise.all([
     getCrmDashboardMetrics(),
     getCalendarMonth({ month: monthKey() }),
@@ -68,10 +83,10 @@ export default async function CrmV2Dashboard() {
     .slice(0, 5);
 
   const cards = [
-    { label: "CA du mois", value: eur.format(monthlyRevenue), detail: `${paymentsThisMonth.length} encaissement${paymentsThisMonth.length > 1 ? "s" : ""}`, accent: true },
-    { label: "CA espèces", value: eur.format(cashRevenue), detail: "Paiements en espèces" },
-    { label: "CA carte + virement", value: eur.format(bankRevenue), detail: "Encaissements bancaires" },
-    { label: "Clients", value: String(metrics.customersTotal), detail: `${metrics.activeLeads} lead${metrics.activeLeads > 1 ? "s" : ""} actif${metrics.activeLeads > 1 ? "s" : ""}` },
+    { label: "Leads", value: String(metrics.activeLeads), detail: `${metrics.leadsRequiringAttention} à traiter`, accent: true, href: "/crm-v2/pipeline" },
+    { label: "CA espèces", value: eur.format(cashRevenue), detail: "Paiements en espèces", href: "/crm-v2/revenue" },
+    { label: "CA carte + virement", value: eur.format(bankRevenue), detail: "Encaissements bancaires", href: "/crm-v2/revenue" },
+    { label: "Clients", value: String(metrics.customersTotal), detail: `${metrics.activeLeads} lead${metrics.activeLeads > 1 ? "s" : ""} actif${metrics.activeLeads > 1 ? "s" : ""}`, href: "/crm-v2/clients" },
   ];
 
   return (
@@ -90,11 +105,18 @@ export default async function CrmV2Dashboard() {
 
       <section className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
         {cards.map((card) => (
-          <div key={card.label} className={`rounded-2xl border p-5 ${card.accent ? "border-cyan-300/25 bg-gradient-to-br from-cyan-300/10 to-blue-500/[0.04]" : "border-white/8 bg-white/[0.025]"}`}>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-white/35">{card.label}</p>
+          <Link
+            key={card.label}
+            href={card.href}
+            className={`group rounded-2xl border p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-300/30 hover:bg-cyan-300/[0.045] hover:shadow-[0_12px_35px_rgba(34,211,238,0.07)] ${card.accent ? "border-cyan-300/25 bg-gradient-to-br from-cyan-300/10 to-blue-500/[0.04]" : "border-white/8 bg-white/[0.025]"}`}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-white/35">{card.label}</p>
+              <span className="text-sm text-white/20 transition group-hover:translate-x-0.5 group-hover:text-cyan-200/70">→</span>
+            </div>
             <p className={`mt-4 text-3xl font-bold ${card.accent ? "text-cyan-100" : "text-white"}`}>{card.value}</p>
             <p className="mt-2 text-xs text-white/35">{card.detail}</p>
-          </div>
+          </Link>
         ))}
       </section>
 
@@ -138,7 +160,15 @@ export default async function CrmV2Dashboard() {
         </section>
       </div>
 
-      <section className="grid gap-3 md:grid-cols-3">
+      {subscriptionsDue > 0 && (
+        <Link href="/crm-v2/subscriptions" className="block rounded-2xl border border-amber-300/20 bg-amber-300/[0.05] p-5 transition hover:border-amber-300/35">
+          <p className="text-[10px] uppercase tracking-[0.18em] text-amber-100/60">Rappel abonnements</p>
+          <p className="mt-2 text-lg font-semibold text-amber-100">{subscriptionsDue} abonnement{subscriptionsDue > 1 ? "s" : ""} à planifier ce mois-ci</p>
+          <p className="mt-2 text-xs text-white/40">Ouvrir l'espace abonnements →</p>
+        </Link>
+      )}
+
+      <section className="grid gap-3 md:grid-cols-4">
         <Link href="/crm-v2/pipeline" className="rounded-2xl border border-white/8 bg-white/[0.025] p-5 transition hover:border-cyan-300/25">
           <p className="text-sm font-semibold">Pipeline checklist</p>
           <p className="mt-2 text-xs leading-5 text-white/40">Chaque client, chaque étape, un seul coup d'œil.</p>
@@ -147,9 +177,13 @@ export default async function CrmV2Dashboard() {
           <p className="text-sm font-semibold">Clients</p>
           <p className="mt-2 text-xs leading-5 text-white/40">Créer, retrouver et gérer la base clients.</p>
         </Link>
-        <Link href="/crm/jobs" className="rounded-2xl border border-white/8 bg-white/[0.025] p-5 transition hover:border-cyan-300/25">
+        <Link href="/crm-v2/subscriptions" className="rounded-2xl border border-white/8 bg-white/[0.025] p-5 transition hover:border-cyan-300/25">
+          <p className="text-sm font-semibold">Abonnements</p>
+          <p className="mt-2 text-xs leading-5 text-white/40">Clients récurrents et rappels mensuels.</p>
+        </Link>
+        <Link href="/crm-v2/pipeline" className="rounded-2xl border border-white/8 bg-white/[0.025] p-5 transition hover:border-cyan-300/25">
           <p className="text-sm font-semibold">Prestations</p>
-          <p className="mt-2 text-xs leading-5 text-white/40">Accès au registre opérationnel existant.</p>
+          <p className="mt-2 text-xs leading-5 text-white/40">Retrouver les prestations depuis les dossiers clients.</p>
         </Link>
       </section>
     </div>

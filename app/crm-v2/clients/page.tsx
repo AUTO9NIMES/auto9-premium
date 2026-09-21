@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { requireCrmAccess } from "../../lib/auth/dal";
 import { getCustomersList, type CustomerListItem } from "../../lib/crm";
 import { createV2Customer, deleteV2Customer } from "./actions";
 
@@ -19,6 +20,8 @@ export default async function CrmV2Clients({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await requireCrmAccess();
+
   const params = await searchParams;
   const rawSearch = Array.isArray(params.search) ? params.search[0] : params.search;
   const search = rawSearch?.trim() || undefined;
@@ -44,7 +47,15 @@ export default async function CrmV2Clients({
       {deleted && <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/[0.05] px-4 py-3 text-sm text-emerald-100">Client supprimé.</div>}
       {error && (
         <div className="rounded-xl border border-red-300/20 bg-red-300/[0.05] px-4 py-3 text-sm text-red-100">
-          {error === "linked" ? "Ce client possède déjà un dossier ou une prestation. Suppression bloquée pour protéger l'historique." : error === "name" ? "Le nom du client est obligatoire." : "L'action n'a pas pu être effectuée."}
+          {error === "protected" || error === "linked"
+            ? "Ce client possède un historique métier AUTO 9 et ne peut pas être supprimé."
+            : error === "not_found"
+              ? "Ce client est introuvable ou a déjà été supprimé."
+              : error === "invalid"
+                ? "Identifiant client invalide ou confirmation de suppression manquante."
+                : error === "name"
+                  ? "Le nom du client est obligatoire."
+                  : "L'action n'a pas pu être effectuée. Veuillez réessayer."}
         </div>
       )}
 
@@ -89,12 +100,22 @@ export default async function CrmV2Clients({
               </div>
               <div className="text-xs text-white/50">{vehicle(item) || "Aucun véhicule"}</div>
               <div className="flex flex-wrap items-center gap-2 md:justify-end">
-                {item.customer.id && <Link href={`/crm/clients/${item.customer.id}`} className="rounded-lg border border-white/10 px-3 py-2 text-[10px] text-white/60 hover:border-cyan-300/25 hover:text-cyan-100">Ouvrir</Link>}
+                {item.customer.id && <Link href={`/crm-v2/clients/${item.customer.id}`} className="rounded-lg border border-white/10 px-3 py-2 text-[10px] text-white/60 hover:border-cyan-300/25 hover:text-cyan-100">Ouvrir</Link>}
                 {item.customer.id && (
-                  <form action={deleteV2Customer}>
-                    <input type="hidden" name="customerId" value={item.customer.id} />
-                    <button className="rounded-lg border border-red-300/10 px-3 py-2 text-[10px] text-red-200/45 hover:border-red-300/25 hover:text-red-100">Supprimer</button>
-                  </form>
+                  <details className="rounded-lg border border-red-300/10 px-3 py-2 text-[10px] text-red-200/60">
+                    <summary className="cursor-pointer hover:text-red-100">Supprimer</summary>
+                    <form action={deleteV2Customer} className="mt-3 max-w-xs space-y-3">
+                      <input type="hidden" name="customerId" value={item.customer.id} />
+                      <p className="text-xs leading-5 text-white/45">
+                        La suppression est définitive. Les clients possédant un historique métier ne peuvent pas être supprimés.
+                      </p>
+                      <label className="flex items-start gap-2 text-xs leading-5 text-white/60">
+                        <input type="checkbox" name="confirm" value="DELETE" required className="mt-1" />
+                        <span>Je confirme la suppression définitive de ce client.</span>
+                      </label>
+                      <button type="submit" className="rounded-lg border border-red-300/20 px-3 py-2 text-[10px] text-red-200/70 hover:border-red-300/35 hover:text-red-100">Supprimer définitivement</button>
+                    </form>
+                  </details>
                 )}
               </div>
             </article>
