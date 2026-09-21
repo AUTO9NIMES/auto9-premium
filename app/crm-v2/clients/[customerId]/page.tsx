@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { requireCrmAccess } from "../../../lib/auth/dal";
 import {
   getCustomer360,
   type Appointment,
@@ -103,6 +104,8 @@ export default async function CustomerV2Page({
   params: Promise<{ customerId?: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await requireCrmAccess();
+
   const { customerId } = await params;
   const id = customerId?.trim();
   const sp = await searchParams;
