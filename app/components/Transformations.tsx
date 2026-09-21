@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import { DesktopVideo } from "./DesktopVideo";
 
 const instagramUrl = "https://www.instagram.com/auto9_nimes/";
 
@@ -77,7 +78,7 @@ function ResultCard({
     if (!video) return;
 
     video.currentTime = 0;
-    void video.play();
+    void video.play().catch(() => undefined);
   };
 
   const pauseVideo = () => {
@@ -99,13 +100,13 @@ function ResultCard({
       className="group relative overflow-hidden rounded-3xl border border-white/10 bg-black transition-all duration-500 hover:-translate-y-3 hover:border-[#B8C7D1]/70 hover:shadow-[0_0_80px_rgba(184,199,209,.25)]"
     >
       <div className="relative aspect-[9/16] overflow-hidden">
-        <video
+        <DesktopVideo
           ref={videoRef}
           src={item.video}
           muted
           loop
           playsInline
-          preload="auto"
+          preload="metadata"
           className="h-full w-full object-cover opacity-80 transition duration-700 group-hover:scale-110 group-hover:opacity-100"
         />
 

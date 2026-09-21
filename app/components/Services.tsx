@@ -178,6 +178,10 @@ export function Services() {
   const router = useRouter();
   const [active, setActive] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
+  const [nearby, setNearby] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const [playing, setPlaying] = useState<number | null>(null);
+  const stage = useRef<HTMLDivElement>(null);
   const videos = useRef<(HTMLVideoElement | null)[]>([]);
   const pointerStart = useRef<number | null>(null);
 
@@ -193,19 +197,52 @@ export function Services() {
   }, [router]);
 
   useEffect(() => {
-    videos.current.forEach((video, index) => {
-      if (!video) return;
-      if (index === active) {
-        video.muted = true;
-        video.defaultMuted = true;
-        video.playsInline = true;
-        video.currentTime = 0;
-        void video.play().catch(() => undefined);
-      } else {
-        video.pause();
+    const element = stage.current;
+    if (!element) return;
+    const warmup = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setNearby(true);
+        warmup.disconnect();
       }
-    });
-  }, [active]);
+    }, { rootMargin: "400px 0px" });
+    const playback = new IntersectionObserver(([entry]) => {
+      setVisible(entry.isIntersecting && entry.intersectionRatio >= 0.15);
+    }, { threshold: [0, 0.15] });
+    warmup.observe(element);
+    playback.observe(element);
+    return () => { warmup.disconnect(); playback.disconnect(); };
+  }, []);
+
+  useEffect(() => {
+    const video = videos.current[active];
+    if (!video) return;
+    const syncPlayback = () => {
+      videos.current.forEach((other, index) => {
+        if (index !== active) other?.pause();
+      });
+      if (!nearby || !visible || document.hidden) {
+        video.pause();
+        return;
+      }
+      video.muted = true;
+      video.defaultMuted = true;
+      video.playsInline = true;
+      // Retry when ready/visible or following a gesture; keep the poster on refusal.
+      void video.play().catch(() => undefined);
+    };
+    syncPlayback();
+    video.addEventListener("canplay", syncPlayback);
+    document.addEventListener("visibilitychange", syncPlayback);
+    document.addEventListener("pointerup", syncPlayback, { passive: true });
+    window.addEventListener("pageshow", syncPlayback);
+    return () => {
+      video.removeEventListener("canplay", syncPlayback);
+      document.removeEventListener("visibilitychange", syncPlayback);
+      document.removeEventListener("pointerup", syncPlayback);
+      window.removeEventListener("pageshow", syncPlayback);
+      video.pause();
+    };
+  }, [active, nearby, visible]);
 
   const move = (delta: number) => {
     setActive((current) => (current + delta + services.length) % services.length);
@@ -222,7 +259,7 @@ export function Services() {
     }
     const video = videos.current[index];
     if (!video) return;
-    video.currentTime = 0;
+    video.muted = true;
     void video.play().catch(() => undefined);
   };
 
@@ -235,6 +272,7 @@ export function Services() {
       </div>
 
       <div
+        ref={stage}
         className={styles.stage}
         onPointerDown={(event) => {
           if ((event.target as HTMLElement).closest("button")) return;
@@ -292,18 +330,27 @@ export function Services() {
                       videos.current[index] = node;
                     }}
                     className={styles.video}
-                    src={service.video}
+                    src={nearby && abs <= 1 ? (isMobile ? `/media/services-mobile-v1/${service.id}.mp4` : service.video) : undefined}
                     poster={service.poster}
+                    autoPlay={index === active && visible}
                     muted
                     loop
                     playsInline
-                    preload={index === active ? "auto" : "metadata"}
+                    preload={nearby && index === active ? "auto" : nearby && abs === 1 ? "metadata" : "none"}
+                    onPlaying={(event) => {
+                      if (index !== active || !visible || document.hidden) {
+                        event.currentTarget.pause();
+                        return;
+                      }
+                      setPlaying(index);
+                    }}
+                    onPause={() => setPlaying((current) => current === index ? null : current)}
                   />
                   <div className={styles.mediaShade} />
 
                   <div className={styles.badge}>{service.eyebrow}</div>
 
-                  <button
+                  {playing !== index && <button
                     type="button"
                     className={styles.playButton}
                     aria-label={`Lire la vidéo ${service.name}`}
@@ -315,7 +362,7 @@ export function Services() {
                     }}
                   >
                     <span aria-hidden="true">▶</span>
-                  </button>
+                  </button>}
 
                   <div className={styles.duration}>{service.duration}</div>
 

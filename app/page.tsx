@@ -1,3 +1,4 @@
+import { DesktopVideo } from "./components/DesktopVideo";
 import { Header } from "./components/Header";
 import { Hero } from "./components/Hero";
 import { Stats } from "./components/Stats";
@@ -43,7 +44,7 @@ export default function Home() {
 
       <div className="hidden md:block">
         <section className="relative min-h-screen overflow-hidden" data-home-hero>
-          <video
+          <DesktopVideo
             data-hero-media
             className="absolute inset-0 h-full w-full object-cover opacity-75 brightness-110 contrast-110 saturate-110 will-change-transform"
             src="/hero-video.mp4"
