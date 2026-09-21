@@ -245,7 +245,8 @@ export type AutomationOutboxEvent = {
   id: string;
   business_id: string;
   event_type: string;
-  review_request_id: string;
+  review_request_id: string | null;
+  appointment_id: string | null;
   created_at: string;
   available_at: string;
   attempt_count: number;
@@ -3785,7 +3786,7 @@ export async function recordAutomationOutboxDeliverySnapshot(input: {
   leaseToken: string;
   recipientEmail: string;
   customerName: string;
-  reviewUrl: string;
+  reviewUrl: string | null;
   senderEmail: string;
   subject: string;
   text: string;
@@ -3796,7 +3797,7 @@ export async function recordAutomationOutboxDeliverySnapshot(input: {
   const leaseToken = input.leaseToken.trim();
   const recipientEmail = input.recipientEmail.trim();
   const customerName = input.customerName.trim();
-  const reviewUrl = input.reviewUrl.trim();
+  const reviewUrl = input.reviewUrl?.trim() || null;
   const senderEmail = input.senderEmail.trim();
   const subject = input.subject.trim();
   const text = input.text;
@@ -3808,7 +3809,6 @@ export async function recordAutomationOutboxDeliverySnapshot(input: {
     !leaseToken ||
     !recipientEmail ||
     !customerName ||
-    !reviewUrl ||
     !senderEmail ||
     !subject ||
     !text ||

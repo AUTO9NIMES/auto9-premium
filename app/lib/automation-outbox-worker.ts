@@ -24,47 +24,56 @@ type WorkerResult = {
   settlementFailures: number;
 };
 
-type ReviewDeliveryConfig = {
-  reviewUrl: string;
+type EmailDeliveryConfig = {
+  reviewUrl: string | null;
   resendApiKey: string;
   senderEmail: string;
+  replyTo: string | null;
 };
 
-type ReviewDelivery = {
+type EmailDelivery = {
   recipientEmail: string;
   customerName: string;
-  reviewUrl: string;
+  reviewUrl: string | null;
   senderEmail: string;
   subject: string;
   text: string;
   html: string;
 };
 
-function requireReviewDeliveryConfig(): ReviewDeliveryConfig {
-  const reviewUrl = process.env.AUTO9_REVIEW_URL?.trim();
+function requireEmailDeliveryConfig(): EmailDeliveryConfig {
+  const reviewUrl = process.env.AUTO9_REVIEW_URL?.trim() || null;
   const resendApiKey = process.env.RESEND_API_KEY?.trim();
   const senderEmail = process.env.RESEND_FROM_EMAIL?.trim();
+  const replyTo = process.env.RESEND_REPLY_TO?.trim() || null;
 
-  if (!reviewUrl || !resendApiKey || !senderEmail) {
-    throw new Error("Review delivery configuration is missing.");
+  if (!resendApiKey || !senderEmail) {
+    throw new Error("Email delivery configuration is missing.");
   }
 
-  let parsedUrl: URL;
+  let normalizedReviewUrl: string | null = null;
 
-  try {
-    parsedUrl = new URL(reviewUrl);
-  } catch {
-    throw new Error("Review delivery configuration is invalid.");
-  }
+  if (reviewUrl) {
+    let parsedUrl: URL;
 
-  if (parsedUrl.protocol !== "https:") {
-    throw new Error("Review delivery URL must use HTTPS.");
+    try {
+      parsedUrl = new URL(reviewUrl);
+    } catch {
+      throw new Error("Review delivery configuration is invalid.");
+    }
+
+    if (parsedUrl.protocol !== "https:") {
+      throw new Error("Review delivery URL must use HTTPS.");
+    }
+
+    normalizedReviewUrl = parsedUrl.toString();
   }
 
   return {
-    reviewUrl: parsedUrl.toString(),
+    reviewUrl: normalizedReviewUrl,
     resendApiKey,
     senderEmail,
+    replyTo,
   };
 }
 
@@ -103,8 +112,12 @@ function safeWorkerError(error: unknown): string {
 async function resolveReviewDelivery(
   event: AutomationOutboxEvent,
   businessId: string,
-  config: ReviewDeliveryConfig,
-): Promise<ReviewDelivery> {
+  config: EmailDeliveryConfig,
+): Promise<EmailDelivery> {
+  if (!event.review_request_id) {
+    throw new Error("Review delivery data is inconsistent.");
+  }
+
   const reviewRequestRows = await supabaseRest<{
     id: string;
     business_id: string;
@@ -152,6 +165,10 @@ async function resolveReviewDelivery(
     details.customer.full_name.trim() || "Client AUTO 9";
   const reviewUrl = config.reviewUrl;
 
+  if (!reviewUrl) {
+    throw new Error("Review delivery configuration is missing.");
+  }
+
   return {
     recipientEmail,
     customerName,
@@ -190,12 +207,314 @@ async function resolveReviewDelivery(
   };
 }
 
+
+async function resolveAppointmentConfirmationDelivery(
+  event: AutomationOutboxEvent,
+  businessId: string,
+  config: EmailDeliveryConfig,
+): Promise<EmailDelivery> {
+  if (!event.appointment_id) {
+    throw new Error("Appointment confirmation event is missing appointment_id.");
+  }
+
+  const appointmentRows = await supabaseRest<{
+    id: string;
+    business_id: string;
+    customer_id: string;
+    job_id: string;
+    vehicle_id: string | null;
+    status: string;
+    scheduled_at: string | null;
+  }>(
+    "appointments",
+    "GET",
+    null,
+    `business_id=eq.${encodeURIComponent(
+      businessId,
+    )}&id=eq.${encodeURIComponent(
+      event.appointment_id,
+    )}&limit=1&select=id,business_id,customer_id,job_id,vehicle_id,status,scheduled_at`,
+  );
+
+  const appointment = Array.isArray(appointmentRows)
+    ? appointmentRows[0]
+    : null;
+
+  if (
+    !appointment ||
+    appointment.id !== event.appointment_id ||
+    appointment.business_id !== businessId ||
+    appointment.status !== "CONFIRMED" ||
+    !appointment.scheduled_at
+  ) {
+    throw new Error("Appointment confirmation delivery data is inconsistent.");
+  }
+
+  const [customerRows, jobRows] = await Promise.all([
+    supabaseRest<{
+      id: string;
+      business_id: string;
+      full_name: string;
+      email: string | null;
+    }>(
+      "customers",
+      "GET",
+      null,
+      `business_id=eq.${encodeURIComponent(
+        businessId,
+      )}&id=eq.${encodeURIComponent(
+        appointment.customer_id,
+      )}&limit=1&select=id,business_id,full_name,email`,
+    ),
+
+    supabaseRest<{
+      id: string;
+      business_id: string;
+      status: string;
+      scheduled_at: string | null;
+      vehicle_id: string | null;
+    }>(
+      "jobs",
+      "GET",
+      null,
+      `business_id=eq.${encodeURIComponent(
+        businessId,
+      )}&id=eq.${encodeURIComponent(
+        appointment.job_id,
+      )}&limit=1&select=id,business_id,status,scheduled_at,vehicle_id`,
+    ),
+  ]);
+
+  const customer = Array.isArray(customerRows)
+    ? customerRows[0]
+    : null;
+
+  const job = Array.isArray(jobRows)
+    ? jobRows[0]
+    : null;
+
+  if (
+    !customer ||
+    customer.business_id !== businessId ||
+    !job ||
+    job.business_id !== businessId ||
+    job.status !== "CONFIRMED" ||
+    job.scheduled_at !== appointment.scheduled_at
+  ) {
+    throw new Error("Appointment confirmation delivery data is inconsistent.");
+  }
+
+  const vehicleId = appointment.vehicle_id || job.vehicle_id;
+
+  if (!vehicleId) {
+    throw new Error("Appointment confirmation vehicle is missing.");
+  }
+
+  const vehicleRows = await supabaseRest<{
+    id: string;
+    business_id: string;
+    brand: string;
+    model: string;
+    plate: string | null;
+  }>(
+    "vehicles",
+    "GET",
+    null,
+    `business_id=eq.${encodeURIComponent(
+      businessId,
+    )}&id=eq.${encodeURIComponent(
+      vehicleId,
+    )}&limit=1&select=id,business_id,brand,model,plate`,
+  );
+
+  const vehicle = Array.isArray(vehicleRows)
+    ? vehicleRows[0]
+    : null;
+
+  if (
+    !vehicle ||
+    vehicle.id !== vehicleId ||
+    vehicle.business_id !== businessId
+  ) {
+    throw new Error("Appointment confirmation delivery data is inconsistent.");
+  }
+
+  const recipientEmail = customer.email?.trim();
+  const customerName = customer.full_name.trim() || "Client AUTO 9";
+
+  if (!recipientEmail) {
+    throw new Error("Appointment confirmation recipient is missing.");
+  }
+
+  const date = new Date(appointment.scheduled_at);
+
+  if (!Number.isFinite(date.getTime())) {
+    throw new Error("Appointment confirmation scheduled_at is invalid.");
+  }
+
+  const dateLabel = new Intl.DateTimeFormat("fr-FR", {
+    timeZone: "Europe/Paris",
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(date);
+
+  const timeLabel = new Intl.DateTimeFormat("fr-FR", {
+    timeZone: "Europe/Paris",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+
+  const vehicleLabel = [vehicle.brand.trim(), vehicle.model.trim()]
+    .filter(Boolean)
+    .join(" ");
+
+  const plate = vehicle.plate?.trim() || "";
+
+  const subject =
+    `Confirmation de votre rendez-vous AUTO9 – ${dateLabel} à ${timeLabel}`;
+
+  const text = [
+    `Bonjour ${customerName},`,
+    "",
+    "Votre rendez-vous AUTO9 est confirmé.",
+    "",
+    `Date : ${dateLabel}`,
+    `Heure : ${timeLabel}`,
+    vehicleLabel ? `Véhicule : ${vehicleLabel}` : null,
+    plate ? `Immatriculation : ${plate}` : null,
+    "",
+    "À bientôt,",
+    "AUTO9",
+  ]
+    .filter((line): line is string => line !== null)
+    .join("\n");
+
+  const html = [
+    `<p>Bonjour ${escapeHtml(customerName)},</p>`,
+    "<p>Votre rendez-vous AUTO9 est <strong>confirmé</strong>.</p>",
+    "<p>",
+    `<strong>Date :</strong> ${escapeHtml(dateLabel)}<br>`,
+    `<strong>Heure :</strong> ${escapeHtml(timeLabel)}`,
+    vehicleLabel
+      ? `<br><strong>Véhicule :</strong> ${escapeHtml(vehicleLabel)}`
+      : "",
+    plate
+      ? `<br><strong>Immatriculation :</strong> ${escapeHtml(plate)}`
+      : "",
+    "</p>",
+    "<p>À bientôt,<br>AUTO9</p>",
+  ].join("");
+
+  return {
+    recipientEmail,
+    customerName,
+    reviewUrl: null,
+    senderEmail: config.senderEmail,
+    subject,
+    text,
+    html,
+  };
+}
+
+async function deliverAppointmentConfirmation(
+  event: AutomationOutboxEvent,
+  businessId: string,
+  config: EmailDeliveryConfig,
+): Promise<string> {
+  let delivery: EmailDelivery;
+
+  if (event.delivery_recipient_email) {
+    if (
+      !event.delivery_customer_name ||
+      event.delivery_review_url !== null ||
+      !event.delivery_sender_email ||
+      !event.delivery_subject ||
+      !event.delivery_text ||
+      !event.delivery_html
+    ) {
+      throw new Error("Appointment confirmation delivery snapshot is incomplete.");
+    }
+
+    delivery = {
+      recipientEmail: event.delivery_recipient_email,
+      customerName: event.delivery_customer_name,
+      reviewUrl: null,
+      senderEmail: event.delivery_sender_email,
+      subject: event.delivery_subject,
+      text: event.delivery_text,
+      html: event.delivery_html,
+    };
+  } else {
+    const resolved = await resolveAppointmentConfirmationDelivery(
+      event,
+      businessId,
+      config,
+    );
+
+    const snapshotted = await recordAutomationOutboxDeliverySnapshot({
+      businessId,
+      outboxId: event.id,
+      leaseToken: event.lease_token!,
+      recipientEmail: resolved.recipientEmail,
+      customerName: resolved.customerName,
+      reviewUrl: null,
+      senderEmail: resolved.senderEmail,
+      subject: resolved.subject,
+      text: resolved.text,
+      html: resolved.html,
+    });
+
+    if (
+      !snapshotted.delivery_recipient_email ||
+      !snapshotted.delivery_customer_name ||
+      snapshotted.delivery_review_url !== null ||
+      !snapshotted.delivery_sender_email ||
+      !snapshotted.delivery_subject ||
+      !snapshotted.delivery_text ||
+      !snapshotted.delivery_html
+    ) {
+      throw new Error("Appointment confirmation delivery snapshot is incomplete.");
+    }
+
+    delivery = {
+      recipientEmail: snapshotted.delivery_recipient_email,
+      customerName: snapshotted.delivery_customer_name,
+      reviewUrl: null,
+      senderEmail: snapshotted.delivery_sender_email,
+      subject: snapshotted.delivery_subject,
+      text: snapshotted.delivery_text,
+      html: snapshotted.delivery_html,
+    };
+  }
+
+  const resend = new Resend(config.resendApiKey);
+
+  const { data, error } = await resend.emails.send({
+    from: delivery.senderEmail,
+    to: [delivery.recipientEmail],
+    ...(config.replyTo ? { replyTo: config.replyTo } : {}),
+    subject: delivery.subject,
+    text: delivery.text,
+    html: delivery.html,
+  }, {
+    idempotencyKey: `automation-outbox/${event.id}`,
+  });
+
+  if (error || !data?.id) {
+    throw new Error("Appointment confirmation provider rejected the request.");
+  }
+
+  return data.id;
+}
+
 async function deliverReviewRequest(
   event: AutomationOutboxEvent,
   businessId: string,
-  config: ReviewDeliveryConfig,
+  config: EmailDeliveryConfig,
 ): Promise<string> {
-  let delivery: ReviewDelivery;
+  let delivery: EmailDelivery;
 
   if (
     event.delivery_recipient_email &&
@@ -259,6 +578,7 @@ async function deliverReviewRequest(
   const { data, error } = await resend.emails.send({
     from: delivery.senderEmail,
     to: [delivery.recipientEmail],
+    ...(config.replyTo ? { replyTo: config.replyTo } : {}),
     subject: delivery.subject,
     text: delivery.text,
     html: delivery.html,
@@ -288,11 +608,14 @@ function escapeHtml(value: string): string {
 async function deliverEvent(
   event: AutomationOutboxEvent,
   businessId: string,
-  config: ReviewDeliveryConfig,
+  config: EmailDeliveryConfig,
 ): Promise<string> {
   switch (event.event_type) {
     case "review.requested.v1":
       return deliverReviewRequest(event, businessId, config);
+
+    case "appointment.confirmed.v1":
+      return deliverAppointmentConfirmation(event, businessId, config);
 
     default:
       throw new Error(`Unsupported automation event type: ${event.event_type}`);
@@ -303,7 +626,7 @@ export async function processAutomationOutbox(): Promise<WorkerResult> {
   // Validate the complete external-delivery configuration before CLAIM.
   // A missing provider configuration must never consume a lease or increment
   // attempt_count.
-  const config = requireReviewDeliveryConfig();
+  const config = requireEmailDeliveryConfig();
 
   const { businessId } = await resolveCurrentBusinessContext();
 
