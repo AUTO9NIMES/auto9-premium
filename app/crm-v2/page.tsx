@@ -83,7 +83,7 @@ export default async function CrmV2Dashboard() {
     .slice(0, 5);
 
   const cards = [
-    { label: "CA du mois", value: eur.format(monthlyRevenue), detail: `${paymentsThisMonth.length} encaissement${paymentsThisMonth.length > 1 ? "s" : ""}`, accent: true, href: "/crm-v2/revenue" },
+    { label: "Leads", value: String(metrics.activeLeads), detail: `${metrics.leadsRequiringAttention} à traiter`, accent: true, href: "/crm-v2/pipeline" },
     { label: "CA espèces", value: eur.format(cashRevenue), detail: "Paiements en espèces", href: "/crm/jobs?status=PAID" },
     { label: "CA carte + virement", value: eur.format(bankRevenue), detail: "Encaissements bancaires", href: "/crm/jobs?status=PAID" },
     { label: "Clients", value: String(metrics.customersTotal), detail: `${metrics.activeLeads} lead${metrics.activeLeads > 1 ? "s" : ""} actif${metrics.activeLeads > 1 ? "s" : ""}`, href: "/crm-v2/clients" },
