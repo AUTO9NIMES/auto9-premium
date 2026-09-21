@@ -89,7 +89,7 @@ export default async function CrmV2Clients({
               </div>
               <div className="text-xs text-white/50">{vehicle(item) || "Aucun véhicule"}</div>
               <div className="flex flex-wrap items-center gap-2 md:justify-end">
-                {item.customer.id && <Link href={`/crm/clients/${item.customer.id}`} className="rounded-lg border border-white/10 px-3 py-2 text-[10px] text-white/60 hover:border-cyan-300/25 hover:text-cyan-100">Ouvrir</Link>}
+                {item.customer.id && <Link href={`/crm-v2/clients/${item.customer.id}`} className="rounded-lg border border-white/10 px-3 py-2 text-[10px] text-white/60 hover:border-cyan-300/25 hover:text-cyan-100">Ouvrir</Link>}
                 {item.customer.id && (
                   <form action={deleteV2Customer}>
                     <input type="hidden" name="customerId" value={item.customer.id} />
