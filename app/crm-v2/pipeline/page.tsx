@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getLeadsList, type LeadLifecycleStatus, type LeadListItem } from "../../lib/crm";
+import { getLeadsList, type LeadLifecycleStatus, type LeadListItem } from "../../lib/crm";\nimport { recordV2Payment } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -55,7 +55,7 @@ function currentIndex(item: LeadListItem) {
 function LeadProgress({ item }: { item: LeadListItem }) {
   const active = currentIndex(item);
   const amount = money(item.latestQuote?.total_price || item.latestJob?.total_amount);
-  const closed = item.lead.lifecycle_status === "CLOSED_LOST";
+  const closed = item.lead.lifecycle_status === "CLOSED_LOST";\n  const canRecordPayment = Boolean(item.latestJob?.id && item.latestJob.status === "COMPLETED");
 
   return (
     <article className="overflow-hidden rounded-3xl border border-white/8 bg-[#0b121b]">
@@ -121,6 +121,9 @@ export default async function CrmV2Pipeline({
         </div>
         <Link href="/crm/pipeline/new" className="w-fit rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-3 text-xs font-semibold text-cyan-100">+ Nouveau dossier</Link>
       </header>
+
+      {paymentRecorded && <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/[0.05] px-4 py-3 text-sm text-emerald-100">Paiement enregistré. Le CA du mois a été mis à jour.</div>}
+      {paymentError && <div className="rounded-xl border border-red-300/20 bg-red-300/[0.05] px-4 py-3 text-sm text-red-100">Le paiement n'a pas pu être enregistré.</div>}
 
       <form className="flex gap-2 rounded-2xl border border-white/8 bg-white/[0.02] p-2">
         <input name="search" defaultValue={search} placeholder="Rechercher un client, téléphone, véhicule..." className="min-w-0 flex-1 bg-transparent px-3 py-2 text-sm text-white outline-none placeholder:text-white/25" />
