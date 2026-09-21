@@ -10,6 +10,15 @@ type Customer = {
   email?: string | null;
 };
 
+type EmailSubscription = {
+  id: string;
+  customer_id: string;
+  service_name: string;
+  price: number | null;
+  booking_token: string | null;
+  active: boolean;
+};
+
 type TemplateKey = "appointment" | "review" | "quote" | "subscription" | "thanks";
 
 const templates: Record<TemplateKey, { label: string; subject: string; body: string; cta: string; url: string }> = {
@@ -32,7 +41,7 @@ const templates: Record<TemplateKey, { label: string; subject: string; body: str
     subject: "Votre devis AUTO 9",
     body: "Bonjour {{prenom}},\n\nJe me permets de revenir vers vous concernant votre demande auprès d’AUTO 9.\n\nSi vous souhaitez toujours faire réaliser la prestation, je reste disponible pour organiser votre rendez-vous.\n\nÀ bientôt,\nAUTO 9",
     cta: "Réserver",
-    url: "https://auto9nimes.com/book-online",
+    url: "https://auto9nimes.com/reservation-abonnement",
   },
   subscription: {
     label: "Abonnement à planifier",
@@ -58,10 +67,21 @@ function replaceVars(text: string, customer?: Customer) {
   return text.replaceAll("{{prenom}}", firstName(customer));
 }
 
-export default function EmailEditor({ customers }: { customers: Customer[] }) {
+export default function EmailEditor({
+  customers,
+  subscriptions,
+}: {
+  customers: Customer[];
+  subscriptions: EmailSubscription[];
+}) {
   const [templateKey, setTemplateKey] = useState<TemplateKey>("subscription");
   const [customerId, setCustomerId] = useState(customers[0]?.id || "");
   const selectedCustomer = customers.find((customer) => customer.id === customerId);
+  const customerSubscriptions = subscriptions.filter((subscription) => subscription.customer_id === customerId);
+  const [subscriptionId, setSubscriptionId] = useState("");
+  const selectedSubscription =
+    customerSubscriptions.find((subscription) => subscription.id === subscriptionId) ||
+    customerSubscriptions[0];
   const base = templates[templateKey];
 
   const [subjectOverrides, setSubjectOverrides] = useState<Partial<Record<TemplateKey, string>>>({});
@@ -72,7 +92,11 @@ export default function EmailEditor({ customers }: { customers: Customer[] }) {
   const subject = subjectOverrides[templateKey] ?? base.subject;
   const body = bodyOverrides[templateKey] ?? base.body;
   const cta = ctaOverrides[templateKey] ?? base.cta;
-  const url = urlOverrides[templateKey] ?? base.url;
+  const privateSubscriptionUrl =
+    templateKey === "subscription" && selectedSubscription?.booking_token
+      ? `https://auto9nimes.com/reservation-abonnement/${selectedSubscription.booking_token}`
+      : base.url;
+  const url = urlOverrides[templateKey] ?? privateSubscriptionUrl;
 
   const renderedSubject = replaceVars(subject, selectedCustomer);
   const renderedBody = replaceVars(body, selectedCustomer);
@@ -118,6 +142,28 @@ export default function EmailEditor({ customers }: { customers: Customer[] }) {
           </select>
         </label>
 
+        {templateKey === "subscription" && (
+          <label className="block text-xs text-white/45">
+            Abonnement
+            <select
+              value={selectedSubscription?.id || ""}
+              onChange={(e) => setSubscriptionId(e.target.value)}
+              className="mt-2 w-full rounded-xl border border-white/10 bg-[#081019] px-4 py-3 text-sm text-white"
+            >
+              {!customerSubscriptions.length && <option value="">Aucun abonnement actif pour ce client</option>}
+              {customerSubscriptions.map((subscription) => (
+                <option key={subscription.id} value={subscription.id}>
+                  {subscription.service_name}
+                  {typeof subscription.price === "number" ? ` · ${subscription.price.toFixed(2)} €` : ""}
+                </option>
+              ))}
+            </select>
+            <span className="mt-1 block text-[10px] text-white/25">
+              Le lien privé de réservation est généré automatiquement pour cet abonnement.
+            </span>
+          </label>
+        )}
+
         <label className="block text-xs text-white/45">
           Objet
           <input
@@ -160,13 +206,15 @@ export default function EmailEditor({ customers }: { customers: Customer[] }) {
           Variable disponible : <span className="text-cyan-200">{"{{prenom}}"}</span> — remplacée automatiquement par le prénom du client.
         </div>
 
-        {selectedCustomer?.email ? (
+        {selectedCustomer?.email && (templateKey !== "subscription" || selectedSubscription?.booking_token) ? (
           <a href={mailto} className="block rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-3 text-center text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/15">
             Ouvrir dans ma messagerie
           </a>
         ) : (
           <div className="rounded-xl border border-amber-300/15 bg-amber-300/[0.04] px-4 py-3 text-sm text-amber-100/60">
-            Sélectionne un client avec une adresse email.
+            {templateKey === "subscription" && selectedCustomer?.email
+              ? "Aucun lien privé disponible : vérifie que l’abonnement du client est actif."
+              : "Sélectionne un client avec une adresse email."}
           </div>
         )}
       </section>
