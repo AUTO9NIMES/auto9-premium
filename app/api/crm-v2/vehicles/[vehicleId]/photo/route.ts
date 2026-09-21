@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { requireCrmAccess } from "../../../../../../lib/auth/dal";
+import { requireCrmAccess } from "../../../../../lib/auth/dal";
 import {
   hasSupabaseWriteConfig,
   supabaseRest,
   supabaseServiceRoleKey,
   supabaseUrl,
-} from "../../../../../../lib/supabase";
+} from "../../../../../lib/supabase";
 
 export const runtime = "nodejs";
 
