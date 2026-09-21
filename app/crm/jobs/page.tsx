@@ -157,21 +157,21 @@ function JobCard({ item }: { item: JobListItem }) {
     : null;
   const vehicle = vehicleName(item);
   const scheduledAt = formatDateTime(job.scheduled_at);
-  const appointmentAt = formatDateTime(item.appointment?.requested_at);
+  const requestedAt = formatDateTime(item.appointment?.requested_at);
   const amount = formatAmount(job.total_amount);
   const quoteAmount = formatAmount(item.quote?.total_price);
 
   return (
-    <article className="border border-white/10 bg-[#101419] p-5 transition-colors hover:border-[#d8b477]/50">
+    <article className="group border border-white/10 bg-gradient-to-br from-[#12171d] to-[#0d1014] p-5 transition-colors hover:border-[#d8b477]/40 md:p-6">
       <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
         <div className="min-w-0">
           <p className="text-[10px] uppercase tracking-[0.16em] text-[#d8b477]">{job.job_number || "Prestation"}</p>
           {jobHref ? (
-            <Link href={jobHref} className="mt-2 block truncate text-base font-medium text-white hover:text-[#d8b477]">
+            <Link href={jobHref} className="mt-2 block truncate text-lg font-medium tracking-tight text-white transition-colors hover:text-[#d8b477]">
               {job.title || "Prestation sans intitulé"}
             </Link>
           ) : (
-            <h3 className="mt-2 truncate text-base font-medium text-white">{job.title || "Prestation sans intitulé"}</h3>
+            <h3 className="mt-2 truncate text-lg font-medium tracking-tight text-white">{job.title || "Prestation sans intitulé"}</h3>
           )}
         </div>
         <span className="w-fit shrink-0 border border-[#d8b477]/40 px-2.5 py-1 text-[10px] uppercase tracking-[0.12em] text-[#d8b477]">{jobStatusLabels[job.status]}</span>
@@ -179,7 +179,8 @@ function JobCard({ item }: { item: JobListItem }) {
       <div className="mt-5 grid gap-4 border-t border-white/10 pt-4 sm:grid-cols-2">
         <div>
           <p className="text-[10px] uppercase tracking-[0.16em] text-white/25">Client</p>
-          {customerHref ? <Link href={customerHref} className="mt-2 block truncate text-sm text-white hover:text-[#d8b477]">{customerName(item)}</Link> : <p className="mt-2 truncate text-sm text-white">{customerName(item)}</p>}
+          {customerHref ? <Link href={customerHref} className="mt-2 block truncate text-sm font-medium text-white transition-colors hover:text-[#d8b477]">{customerName(item)}</Link> : <p className="mt-2 truncate text-sm font-medium text-white">{customerName(item)}</p>}
+          {customerHref && <p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-[#d8b477]/45">Customer 360</p>}
           {item.customer.email && <p className="mt-1 truncate text-xs text-white/40">{item.customer.email}</p>}
           {!item.customer.email && item.customer.phone && <p className="mt-1 text-xs text-white/40">{item.customer.phone}</p>}
         </div>
@@ -189,19 +190,44 @@ function JobCard({ item }: { item: JobListItem }) {
           {item.vehicle?.plate && <p className="mt-1 text-xs text-white/40">{item.vehicle.plate}</p>}
         </div>
       </div>
-      <div className="mt-5 space-y-2 border-t border-white/10 pt-4 text-xs text-white/45">
-        {scheduledAt && <p>Planifiée : <span className="text-white/70">{scheduledAt}</span></p>}
-        {appointmentAt && <p>Rendez-vous : <span className="text-white/70">{appointmentAt}</span>{item.appointment?.status ? ` · ${appointmentStatusLabels[item.appointment.status]}` : ""}</p>}
-        {item.quote?.status && <p>Devis : <span className="text-white/70">{item.quote.status}{quoteAmount ? ` · ${quoteAmount}` : ""}</span></p>}
-        {amount && <p>Montant prestation : <span className="text-[#d8b477]">{amount}</span></p>}
-        {!scheduledAt && !appointmentAt && !item.quote && !amount && <p className="text-white/30">Contexte opérationnel non renseigné</p>}
+      <div className="mt-5 border-t border-white/10 pt-4">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="border border-white/10 bg-black/10 px-4 py-3">
+            <p className="text-[10px] uppercase tracking-[0.16em] text-white/25">Planning opérationnel</p>
+            {scheduledAt ? (
+              <p className="mt-2 text-sm font-medium text-white/85">{scheduledAt}</p>
+            ) : (
+              <p className="mt-2 text-xs text-white/35">Non planifiée</p>
+            )}
+          </div>
+          <div className="border border-white/10 bg-black/10 px-4 py-3">
+            <p className="text-[10px] uppercase tracking-[0.16em] text-white/25">Souhait client</p>
+            {requestedAt ? (
+              <>
+                <p className="mt-2 text-sm text-white/70">{requestedAt}</p>
+                {item.appointment?.status && <p className="mt-1 text-[10px] uppercase tracking-[0.12em] text-white/35">{appointmentStatusLabels[item.appointment.status]}</p>}
+              </>
+            ) : (
+              <p className="mt-2 text-xs text-white/35">Non renseigné</p>
+            )}
+          </div>
+        </div>
+
+
+        <div className="mt-4 space-y-2 text-xs text-white/45">
+          {item.quote?.status && <p>Devis : <span className="text-white/70">{item.quote.status}{quoteAmount ? ` · ${quoteAmount}` : ""}</span></p>}
+          {amount && <p>Montant prestation : <span className="text-[#d8b477]">{amount}</span></p>}
+          {!scheduledAt && !requestedAt && !item.quote && !amount && <p className="text-white/30">Contexte opérationnel non renseigné</p>}
+        </div>
       </div>
       <div className="mt-5 flex items-center justify-between border-t border-white/10 pt-4 text-xs text-white/30">
         <span>Créée le {formatDate(job.created_at) || "date non renseignée"}</span>
         {job.notes && <span className="max-w-[55%] truncate text-white/45">{job.notes}</span>}
       </div>
       {item.appointment?.id && UUID_REGEX.test(item.appointment.id) && appointmentActions(item.appointment, job).length > 0 && (
-        <div className="mt-5 flex flex-wrap gap-2 border-t border-white/10 pt-4">
+        <div className="mt-5 border-t border-white/10 pt-4">
+          <p className="mb-3 text-[10px] uppercase tracking-[0.16em] text-white/25">Actions rendez-vous</p>
+          <div className="flex flex-wrap gap-2">
           {appointmentActions(item.appointment, job).map((action) => (
             <form key={action.targetStatus} action={transitionJobAppointment}>
               <input type="hidden" name="appointmentId" value={item.appointment?.id || ""} />
@@ -211,6 +237,7 @@ function JobCard({ item }: { item: JobListItem }) {
               </button>
             </form>
           ))}
+          </div>
         </div>
       )}
     </article>
@@ -247,13 +274,21 @@ export default async function JobsPage({ searchParams }: {
 
   return (
     <div data-crm-route="jobs" className="space-y-10">
-      <section className="flex flex-col justify-between gap-6 border-b border-white/10 pb-8 md:flex-row md:items-end">
-        <div>
-          <p className="mb-4 text-xs uppercase tracking-[0.24em] text-[#d8b477]">03 / Opérations</p>
-          <h1 className="text-3xl font-semibold tracking-tight text-white md:text-5xl">Prestations</h1>
-          <p className="mt-4 max-w-xl text-sm leading-7 text-white/50">Le point de pilotage des prestations planifiées, en cours et terminées.</p>
+      <section className="relative overflow-hidden border-b border-white/10 pb-8">
+        <div className="pointer-events-none absolute right-0 top-0 h-32 w-32 bg-[#d8b477]/[0.04] blur-3xl" />
+        <div className="relative flex flex-col justify-between gap-6 md:flex-row md:items-end">
+          <div>
+            <p className="mb-4 text-xs uppercase tracking-[0.24em] text-[#d8b477]">03 / Opérations</p>
+            <h1 className="text-3xl font-semibold tracking-tight text-white md:text-5xl">Prestations</h1>
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-white/50">
+              Cockpit opérationnel des prestations, de la planification jusqu&apos;à leur réalisation.
+            </p>
+          </div>
+          <div className="w-fit border border-[#d8b477]/20 bg-[#d8b477]/[0.04] px-4 py-3 text-right">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-[#d8b477]/60">Vue active</p>
+            <p className="mt-1 text-sm font-medium text-white/75">Opérations</p>
+          </div>
         </div>
-        <span className="w-fit border border-white/10 px-3 py-2 text-[10px] uppercase tracking-[0.16em] text-white/35">Lecture seule</span>
       </section>
 
       {updated && <p role="status" className="border border-emerald-300/30 bg-emerald-300/5 px-4 py-3 text-sm text-emerald-200">Rendez-vous mis à jour.</p>}
@@ -265,9 +300,9 @@ export default async function JobsPage({ searchParams }: {
             <p className="text-[10px] uppercase tracking-[0.2em] text-[#d8b477]">Suivi opérationnel</p>
             <h2 id="jobs-list" className="mt-2 text-xl font-medium text-white">Registre des prestations</h2>
           </div>
-          {!failed && <span className="text-xs text-white/30">{result?.pagination.returned ?? 0} chargée{result?.pagination.returned === 1 ? "" : "s"}</span>}
+          {!failed && <span className="text-xs text-white/30">{result?.pagination.returned ?? 0} prestation{result?.pagination.returned === 1 ? "" : "s"} sur cette page</span>}
         </div>
-        <div className="border border-white/10 bg-[#101419] px-5 py-5 md:px-7">
+        <div className="border border-white/10 bg-gradient-to-br from-[#12171d] to-[#0d1014] px-5 py-5 md:px-7">
           <form method="get" className="flex flex-col gap-3 lg:flex-row">
             <label htmlFor="jobs-search" className="sr-only">Rechercher une prestation</label>
             <input id="jobs-search" name="search" type="search" defaultValue={search} maxLength={SEARCH_MAX_LENGTH} placeholder="Client, prestation, numéro ou véhicule" className="min-w-0 flex-1 border border-white/15 bg-[#0d1014] px-4 py-3 text-sm text-white outline-none placeholder:text-white/25 focus:border-[#d8b477]" />
