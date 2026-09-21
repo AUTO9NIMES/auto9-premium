@@ -195,7 +195,8 @@ function EmptySection({ children }: { children: string }) {
 
 function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
   return (
-    <article className="border border-white/10 bg-[#101419] p-5">
+    <article className="group relative overflow-hidden border border-white/10 bg-[#101419] p-5 transition-colors hover:border-white/20 md:p-6">
+      <div aria-hidden="true" className="absolute inset-y-0 left-0 w-px bg-[#d8b477]/40" />
       <p className="text-sm font-medium text-white">{formatVehicle(vehicle)}</p>
       {formatVehicleMeta(vehicle) && <p className="mt-2 text-xs text-white/45">{formatVehicleMeta(vehicle)}</p>}
       {vehicle.vehicle_type && <p className="mt-4 text-[10px] uppercase tracking-[0.16em] text-[#d8b477]">{vehicle.vehicle_type}</p>}
@@ -206,7 +207,7 @@ function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
 
 function LeadRow({ lead }: { lead: Lead }) {
   return (
-    <article className="border-b border-white/10 px-5 py-5 last:border-b-0 md:px-7">
+    <article className="border-b border-white/10 px-5 py-5 transition-colors last:border-b-0 hover:bg-white/[0.015] md:px-7">
       <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
         <div>
           <p className="text-sm font-medium text-white">{statusLabel(lead.lifecycle_status, leadStatusLabels)}</p>
@@ -221,7 +222,7 @@ function LeadRow({ lead }: { lead: Lead }) {
 
 function QuoteRow({ quote }: { quote: Quote }) {
   return (
-    <article className="flex flex-col justify-between gap-3 border-b border-white/10 px-5 py-5 last:border-b-0 md:flex-row md:items-center md:px-7">
+    <article className="flex flex-col justify-between gap-3 border-b border-white/10 px-5 py-5 transition-colors last:border-b-0 hover:bg-white/[0.015] md:flex-row md:items-center md:px-7">
       <div>
         <p className="text-sm font-medium text-white">Version {quote.quote_version}</p>
         <p className="mt-1 text-xs text-white/40">{statusLabel(quote.status, quoteStatusLabels)}{quote.estimated_time ? ` · ${quote.estimated_time}` : ""}</p>
@@ -236,7 +237,7 @@ function QuoteRow({ quote }: { quote: Quote }) {
 
 function JobRow({ job }: { job: Job }) {
   return (
-    <article className="border-b border-white/10 px-5 py-5 last:border-b-0 md:px-7">
+    <article className="border-b border-white/10 px-5 py-5 transition-colors last:border-b-0 hover:bg-white/[0.015] md:px-7">
       <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
         <div>
           <p className="text-sm font-medium text-white">{job.title || job.job_number || "Prestation"}</p>
@@ -253,13 +254,57 @@ function JobRow({ job }: { job: Job }) {
 }
 
 function AppointmentRow({ appointment }: { appointment: Appointment }) {
+  const operationalDate = formatDateTime(appointment.scheduled_at);
+  const requestedDate = formatDateTime(appointment.requested_at);
+
   return (
-    <article className="flex flex-col justify-between gap-3 border-b border-white/10 px-5 py-5 last:border-b-0 md:flex-row md:items-center md:px-7">
-      <div>
-        <p className="text-sm font-medium text-white">{statusLabel(appointment.status, appointmentStatusLabels)}</p>
-        {appointment.notes && <p className="mt-1 text-xs text-white/40">{appointment.notes}</p>}
+    <article className="border-b border-white/10 px-5 py-5 last:border-b-0 md:px-7">
+      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
+        <div>
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="text-sm font-medium text-white">
+              {statusLabel(appointment.status, appointmentStatusLabels)}
+            </p>
+            <span className="border border-white/10 px-2 py-1 text-[9px] uppercase tracking-[0.14em] text-white/35">
+              Rendez-vous
+            </span>
+          </div>
+
+          {appointment.notes && (
+            <p className="mt-3 max-w-2xl text-xs leading-5 text-white/40">
+              {appointment.notes}
+            </p>
+          )}
+        </div>
+
+        <div className="md:text-right">
+          {operationalDate ? (
+            <>
+              <p className="text-sm font-medium text-[#d8b477]">{operationalDate}</p>
+              <p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-white/30">
+                Créneau opérationnel
+              </p>
+            </>
+          ) : requestedDate ? (
+            <>
+              <p className="text-sm text-white/60">{requestedDate}</p>
+              <p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-white/30">
+                Souhait client · non planifié
+              </p>
+            </>
+          ) : (
+            <p className="text-xs text-white/30">Date non renseignée</p>
+          )}
+        </div>
       </div>
-      <p className="text-xs text-white/35">{formatDateTime(appointment.requested_at) || "Date non renseignée"}</p>
+
+      {operationalDate && requestedDate && operationalDate !== requestedDate && (
+        <div className="mt-4 border-t border-white/10 pt-3">
+          <p className="text-xs text-white/30">
+            Souhait initial : {requestedDate}
+          </p>
+        </div>
+      )}
     </article>
   );
 }
@@ -327,31 +372,257 @@ export default async function Customer360Page({ params, searchParams }: {
     (value): value is string => Boolean(value?.trim()),
   );
 
+  const scheduledAppointments = result.appointments
+    .filter((appointment) => Boolean(appointment.scheduled_at))
+    .sort((left, right) => {
+      const leftTime = new Date(left.scheduled_at as string).getTime();
+      const rightTime = new Date(right.scheduled_at as string).getTime();
+      return leftTime - rightTime;
+    });
+
+  const now = Date.now();
+
+  const nextAppointment =
+    scheduledAppointments.find((appointment) => {
+      const scheduledTime = new Date(appointment.scheduled_at as string).getTime();
+
+      return (
+        appointment.status === "CONFIRMED" &&
+        !Number.isNaN(scheduledTime) &&
+        scheduledTime >= now
+      );
+    }) ?? null;
+
+  const latestOperationalAppointment =
+    [...scheduledAppointments]
+      .reverse()
+      .find((appointment) => {
+        const scheduledTime = new Date(appointment.scheduled_at as string).getTime();
+
+        return (
+          appointment.status === "COMPLETED" &&
+          !Number.isNaN(scheduledTime) &&
+          scheduledTime < now
+        );
+      }) ?? null;
+
+  const planningAppointment = nextAppointment ?? latestOperationalAppointment;
+
+  const activeJobs = result.jobs.filter((job) =>
+    ["QUOTE_ACCEPTED", "SCHEDULED", "CONFIRMED", "IN_PROGRESS"].includes(job.status),
+  ).length;
+
+  const activeLeads = result.leads.filter((lead) =>
+    ["NEW", "QUALIFIED", "CONTACTED", "QUOTE_SENT", "BOOKED", "IN_PROGRESS"].includes(
+      lead.lifecycle_status,
+    ),
+  ).length;
+
   return (
     <div data-crm-route="clients" className="space-y-12">
       <Link href="/crm/clients" className="inline-block text-xs text-[#d8b477] hover:text-white">← Retour aux clients</Link>
 
-      <section className="border-b border-white/10 pb-8">
-        <p className="text-[10px] uppercase tracking-[0.24em] text-[#d8b477]">Customer 360 / Profil client</p>
-        <div className="mt-4 flex flex-col justify-between gap-6 md:flex-row md:items-end">
-          <div>
-            <h1 className="text-3xl font-semibold tracking-tight text-white md:text-5xl">{displayName}</h1>
-            {contactDetails.length > 0 && <p className="mt-4 text-sm text-white/50">{contactDetails.join(" · ")}</p>}
-            <ContactActions phone={customer.phone} email={customer.email} whatsappMessage={`Bonjour ${displayName}, AUTO 9 ici.`} />
+      <section className="relative overflow-hidden border border-white/10 bg-[#101419]">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#d8b477]/80 to-transparent"
+        />
+
+        <div className="grid lg:grid-cols-[minmax(0,1fr)_300px]">
+          <div className="p-6 md:p-8 lg:p-10">
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="text-[10px] uppercase tracking-[0.24em] text-[#d8b477]">
+                Customer 360°
+              </p>
+              <span className="h-px w-8 bg-white/15" />
+              <p className="text-[10px] uppercase tracking-[0.18em] text-white/30">
+                Dossier client
+              </p>
+            </div>
+
+            <h1 className="mt-5 max-w-4xl text-3xl font-semibold tracking-[-0.03em] text-white md:text-5xl lg:text-6xl">
+              {displayName}
+            </h1>
+
+            {contactDetails.length > 0 && (
+              <p className="mt-5 max-w-3xl text-sm leading-6 text-white/45">
+                {contactDetails.join(" · ")}
+              </p>
+            )}
+
+            <ContactActions
+              phone={customer.phone}
+              email={customer.email}
+              whatsappMessage={`Bonjour ${displayName}, AUTO 9 ici.`}
+            />
           </div>
-          {formatDate(customer.created_at) && <p className="text-xs text-white/35">Client depuis le {formatDate(customer.created_at)}</p>}
+
+          <aside className="border-t border-white/10 bg-[#0d1014]/70 p-6 lg:border-l lg:border-t-0 lg:p-8">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-white/30">
+              Relation client
+            </p>
+
+            <p className="mt-4 text-sm font-medium text-white">
+              {formatDate(customer.created_at)
+                ? `Client depuis le ${formatDate(customer.created_at)}`
+                : "Date d’entrée non renseignée"}
+            </p>
+
+            <div className="mt-6 space-y-3 border-t border-white/10 pt-5">
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-xs text-white/35">Demandes actives</span>
+                <span className="text-sm font-medium text-white">{activeLeads}</span>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-xs text-white/35">Prestations actives</span>
+                <span className="text-sm font-medium text-white">{activeJobs}</span>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-xs text-white/35">Véhicules</span>
+                <span className="text-sm font-medium text-white">{result.vehicles.length}</span>
+              </div>
+            </div>
+          </aside>
         </div>
       </section>
 
-      <section aria-labelledby="customer-profile-edit" className="space-y-4">
-        <div className="border-b border-white/10 pb-4">
-          <p className="text-[10px] uppercase tracking-[0.2em] text-[#d8b477]">Profil</p>
-          <h2 id="customer-profile-edit" className="mt-2 text-xl font-medium text-white">Modifier le profil</h2>
+      <section aria-labelledby="customer-summary" className="space-y-4">
+        <SectionHeading eyebrow="Cockpit" title="Vue opérationnelle" />
+
+        <div className="grid gap-px overflow-hidden border border-white/10 bg-white/10 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            ["Véhicules", result.vehicles.length, "Parc client"],
+            ["Demandes", result.leads.length, `${activeLeads} active${activeLeads > 1 ? "s" : ""}`],
+            ["Devis", result.quotes.length, "Historique commercial"],
+            ["Prestations", result.jobs.length, `${activeJobs} active${activeJobs > 1 ? "s" : ""}`],
+          ].map(([label, value, detail]) => (
+            <div key={label} className="bg-[#101419] p-5 md:p-6">
+              <p className="text-[10px] uppercase tracking-[0.16em] text-white/30">{label}</p>
+              <p className="mt-4 text-3xl font-semibold tracking-tight text-white">{value}</p>
+              <p className="mt-2 text-xs text-white/35">{detail}</p>
+            </div>
+          ))}
         </div>
+
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.65fr)]">
+          <div className="border border-white/10 bg-[#101419] p-5 md:p-7">
+            <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.18em] text-[#d8b477]">
+                  Planning
+                </p>
+                <h3 className="mt-2 text-lg font-medium text-white">
+                  {nextAppointment
+                    ? "Prochain rendez-vous"
+                    : latestOperationalAppointment
+                      ? "Dernier rendez-vous"
+                      : "Aucun rendez-vous planifié"}
+                </h3>
+              </div>
+
+              {planningAppointment?.status && (
+                <span className="w-fit border border-[#d8b477]/30 bg-[#d8b477]/5 px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[#d8b477]">
+                  {statusLabel(planningAppointment.status, appointmentStatusLabels)}
+                </span>
+              )}
+            </div>
+
+            {planningAppointment?.scheduled_at ? (
+              <p className="mt-8 text-2xl font-medium tracking-tight text-white md:text-3xl">
+                {formatDateTime(planningAppointment.scheduled_at)}
+              </p>
+            ) : (
+              <p className="mt-6 max-w-xl text-sm leading-6 text-white/40">
+                Aucun créneau opérationnel confirmé ou planifié n’est actuellement rattaché à ce client.
+              </p>
+            )}
+
+            {planningAppointment && (
+              <p className="mt-3 text-xs text-white/30">
+                Créneau opérationnel
+              </p>
+            )}
+          </div>
+
+          <div className="border border-white/10 bg-[#101419] p-5 md:p-7">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-[#d8b477]">
+              Dossier
+            </p>
+            <h3 className="mt-2 text-lg font-medium text-white">Signal commercial</h3>
+
+            <div className="mt-6 space-y-4">
+              <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-4">
+                <span className="text-xs text-white/40">Demandes actives</span>
+                <span className="text-sm font-medium text-white">{activeLeads}</span>
+              </div>
+              <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-4">
+                <span className="text-xs text-white/40">Devis enregistrés</span>
+                <span className="text-sm font-medium text-white">{result.quotes.length}</span>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-xs text-white/40">Prestations actives</span>
+                <span className="text-sm font-medium text-white">{activeJobs}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="customer-vehicles" className="space-y-4">
+        <SectionHeading eyebrow="01 / Parc" title="Véhicules" count={result.vehicles.length} />
+
+        {vehicleStatus === "created" && <p role="status" className="border border-emerald-300/30 bg-emerald-300/5 px-4 py-3 text-sm text-emerald-200">Véhicule créé.</p>}
+        {vehicleStatus === "unchanged" && <p role="status" className="border border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-white/55">Véhicule déjà créé.</p>}
+        {vehicleError && <p role="alert" className="border border-red-300/30 bg-red-300/5 px-4 py-3 text-sm text-red-200">{vehicleError === "invalid" ? "Vérifiez les informations du véhicule." : vehicleError === "access" ? "Action non autorisée." : "Création du véhicule momentanément indisponible."}</p>}
+
+        {result.vehicles.length > 0 ? (
+          <div className="grid gap-4 md:grid-cols-2">
+            {result.vehicles.map((vehicle) => (
+              <VehicleCard
+                key={vehicle.id || `${vehicle.brand}-${vehicle.model}-${vehicle.created_at}`}
+                vehicle={vehicle}
+              />
+            ))}
+          </div>
+        ) : (
+          <EmptySection>Aucun véhicule associé à ce client.</EmptySection>
+        )}
+      </section>
+
+      <section aria-labelledby="customer-administration" className="space-y-4">
+        <SectionHeading eyebrow="Administration" title="Gestion du dossier" />
+
+        <div className="grid gap-4 xl:grid-cols-2">
+          <details
+            open={Boolean(profileStatus || profileError)}
+            className="group border border-white/10 bg-[#101419]"
+          >
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-6 p-5 md:p-6">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.18em] text-[#d8b477]">
+                  Identité
+                </p>
+                <h3 className="mt-2 text-base font-medium text-white">
+                  Modifier le profil
+                </h3>
+                <p className="mt-2 text-xs leading-5 text-white/35">
+                  Coordonnées et informations principales du client.
+                </p>
+              </div>
+
+              <span
+                aria-hidden="true"
+                className="text-xl font-light text-white/35 transition-transform group-open:rotate-45"
+              >
+                +
+              </span>
+            </summary>
+
+            <div className="border-t border-white/10 p-5 md:p-6">
         {profileStatus === "updated" && <p role="status" className="border border-emerald-300/30 bg-emerald-300/5 px-4 py-3 text-sm text-emerald-200">Profil mis à jour.</p>}
         {profileStatus === "unchanged" && <p role="status" className="border border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-white/55">Aucun changement à enregistrer.</p>}
         {profileError && <p role="alert" className="border border-red-300/30 bg-red-300/5 px-4 py-3 text-sm text-red-200">{profileError === "invalid" ? "Vérifiez les informations saisies." : profileError === "access" ? "Action non autorisée." : "Mise à jour momentanément indisponible."}</p>}
-        <form action={updateCustomerProfileAction} className="grid gap-4 border border-white/10 bg-[#101419] p-5 md:grid-cols-2 md:p-7">
+        <form action={updateCustomerProfileAction} className="mt-4 grid gap-4 md:grid-cols-2">
           <input type="hidden" name="customerId" value={normalizedCustomerId} />
           <div className="md:col-span-2"><label htmlFor="full_name" className="block text-xs text-white/55">Nom complet</label><input id="full_name" name="full_name" defaultValue={customer.full_name} required maxLength={200} autoComplete="name" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[#d8b477]" /></div>
           <div><label htmlFor="first_name" className="block text-xs text-white/55">Prénom</label><input id="first_name" name="first_name" defaultValue={customer.first_name || ""} maxLength={100} autoComplete="given-name" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[#d8b477]" /></div>
@@ -361,32 +632,36 @@ export default async function Customer360Page({ params, searchParams }: {
           <div><label htmlFor="city" className="block text-xs text-white/55">Ville</label><input id="city" name="city" defaultValue={customer.city || ""} maxLength={120} autoComplete="address-level2" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[#d8b477]" /></div>
           <div className="md:col-span-2"><button type="submit" className="border border-[#d8b477] px-5 py-2.5 text-xs font-medium uppercase tracking-[0.14em] text-[#d8b477] transition-colors hover:bg-[#d8b477] hover:text-[#080a0d]">Enregistrer les modifications</button></div>
         </form>
-      </section>
-
-      <section aria-labelledby="customer-summary" className="space-y-4">
-        <SectionHeading eyebrow="Vue rapide" title="Repères du dossier" />
-        <div className="grid gap-px overflow-hidden border border-white/10 bg-white/10 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            ["Véhicules", result.vehicles.length],
-            ["Demandes", result.leads.length],
-            ["Devis", result.quotes.length],
-            ["Prestations", result.jobs.length],
-          ].map(([label, value]) => (
-            <div key={label} className="bg-[#101419] p-5">
-              <p className="text-xs text-white/40">{label}</p>
-              <p className="mt-4 text-3xl font-semibold text-white">{value}</p>
-              <p className="mt-2 text-[10px] uppercase tracking-[0.16em] text-white/25">Données du dossier</p>
             </div>
-          ))}
-        </div>
-      </section>
+          </details>
 
-      <section aria-labelledby="customer-vehicles" className="space-y-4">
-        <SectionHeading eyebrow="01 / Parc" title="Véhicules" count={result.vehicles.length} />
-        {vehicleStatus === "created" && <p role="status" className="border border-emerald-300/30 bg-emerald-300/5 px-4 py-3 text-sm text-emerald-200">Véhicule créé.</p>}
-        {vehicleStatus === "unchanged" && <p role="status" className="border border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-white/55">Véhicule déjà créé.</p>}
-        {vehicleError && <p role="alert" className="border border-red-300/30 bg-red-300/5 px-4 py-3 text-sm text-red-200">{vehicleError === "invalid" ? "Vérifiez les informations du véhicule." : vehicleError === "access" ? "Action non autorisée." : "Création du véhicule momentanément indisponible."}</p>}
-        <form action={createCustomerVehicleAction} className="grid gap-4 border border-white/10 bg-[#101419] p-5 md:grid-cols-2 md:p-7">
+          <details
+            open={Boolean(vehicleStatus || vehicleError)}
+            className="group border border-white/10 bg-[#101419]"
+          >
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-6 p-5 md:p-6">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.18em] text-[#d8b477]">
+                  Parc client
+                </p>
+                <h3 className="mt-2 text-base font-medium text-white">
+                  Ajouter un véhicule
+                </h3>
+                <p className="mt-2 text-xs leading-5 text-white/35">
+                  Enrichir le dossier sans masquer l’historique existant.
+                </p>
+              </div>
+
+              <span
+                aria-hidden="true"
+                className="text-xl font-light text-white/35 transition-transform group-open:rotate-45"
+              >
+                +
+              </span>
+            </summary>
+
+            <div className="border-t border-white/10 p-5 md:p-6">
+        <form action={createCustomerVehicleAction} className="grid gap-4 md:grid-cols-2">
           <input type="hidden" name="customerId" value={normalizedCustomerId} />
           <input type="hidden" name="idempotencyKey" value={vehicleIdempotencyKey} />
           <div><label htmlFor="vehicle-brand" className="block text-xs text-white/55">Marque <span className="text-[#d8b477]">*</span></label><input id="vehicle-brand" name="brand" required maxLength={100} autoComplete="off" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[#d8b477]" /></div>
@@ -398,7 +673,9 @@ export default async function Customer360Page({ params, searchParams }: {
           <div><label htmlFor="vehicle-mileage" className="block text-xs text-white/55">Kilométrage <span className="text-white/30">(optionnel)</span></label><input id="vehicle-mileage" name="mileage_km" type="number" min="0" max="2147483647" step="1" inputMode="numeric" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[#d8b477]" /></div>
           <div className="md:col-span-2"><button type="submit" className="border border-[#d8b477] px-5 py-2.5 text-xs font-medium uppercase tracking-[0.14em] text-[#d8b477] transition-colors hover:bg-[#d8b477] hover:text-[#080a0d]">Créer un véhicule</button></div>
         </form>
-        {result.vehicles.length > 0 ? <div className="grid gap-4 md:grid-cols-2">{result.vehicles.map((vehicle) => <VehicleCard key={vehicle.id || `${vehicle.brand}-${vehicle.model}-${vehicle.created_at}`} vehicle={vehicle} />)}</div> : <EmptySection>Aucun véhicule associé à ce client.</EmptySection>}
+            </div>
+          </details>
+        </div>
       </section>
 
       <section aria-labelledby="customer-leads" className="space-y-4">
