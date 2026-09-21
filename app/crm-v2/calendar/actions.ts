@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { requireCrmAccess } from "../../lib/auth/dal";
 import { resolveCurrentBusinessContext } from "../../lib/business";
 import { supabaseRest } from "../../lib/supabase";
+import { upsertCustomer } from "../../lib/crm";
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -21,7 +22,11 @@ export async function createCalendarEvent(formData: FormData) {
   await requireCrmAccess();
   const { businessId } = await resolveCurrentBusinessContext();
 
-  const customerId = String(formData.get("customerId") || "").trim();
+  let customerId = String(formData.get("customerId") || "").trim();
+  const newClientName = String(formData.get("newClientName") || "").trim();
+  const newClientEmail = String(formData.get("newClientEmail") || "").trim();
+  const newClientPhone = String(formData.get("newClientPhone") || "").trim();
+  const newClientCity = String(formData.get("newClientCity") || "").trim();
   const vehicleId = String(formData.get("vehicleId") || "").trim();
   const title = String(formData.get("title") || "").trim();
   const serviceName = String(formData.get("serviceName") || "").trim();
@@ -35,6 +40,26 @@ export async function createCalendarEvent(formData: FormData) {
 
   if (customerId && !UUID_REGEX.test(customerId)) {
     redirect("/crm-v2/calendar?event_error=invalid");
+  }
+
+  if (!customerId && newClientName) {
+    const parts = newClientName.split(/\s+/);
+    const created = await upsertCustomer({
+      business_id: "",
+      full_name: newClientName,
+      first_name: parts[0] || null,
+      last_name: parts.slice(1).join(" ") || null,
+      email: newClientEmail || null,
+      phone: newClientPhone || null,
+      city: newClientCity || null,
+      source: "crm_v2_calendar",
+    });
+
+    if (!created?.id) {
+      redirect("/crm-v2/calendar?event_error=client_create");
+    }
+
+    customerId = created.id;
   }
 
   if (vehicleId && !UUID_REGEX.test(vehicleId)) {
