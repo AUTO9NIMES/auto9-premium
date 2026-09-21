@@ -26,7 +26,7 @@ function parisMonthKey(value: string | Date) {
 function MiniEvent({ item }: { item: CalendarAppointmentItem }) {
   const when = new Date(item.appointment.scheduledAt);
   return (
-    <Link href={`/crm/jobs/${item.job.id}`} className="group flex items-center gap-3 rounded-xl border border-white/8 bg-white/[0.025] p-3 transition hover:border-cyan-300/25 hover:bg-cyan-300/[0.04]">
+    <Link href="/crm-v2/calendar" className="group flex items-center gap-3 rounded-xl border border-white/8 bg-white/[0.025] p-3 transition hover:border-cyan-300/25 hover:bg-cyan-300/[0.04]">
       <div className="w-14 shrink-0 text-center">
         <p className="text-[10px] uppercase text-white/35">{day.format(when)}</p>
         <p className="mt-1 text-xs font-semibold text-cyan-200">{hour.format(when)}</p>
@@ -84,8 +84,8 @@ export default async function CrmV2Dashboard() {
 
   const cards = [
     { label: "Leads", value: String(metrics.activeLeads), detail: `${metrics.leadsRequiringAttention} à traiter`, accent: true, href: "/crm-v2/pipeline" },
-    { label: "CA espèces", value: eur.format(cashRevenue), detail: "Paiements en espèces", href: "/crm/jobs?status=PAID" },
-    { label: "CA carte + virement", value: eur.format(bankRevenue), detail: "Encaissements bancaires", href: "/crm/jobs?status=PAID" },
+    { label: "CA espèces", value: eur.format(cashRevenue), detail: "Paiements en espèces", href: "/crm-v2/revenue" },
+    { label: "CA carte + virement", value: eur.format(bankRevenue), detail: "Encaissements bancaires", href: "/crm-v2/revenue" },
     { label: "Clients", value: String(metrics.customersTotal), detail: `${metrics.activeLeads} lead${metrics.activeLeads > 1 ? "s" : ""} actif${metrics.activeLeads > 1 ? "s" : ""}`, href: "/crm-v2/clients" },
   ];
 
@@ -181,9 +181,9 @@ export default async function CrmV2Dashboard() {
           <p className="text-sm font-semibold">Abonnements</p>
           <p className="mt-2 text-xs leading-5 text-white/40">Clients récurrents et rappels mensuels.</p>
         </Link>
-        <Link href="/crm/jobs" className="rounded-2xl border border-white/8 bg-white/[0.025] p-5 transition hover:border-cyan-300/25">
+        <Link href="/crm-v2/pipeline" className="rounded-2xl border border-white/8 bg-white/[0.025] p-5 transition hover:border-cyan-300/25">
           <p className="text-sm font-semibold">Prestations</p>
-          <p className="mt-2 text-xs leading-5 text-white/40">Accès au registre opérationnel existant.</p>
+          <p className="mt-2 text-xs leading-5 text-white/40">Retrouver les prestations depuis les dossiers clients.</p>
         </Link>
       </section>
     </div>
