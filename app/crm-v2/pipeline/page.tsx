@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { getLeadsList, type LeadLifecycleStatus, type LeadListItem } from "../../lib/crm";\nimport { recordV2Payment } from "./actions";
+import { getLeadsList, type LeadLifecycleStatus, type LeadListItem } from "../../lib/crm";
+import { recordV2Payment } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +36,13 @@ function vehicle(item: LeadListItem) {
   return [item.vehicle.brand, item.vehicle.model, item.vehicle.plate].filter(Boolean).join(" · ") || "Véhicule";
 }
 
+function serviceName(item: LeadListItem) {
+  const value = item.latestQuote?.payload_json?.serviceName;
+  return typeof value === "string" && value.trim()
+    ? value
+    : item.latestJob?.title || "Prestation AUTO 9";
+}
+
 function money(value?: number | null) {
   if (typeof value !== "number") return null;
   return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(value);
@@ -55,7 +63,8 @@ function currentIndex(item: LeadListItem) {
 function LeadProgress({ item }: { item: LeadListItem }) {
   const active = currentIndex(item);
   const amount = money(item.latestQuote?.total_price || item.latestJob?.total_amount);
-  const closed = item.lead.lifecycle_status === "CLOSED_LOST";\n  const canRecordPayment = Boolean(item.latestJob?.id && item.latestJob.status === "COMPLETED");
+  const closed = item.lead.lifecycle_status === "CLOSED_LOST";
+  const canRecordPayment = Boolean(item.latestJob?.id && item.latestJob.status === "COMPLETED");
 
   return (
     <article className="overflow-hidden rounded-3xl border border-white/8 bg-[#0b121b]">
@@ -63,15 +72,15 @@ function LeadProgress({ item }: { item: LeadListItem }) {
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="truncate text-lg font-semibold text-white">{name(item)}</h2>
-            {closed && <span className="rounded-full border border-red-300/20 bg-red-300/5 px-2 py-1 text-[9px] uppercase tracking-[0.15em] text-red-200/70">Clôturé</span>}
+            {closed && <span className="rounded-full border border-red-300/20 bg-red-300/5 px-2 py-1 text-[9px] uppercase tracking-[0.15em] text-red-200/70">Perdu / annulé</span>}
           </div>
           <p className="mt-1 text-xs text-white/40">{vehicle(item)}</p>
-          <p className="mt-3 text-sm text-white/65">{item.latestQuote?.payload_json?.serviceName as string || item.latestJob?.title || "Prestation AUTO 9"}</p>
+          <p className="mt-3 text-sm text-white/65">{serviceName(item)}</p>
         </div>
         <div className="shrink-0 text-left md:text-right">
           {amount && <p className="text-xl font-bold text-cyan-100">{amount}</p>}
           {item.latestAppointment?.scheduled_at && (
-            <p className="mt-1 text-xs text-white/35">{new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(item.latestAppointment.scheduled_at))}</p>
+            <p className="mt-1 text-xs text-white/35">{new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Paris" }).format(new Date(item.latestAppointment.scheduled_at))}</p>
           )}
           {item.lead.id && <Link href={`/crm/pipeline/${item.lead.id}`} className="mt-3 inline-block text-[11px] text-cyan-200/65 hover:text-cyan-100">Ouvrir le dossier →</Link>}
         </div>
@@ -95,6 +104,32 @@ function LeadProgress({ item }: { item: LeadListItem }) {
             );
           })}
         </div>
+
+        {canRecordPayment && item.latestJob?.id && (
+          <div className="mt-4 rounded-2xl border border-cyan-300/12 bg-cyan-300/[0.035] p-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-white">Paiement reçu</p>
+                <p className="mt-1 text-xs text-white/35">Choisis le mode utilisé par le client.</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  ["CARD", "Carte"],
+                  ["BANK_TRANSFER", "Virement"],
+                  ["CASH", "Espèces"],
+                ].map(([method, label]) => (
+                  <form key={method} action={recordV2Payment}>
+                    <input type="hidden" name="jobId" value={item.latestJob!.id} />
+                    <input type="hidden" name="method" value={method} />
+                    <button className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-xs font-semibold text-white/70 transition hover:border-cyan-300/30 hover:text-cyan-100">
+                      {label}
+                    </button>
+                  </form>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </article>
   );
@@ -108,6 +143,8 @@ export default async function CrmV2Pipeline({
   const params = await searchParams;
   const rawSearch = Array.isArray(params.search) ? params.search[0] : params.search;
   const search = rawSearch?.trim() || undefined;
+  const paymentRecorded = (Array.isArray(params.payment) ? params.payment[0] : params.payment) === "recorded";
+  const paymentError = Array.isArray(params.payment_error) ? params.payment_error[0] : params.payment_error;
 
   const result = await getLeadsList({ page: 1, limit: 50, search });
 
