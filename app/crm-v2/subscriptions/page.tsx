@@ -128,7 +128,11 @@ export default async function SubscriptionsPage({
               ))}
             </select>
             <input name="serviceName" required placeholder="Prestation * (ex. Formule Duo)" className="rounded-xl border border-white/10 bg-[#081019] px-4 py-3 text-sm outline-none placeholder:text-white/25" />
-            <input name="price" inputMode="decimal" placeholder="Prix (€)" className="rounded-xl border border-white/10 bg-[#081019] px-4 py-3 text-sm outline-none placeholder:text-white/25" />
+            <label className="text-xs text-white/45">
+              Tarif négocié (€)
+              <input name="price" inputMode="decimal" placeholder="Ex. 169" className="mt-2 w-full rounded-xl border border-white/10 bg-[#081019] px-4 py-3 text-sm outline-none placeholder:text-white/25" />
+              <span className="mt-1 block text-[10px] text-white/25">Montant libre selon l'accord conclu avec le client.</span>
+            </label>
             <select name="frequencyMonths" defaultValue="1" className="rounded-xl border border-white/10 bg-[#081019] px-4 py-3 text-sm text-white">
               <option value="1">Tous les mois</option>
               <option value="2">Tous les 2 mois</option>
