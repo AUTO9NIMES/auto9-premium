@@ -44,6 +44,8 @@ type CalendarEventRow = {
   vehicle_id: string | null;
   title: string;
   service_name: string | null;
+  price: number | null;
+  lead_id: string | null;
   event_date: string;
   event_time: string;
   notes: string | null;
@@ -99,6 +101,11 @@ function CustomEvent({
           .filter(Boolean)
           .join(" · ")}
       </p>
+      {typeof item.price === "number" && (
+        <p className="mt-1 text-[9px] font-semibold text-emerald-100/70">
+          {new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(item.price)}
+        </p>
+      )}
     </Link>
   );
 }
@@ -134,6 +141,10 @@ export default async function CrmV2Calendar({
   const eventError = Array.isArray(params.event_error)
     ? params.event_error[0]
     : params.event_error;
+  const leadCreated =
+    (Array.isArray(params.lead_created) ? params.lead_created[0] : params.lead_created) === "1";
+  const leadError =
+    (Array.isArray(params.lead_error) ? params.lead_error[0] : params.lead_error) === "1";
 
   const result = await getCalendarMonth({ month: selectedMonth });
   const { businessId } = await resolveCurrentBusinessContext();
@@ -254,6 +265,16 @@ export default async function CrmV2Calendar({
           Événement ajouté au calendrier.
         </div>
       )}
+      {leadCreated && (
+        <div className="rounded-xl border border-cyan-300/20 bg-cyan-300/[0.05] px-4 py-3 text-sm text-cyan-100">
+          Le RDV a aussi été ajouté au pipeline client.
+        </div>
+      )}
+      {leadError && (
+        <div className="rounded-xl border border-amber-300/20 bg-amber-300/[0.05] px-4 py-3 text-sm text-amber-100">
+          Le rendez-vous a été créé, mais le lead n&apos;a pas pu être ajouté au pipeline.
+        </div>
+      )}
       {eventUpdated && (
         <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/[0.05] px-4 py-3 text-sm text-emerald-100">
           Événement modifié.
@@ -286,7 +307,7 @@ export default async function CrmV2Calendar({
                 {formEvent ? "Modifier le rendez-vous" : "Nouvel événement / RDV"}
               </h2>
               <p className="mt-2 text-xs text-white/35">
-                Tu peux saisir une date passée ou future. Cela ne crée pas de nouveau lead.
+                Pour un client, le RDV crée aussi automatiquement un lead dans le pipeline. Sans client, il reste un simple événement calendrier.
               </p>
             </div>
             <Link
@@ -397,6 +418,22 @@ export default async function CrmV2Calendar({
                 placeholder="Ex. Formule Duo"
                 className="mt-2 w-full rounded-xl border border-white/10 bg-[#081019] px-4 py-3 text-sm text-white outline-none placeholder:text-white/25"
               />
+            </label>
+
+            <label className="text-xs text-white/45">
+              Prix de la prestation (€)
+              <input
+                name="price"
+                type="number"
+                min="0"
+                step="0.01"
+                defaultValue={formEvent?.price ?? ""}
+                placeholder="Ex. 99"
+                className="mt-2 w-full rounded-xl border border-white/10 bg-[#081019] px-4 py-3 text-sm text-white outline-none placeholder:text-white/25"
+              />
+              <span className="mt-1 block text-[10px] text-white/25">
+                Ce montant sera repris dans le lead créé dans le pipeline.
+              </span>
             </label>
 
             <label className="text-xs text-white/45">
