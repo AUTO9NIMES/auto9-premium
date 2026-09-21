@@ -100,3 +100,74 @@ export async function deleteV2Lead(formData: FormData) {
   revalidatePath("/crm/pipeline");
   redirect("/crm-v2/pipeline?lead_deleted=1");
 }
+
+
+const MANUAL_STEPS = [
+  "CONTACTED",
+  "QUOTE_SENT",
+  "BOOKED",
+  "IN_PROGRESS",
+  "COMPLETED",
+  "REVIEW_REQUESTED",
+] as const;
+
+type ManualStepKey = (typeof MANUAL_STEPS)[number];
+
+function isManualStepKey(value: string): value is ManualStepKey {
+  return MANUAL_STEPS.includes(value as ManualStepKey);
+}
+
+export async function toggleV2LeadStep(formData: FormData) {
+  await requireCrmAccess();
+
+  const leadId = String(formData.get("leadId") || "").trim();
+  const stepKey = String(formData.get("stepKey") || "").trim();
+  const nextDone = String(formData.get("nextDone") || "") === "1";
+
+  if (!UUID_REGEX.test(leadId) || !isManualStepKey(stepKey)) {
+    redirect("/crm-v2/pipeline?step_error=invalid");
+  }
+
+  const { businessId } = await resolveCurrentBusinessContext();
+
+  try {
+    const leadRows = await supabaseRest<Array<{ id: string; customer_id: string }>>(
+      "leads",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&id=eq.${leadId}&select=id,customer_id&limit=1`,
+    );
+    const lead = (leadRows as Array<{ id: string; customer_id: string }> | null)?.[0];
+    if (!lead) redirect("/crm-v2/pipeline?step_error=invalid");
+
+    const targetIndex = MANUAL_STEPS.indexOf(stepKey);
+    const affected = nextDone
+      ? MANUAL_STEPS.slice(0, targetIndex + 1)
+      : MANUAL_STEPS.slice(targetIndex);
+
+    for (const key of affected) {
+      await supabaseRest(
+        "activity_log",
+        "POST",
+        {
+          business_id: businessId,
+          customer_id: lead.customer_id,
+          lead_id: leadId,
+          event_type: nextDone ? "crm_v2.step.completed" : "crm_v2.step.reopened",
+          event_data: {
+            step_key: key,
+            source: "crm_v2_pipeline",
+          },
+        },
+        "select=id",
+      );
+    }
+  } catch (error) {
+    if (error && typeof error === "object" && "digest" in error) throw error;
+    redirect("/crm-v2/pipeline?step_error=unavailable");
+  }
+
+  revalidatePath("/crm-v2");
+  revalidatePath("/crm-v2/pipeline");
+  redirect("/crm-v2/pipeline?step_updated=1");
+}
