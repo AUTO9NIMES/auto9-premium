@@ -21,6 +21,7 @@ const nav = [
   ["Pipeline", "/crm-v2/pipeline"],
   ["Clients", "/crm-v2/clients"],
   ["Abonnements", "/crm-v2/subscriptions"],
+  ["Emails", "/crm-v2/emails"],
   ["Calendrier", "/crm-v2/calendar"],
 ];
 
