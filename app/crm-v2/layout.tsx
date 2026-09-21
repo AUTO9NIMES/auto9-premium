@@ -20,6 +20,7 @@ const nav = [
   ["Pilotage", "/crm-v2"],
   ["Pipeline", "/crm-v2/pipeline"],
   ["Clients", "/crm-v2/clients"],
+  ["Abonnements", "/crm-v2/subscriptions"],
   ["Calendrier", "/crm-v2/calendar"],
 ];
 
