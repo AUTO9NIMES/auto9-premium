@@ -127,6 +127,7 @@ export type Vehicle = {
   mileage_km?: number | null;
   vehicle_type?: string | null;
   photo_url?: string | null;
+  photo_path?: string | null;
   created_at?: string;
   updated_at?: string;
 };
