@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getLeadsList, type LeadLifecycleStatus, type LeadListItem } from "../../lib/crm";
-import { recordV2Payment } from "./actions";
+import { cancelV2Lead, deleteV2Lead, recordV2Payment } from "./actions";
+import LeadDangerActions from "./LeadDangerActions";
 
 export const dynamic = "force-dynamic";
 
@@ -84,6 +85,16 @@ function LeadProgress({ item }: { item: LeadListItem }) {
           )}
           {item.lead.id && <Link href={`/crm/pipeline/${item.lead.id}`} className="mt-3 inline-block text-[11px] text-cyan-200/65 hover:text-cyan-100">Ouvrir le dossier →</Link>}
         </div>
+        {item.lead.id && (
+          <div className="md:ml-auto md:pt-1">
+            <LeadDangerActions
+              leadId={item.lead.id}
+              closed={closed}
+              cancelAction={cancelV2Lead}
+              deleteAction={deleteV2Lead}
+            />
+          </div>
+        )}
       </div>
 
       <div className="p-5">
@@ -145,6 +156,9 @@ export default async function CrmV2Pipeline({
   const search = rawSearch?.trim() || undefined;
   const paymentRecorded = (Array.isArray(params.payment) ? params.payment[0] : params.payment) === "recorded";
   const paymentError = Array.isArray(params.payment_error) ? params.payment_error[0] : params.payment_error;
+  const leadCancelled = (Array.isArray(params.lead_cancelled) ? params.lead_cancelled[0] : params.lead_cancelled) === "1";
+  const leadDeleted = (Array.isArray(params.lead_deleted) ? params.lead_deleted[0] : params.lead_deleted) === "1";
+  const leadError = Array.isArray(params.lead_error) ? params.lead_error[0] : params.lead_error;
 
   const result = await getLeadsList({ page: 1, limit: 50, search });
 
@@ -161,6 +175,10 @@ export default async function CrmV2Pipeline({
 
       {paymentRecorded && <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/[0.05] px-4 py-3 text-sm text-emerald-100">Paiement enregistré. Le CA du mois a été mis à jour.</div>}
       {paymentError && <div className="rounded-xl border border-red-300/20 bg-red-300/[0.05] px-4 py-3 text-sm text-red-100">Le paiement n'a pas pu être enregistré.</div>}
+      {leadCancelled && <div className="rounded-xl border border-amber-300/20 bg-amber-300/[0.05] px-4 py-3 text-sm text-amber-100">Demande annulée et conservée dans l'historique.</div>}
+      {leadDeleted && <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/[0.05] px-4 py-3 text-sm text-emerald-100">Demande supprimée.</div>}
+      {leadError === "linked" && <div className="rounded-xl border border-red-300/20 bg-red-300/[0.05] px-4 py-3 text-sm text-red-100">Impossible de supprimer cette demande : une prestation est déjà liée. Annule-la plutôt pour conserver l'historique.</div>}
+      {leadError && leadError !== "linked" && <div className="rounded-xl border border-red-300/20 bg-red-300/[0.05] px-4 py-3 text-sm text-red-100">La demande n'a pas pu être modifiée.</div>}
 
       <form className="flex gap-2 rounded-2xl border border-white/8 bg-white/[0.02] p-2">
         <input name="search" defaultValue={search} placeholder="Rechercher un client, téléphone, véhicule..." className="min-w-0 flex-1 bg-transparent px-3 py-2 text-sm text-white outline-none placeholder:text-white/25" />
