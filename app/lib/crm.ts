@@ -592,7 +592,11 @@ async function getCurrentBusinessId(): Promise<string> {
   return business.businessId;
 }
 
-export async function upsertCustomer(input: Customer) {
+export type UpsertCustomerInput = Omit<Customer, "business_id"> & {
+  business_id?: string;
+};
+
+export async function upsertCustomer(input: UpsertCustomerInput) {
   if (!hasSupabaseWriteConfig()) {
     return null;
   }
@@ -625,6 +629,47 @@ export async function upsertCustomer(input: Customer) {
     if (identifierPhone) {
       await upsertCustomerIdentifier(businessId, result.id, "phone", identifierPhone, "website");
     }
+  }
+
+  return result;
+}
+
+
+export type DeleteCustomerResult =
+  | "DELETED"
+  | "PROTECTED"
+  | "NOT_FOUND";
+
+export async function deleteCustomerIfSafe(
+  customerId: string,
+): Promise<DeleteCustomerResult> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const normalizedCustomerId = customerId.trim();
+
+  if (!normalizedCustomerId) {
+    throw new Error("customerId is required.");
+  }
+
+  const businessId = await getCurrentBusinessId();
+
+  const result = await supabaseRest<DeleteCustomerResult>(
+    "rpc/delete_customer_if_safe",
+    "POST",
+    {
+      p_business_id: businessId,
+      p_customer_id: normalizedCustomerId,
+    },
+  );
+
+  if (
+    result !== "DELETED" &&
+    result !== "PROTECTED" &&
+    result !== "NOT_FOUND"
+  ) {
+    throw new Error("Unexpected customer deletion result.");
   }
 
   return result;

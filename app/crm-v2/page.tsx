@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { getCalendarMonth, getCrmDashboardMetrics, type CalendarAppointmentItem, type Payment } from "../lib/crm";\nimport { resolveCurrentBusinessContext } from "../lib/business";\nimport { supabaseRest } from "../lib/supabase";
+import { getCalendarMonth, getCrmDashboardMetrics, type CalendarAppointmentItem, type Payment } from "../lib/crm";
+import { resolveCurrentBusinessContext } from "../lib/business";
+import { supabaseRest } from "../lib/supabase";
 
 export const dynamic = "force-dynamic";
 

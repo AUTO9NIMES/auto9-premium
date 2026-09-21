@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { getLeadsList, type LeadLifecycleStatus, type LeadListItem } from "../../lib/crm";\nimport { recordV2Payment } from "./actions";
+import { getLeadsList, type LeadLifecycleStatus, type LeadListItem } from "../../lib/crm";
+import { recordV2Payment } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -55,7 +56,8 @@ function currentIndex(item: LeadListItem) {
 function LeadProgress({ item }: { item: LeadListItem }) {
   const active = currentIndex(item);
   const amount = money(item.latestQuote?.total_price || item.latestJob?.total_amount);
-  const closed = item.lead.lifecycle_status === "CLOSED_LOST";\n  const canRecordPayment = Boolean(item.latestJob?.id && item.latestJob.status === "COMPLETED");
+  const closed = item.lead.lifecycle_status === "CLOSED_LOST";
+  const canRecordPayment = Boolean(item.latestJob?.id && item.latestJob.status === "COMPLETED");
 
   return (
     <article className="overflow-hidden rounded-3xl border border-white/8 bg-[#0b121b]">
@@ -108,6 +110,10 @@ export default async function CrmV2Pipeline({
   const params = await searchParams;
   const rawSearch = Array.isArray(params.search) ? params.search[0] : params.search;
   const search = rawSearch?.trim() || undefined;
+
+  const rawPayment = Array.isArray(params.payment) ? params.payment[0] : params.payment;
+  const paymentRecorded = rawPayment === "recorded";
+  const paymentError = rawPayment === "error";
 
   const result = await getLeadsList({ page: 1, limit: 50, search });
 

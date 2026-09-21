@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CrmAccessError, requireCrmAccess } from "../../lib/auth/dal";
 import Pagination, { normalizePage } from "../components/Pagination";
+import { createCustomerAction, deleteCustomerAction } from "./actions";
 import {
   getCustomersList,
   type CustomerListItem,
@@ -125,6 +126,43 @@ function CustomerRow({ item }: { item: CustomerListItem }) {
         ) : (
           <span className="mt-2 inline-block text-white/25">Profil détaillé indisponible</span>
         )}
+        {customer.id && (
+          <div className="md:col-span-4">
+            <details className="group">
+              <summary className="w-fit cursor-pointer list-none text-[10px] uppercase tracking-[0.14em] text-red-200/35 transition-colors hover:text-red-200/70">
+                Gérer ce client
+              </summary>
+              <div className="mt-3 border border-red-300/10 bg-red-300/[0.025] p-4">
+                <p className="text-xs leading-5 text-white/40">
+                  La suppression est autorisée uniquement si ce client ne possède aucun historique métier AUTO 9.
+                </p>
+                <form action={deleteCustomerAction} className="mt-3 space-y-3">
+                  <input type="hidden" name="customerId" value={customer.id} />
+
+                  <label className="flex cursor-pointer items-start gap-3 text-xs leading-5 text-white/45">
+                    <input
+                      type="checkbox"
+                      name="confirm"
+                      value="DELETE"
+                      required
+                      className="mt-1"
+                    />
+                    <span>
+                      Je confirme vouloir supprimer définitivement ce contact s&apos;il ne possède aucun historique métier.
+                    </span>
+                  </label>
+
+                  <button
+                    type="submit"
+                    className="border border-red-300/20 px-4 py-2 text-[10px] uppercase tracking-[0.14em] text-red-200/60 transition-colors hover:border-red-300/40 hover:text-red-100"
+                  >
+                    Supprimer définitivement
+                  </button>
+                </form>
+              </div>
+            </details>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -140,6 +178,18 @@ export default async function ClientsPage({ searchParams }: {
   const params = await searchParams;
   const page = normalizePage(params.page);
   const search = normalizeSearchValue(params.q);
+  const showNewCustomerForm =
+    (Array.isArray(params.new) ? params.new[0] : params.new) === "1";
+  const created =
+    (Array.isArray(params.created) ? params.created[0] : params.created) === "1";
+  const deleted =
+    (Array.isArray(params.deleted) ? params.deleted[0] : params.deleted) === "1";
+  const createError = Array.isArray(params.create_error)
+    ? params.create_error[0]
+    : params.create_error;
+  const deleteError = Array.isArray(params.delete_error)
+    ? params.delete_error[0]
+    : params.delete_error;
   let result;
   let failed = false;
 
@@ -164,8 +214,146 @@ export default async function ClientsPage({ searchParams }: {
           <h1 className="text-3xl font-semibold tracking-tight text-white md:text-5xl">Clients</h1>
           <p className="mt-4 max-w-xl text-sm leading-7 text-white/50">L&apos;espace central pour retrouver les contacts, véhicules et historiques de prestation.</p>
         </div>
-        <span className="w-fit border border-white/10 px-3 py-2 text-[10px] uppercase tracking-[0.16em] text-white/35">Répertoire réel</span>
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="w-fit border border-white/10 px-3 py-2 text-[10px] uppercase tracking-[0.16em] text-white/35">
+            Répertoire réel
+          </span>
+          <Link
+            href={showNewCustomerForm ? "/crm/clients" : "/crm/clients?new=1"}
+            className="border border-[#d8b477] px-4 py-2 text-[10px] font-medium uppercase tracking-[0.14em] text-[#d8b477] transition-colors hover:bg-[#d8b477] hover:text-[#080a0d]"
+          >
+            {showNewCustomerForm ? "Annuler" : "+ Nouveau client"}
+          </Link>
+        </div>
       </section>
+
+      {/* AUTO9_CUSTOMER_MANAGEMENT_UI */}
+
+      {created && (
+        <div className="border border-emerald-300/20 bg-emerald-300/[0.05] px-5 py-4 text-sm text-emerald-100">
+          Client créé avec succès.
+        </div>
+      )}
+
+      {deleted && (
+        <div className="border border-emerald-300/20 bg-emerald-300/[0.05] px-5 py-4 text-sm text-emerald-100">
+          Client supprimé.
+        </div>
+      )}
+
+      {createError && (
+        <div className="border border-red-300/20 bg-red-300/[0.05] px-5 py-4 text-sm text-red-100">
+          {createError === "invalid"
+            ? "Les informations saisies sont invalides."
+            : createError === "access"
+              ? "Vous n'avez pas l'autorisation de créer un client."
+              : "La création du client a échoué."}
+        </div>
+      )}
+
+      {deleteError && (
+        <div className="border border-red-300/20 bg-red-300/[0.05] px-5 py-4 text-sm text-red-100">
+          {deleteError === "protected"
+            ? "Ce client possède un historique AUTO 9 et ne peut pas être supprimé."
+            : deleteError === "not_found"
+              ? "Ce client n'existe plus."
+              : deleteError === "invalid"
+                ? "Identifiant client invalide."
+                : deleteError === "access"
+                  ? "Vous n'avez pas l'autorisation de supprimer ce client."
+                  : "La suppression du client a échoué."}
+        </div>
+      )}
+
+      {showNewCustomerForm && (
+        <section className="border border-[#d8b477]/25 bg-[#101419] p-5 md:p-7">
+          <div className="mb-6">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-[#d8b477]">
+              Nouveau contact
+            </p>
+            <h2 className="mt-2 text-xl font-medium text-white">
+              Ajouter un client
+            </h2>
+            <p className="mt-2 text-sm text-white/40">
+              Le client sera ajouté au répertoire AUTO 9.
+            </p>
+          </div>
+
+          <form action={createCustomerAction} className="grid gap-4 md:grid-cols-2">
+            <label className="space-y-2">
+              <span className="block text-xs text-white/45">Prénom</span>
+              <input
+                name="first_name"
+                maxLength={100}
+                autoComplete="given-name"
+                className="w-full border border-white/15 bg-[#0d1014] px-4 py-3 text-sm text-white outline-none focus:border-[#d8b477]"
+                placeholder="Nicolas"
+              />
+            </label>
+
+            <label className="space-y-2">
+              <span className="block text-xs text-white/45">Nom</span>
+              <input
+                name="last_name"
+                maxLength={100}
+                autoComplete="family-name"
+                className="w-full border border-white/15 bg-[#0d1014] px-4 py-3 text-sm text-white outline-none focus:border-[#d8b477]"
+                placeholder="Dupont"
+              />
+            </label>
+
+            <label className="space-y-2">
+              <span className="block text-xs text-white/45">E-mail</span>
+              <input
+                name="email"
+                type="email"
+                maxLength={254}
+                autoComplete="email"
+                className="w-full border border-white/15 bg-[#0d1014] px-4 py-3 text-sm text-white outline-none focus:border-[#d8b477]"
+                placeholder="client@email.fr"
+              />
+            </label>
+
+            <label className="space-y-2">
+              <span className="block text-xs text-white/45">Téléphone</span>
+              <input
+                name="phone"
+                type="tel"
+                maxLength={40}
+                autoComplete="tel"
+                className="w-full border border-white/15 bg-[#0d1014] px-4 py-3 text-sm text-white outline-none focus:border-[#d8b477]"
+                placeholder="06 12 34 56 78"
+              />
+            </label>
+
+            <label className="space-y-2 md:col-span-2">
+              <span className="block text-xs text-white/45">Ville</span>
+              <input
+                name="city"
+                maxLength={120}
+                autoComplete="address-level2"
+                className="w-full border border-white/15 bg-[#0d1014] px-4 py-3 text-sm text-white outline-none focus:border-[#d8b477]"
+                placeholder="Nîmes"
+              />
+            </label>
+
+            <div className="flex flex-wrap justify-end gap-3 md:col-span-2">
+              <Link
+                href="/crm/clients"
+                className="border border-white/10 px-5 py-3 text-xs text-white/50 transition-colors hover:border-white/30 hover:text-white"
+              >
+                Annuler
+              </Link>
+              <button
+                type="submit"
+                className="border border-[#d8b477] px-5 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[#d8b477] transition-colors hover:bg-[#d8b477] hover:text-[#080a0d]"
+              >
+                Créer le client
+              </button>
+            </div>
+          </form>
+        </section>
+      )}
 
       <section aria-labelledby="clients-list" className="border border-white/10 bg-[#101419]">
         <div className="flex items-center justify-between border-b border-white/10 px-5 py-4 md:px-7">
@@ -217,7 +405,9 @@ export default async function ClientsPage({ searchParams }: {
       />}
 
       {!failed && result?.pagination.hasNextPage && (
-        <p className="text-xs text-white/35">Affichage limité aux {CUSTOMER_LIST_LIMIT} premiers clients. La pagination sera ajoutée dans une étape dédiée.</p>
+        <p className="text-xs text-white/35">
+          {CUSTOMER_LIST_LIMIT} clients affichés par page.
+        </p>
       )}
     </div>
   );
