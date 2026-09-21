@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { CrmAccessError, requireCrmAccess } from "../../lib/auth/dal";
 
+import styles from "../crm.module.css";
+
 export const dynamic = "force-dynamic";
 
 export default async function LoginPage({ searchParams }: {
@@ -36,33 +38,38 @@ export default async function LoginPage({ searchParams }: {
           : null;
 
   return (
-    <>
-      <h1 className="mb-6 text-2xl font-semibold">Connexion CRM AUTO9</h1>
-      {message && <p role="alert" className="mb-4">{message}</p>}
-      <form action="/crm/login/submit" method="post" className="space-y-4">
+    <div className={styles.login}>
+      <div className={styles.loginBrand}>
+        {/* The visible heading names AUTO9; keep the unchanged artwork decorative. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo-auto9-transparent.png" alt="" width={144} height={144} className={styles.loginLogo} />
+        <h1 className={styles.loginTitle}>Connexion CRM AUTO9</h1>
+      </div>
+      {message && <p role="alert" className={styles.error}>{message}</p>}
+      <form action="/crm/login/submit" method="post" className={styles.loginForm}>
         <div>
-          <label htmlFor="email" className="block">Email</label>
+          <label htmlFor="email" className={styles.fieldLabel}>Email</label>
           <input id="email" name="email" type="email" required
             autoComplete="username" maxLength={254}
-            className="w-full rounded border border-gray-500 bg-transparent p-2" />
+            className={styles.control} />
         </div>
         <div>
-          <label htmlFor="password" className="block">Mot de passe</label>
+          <label htmlFor="password" className={styles.fieldLabel}>Mot de passe</label>
           <input id="password" name="password" type="password" required
             autoComplete="current-password" maxLength={1024}
-            className="w-full rounded border border-gray-500 bg-transparent p-2" />
+            className={styles.control} />
         </div>
-        <button type="submit" className="rounded bg-white px-4 py-2 text-black">
+        <button type="submit" className={styles.primaryAction}>
           Se connecter
         </button>
       </form>
       {denied && (
-        <form action="/logout" method="post" className="mt-6">
-          <button type="submit" className="rounded border px-4 py-2">
+        <form action="/logout" method="post" className={styles.deniedLogout}>
+          <button type="submit" className={styles.secondaryAction}>
             Se déconnecter
           </button>
         </form>
       )}
-    </>
+    </div>
   );
 }

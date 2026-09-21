@@ -1,4 +1,5 @@
 import Link from "next/link";
+import styles from "../crm.module.css";
 
 type QueryValue = string | undefined;
 
@@ -51,15 +52,15 @@ export default function Pagination({
   }
 
   return (
-    <nav aria-label="Pagination" className="flex items-center justify-between border-t border-white/10 pt-5">
+    <nav aria-label="Pagination" className={styles.pagination}>
       {hasPreviousPage ? (
-        <Link href={createHref(currentPage - 1)} className="border border-white/10 px-4 py-2.5 text-xs text-white/60 transition-colors hover:border-[#d8b477] hover:text-[#d8b477]">
+        <Link href={createHref(currentPage - 1)} className={styles.secondaryAction}>
           ← Précédent
         </Link>
       ) : <span aria-hidden="true" />}
-      <span className="text-[10px] uppercase tracking-[0.16em] text-white/30">Page {currentPage}</span>
+      <span className={styles.meta}>Page {currentPage}</span>
       {canGoToNextPage ? (
-        <Link href={createHref(currentPage + 1)} className="border border-white/10 px-4 py-2.5 text-xs text-white/60 transition-colors hover:border-[#d8b477] hover:text-[#d8b477]">
+        <Link href={createHref(currentPage + 1)} className={styles.secondaryAction}>
           Suivant →
         </Link>
       ) : <span aria-hidden="true" />}

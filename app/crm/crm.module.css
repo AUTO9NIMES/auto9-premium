@@ -1,0 +1,393 @@
+/* Tokens stay inside the CRM; public-site typography and colors are untouched. */
+.root {
+  --crm-canvas: #080a0d;
+  --crm-surface: #101419;
+  --crm-surface-secondary: #151b22;
+  --crm-surface-elevated: #1b222b;
+  --crm-text-strong: #f4f1ea;
+  --crm-text: #d4d7dc;
+  --crm-text-secondary: #a7adb6;
+  --crm-text-muted: #89919d;
+  --crm-gold: #d8b477;
+  --crm-gold-surface: #26221c;
+  --crm-gold-border: #746244;
+  --crm-info: #9abded;
+  --crm-success: #86cbb1;
+  --crm-warning: #e4bd7c;
+  --crm-danger: #efa1a8;
+  --crm-focus: #9abded;
+  --crm-divider: #303944;
+  --crm-control-border: #66717f;
+  --crm-radius-control: 6px;
+  --crm-radius-panel: 8px;
+  --crm-transition: 120ms ease-out;
+  min-height: 100vh;
+  background: var(--crm-canvas);
+  color: var(--crm-text);
+  color-scheme: dark;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.root ::selection {
+  background: var(--crm-gold);
+  color: var(--crm-canvas);
+}
+
+.root :focus-visible {
+  outline: 2px solid var(--crm-focus);
+  outline-offset: 2px;
+}
+
+.skipLink {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 50;
+  padding: 12px 16px;
+  border-radius: var(--crm-radius-control);
+  background: var(--crm-text-strong);
+  color: var(--crm-canvas);
+  transform: translateY(calc(-100% - 20px));
+}
+
+.skipLink:focus {
+  transform: none;
+}
+
+.shell {
+  min-height: 100vh;
+}
+
+.sidebar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px 12px;
+  min-width: 0;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--crm-divider);
+  background: var(--crm-surface);
+}
+
+.brand {
+  grid-column: 1;
+  grid-row: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  width: fit-content;
+  max-width: 100%;
+  border-radius: var(--crm-radius-control);
+  color: var(--crm-text-strong);
+  text-decoration: none;
+}
+
+.brandLogo {
+  display: block;
+  width: 64px;
+  height: 64px;
+  flex: none;
+  object-fit: contain;
+}
+
+.brandLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--crm-text-secondary);
+}
+
+.navigation {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+  /* Room for the focus outline, offset and fractional scroll rounding. */
+  padding: 8px;
+  overflow-x: auto;
+  scroll-padding-inline: 8px;
+}
+
+.navLink {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: none;
+  min-height: 44px;
+  padding: 12px 16px;
+  border: 1px solid transparent;
+  border-radius: var(--crm-radius-control);
+  color: var(--crm-text-secondary);
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 140ms ease-out, background-color 140ms ease-out, border-color 140ms ease-out;
+}
+
+.navLink[aria-current] {
+  border-color: var(--crm-gold-border);
+  background: var(--crm-gold-surface);
+  color: var(--crm-text-strong);
+}
+
+.navLink[aria-current]::before {
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: 0;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--crm-gold);
+  content: "";
+}
+
+.logout {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.content {
+  min-width: 0;
+  width: 100%;
+  max-width: 1280px;
+  margin-inline: auto;
+  padding: 24px 16px;
+}
+
+.guestContent {
+  display: grid;
+  align-items: center;
+  min-height: 100vh;
+  padding: 32px 16px;
+}
+
+.primaryAction,
+.secondaryAction,
+.quietAction {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: var(--crm-radius-control);
+  font: inherit;
+  font-weight: 500;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color var(--crm-transition), background-color var(--crm-transition), border-color var(--crm-transition);
+}
+
+.primaryAction {
+  background: var(--crm-gold);
+  color: var(--crm-canvas);
+}
+
+.secondaryAction {
+  border-color: var(--crm-control-border);
+  background: var(--crm-surface);
+  color: var(--crm-text-strong);
+}
+
+.quietAction {
+  background: transparent;
+  color: var(--crm-text-secondary);
+}
+
+.primaryAction:disabled,
+.secondaryAction:disabled,
+.quietAction:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+@media (hover: hover) {
+  .navLink:hover {
+    border-color: var(--crm-control-border);
+    color: var(--crm-text-strong);
+    background: var(--crm-surface-elevated);
+  }
+
+  .navLink[aria-current]:hover {
+    border-color: var(--crm-gold);
+    background: var(--crm-gold-surface);
+  }
+
+  .primaryAction:hover:not(:disabled) {
+    background: var(--crm-text-strong);
+  }
+
+  .secondaryAction:hover:not(:disabled),
+  .quietAction:hover:not(:disabled) {
+    border-color: var(--crm-control-border);
+    background: var(--crm-surface-elevated);
+    color: var(--crm-text-strong);
+  }
+}
+
+.login {
+  width: 100%;
+  max-width: 400px;
+  min-width: 0;
+  margin-inline: auto;
+}
+
+.loginBrand {
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.loginLogo {
+  display: block;
+  width: 144px;
+  height: 144px;
+  margin: 0 auto 16px;
+  object-fit: contain;
+}
+
+.loginTitle {
+  margin: 0;
+  color: var(--crm-text-strong);
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+}
+
+.loginForm {
+  display: grid;
+  gap: 20px;
+  padding: 24px;
+  border: 1px solid var(--crm-divider);
+  border-radius: var(--crm-radius-panel);
+  background: var(--crm-surface);
+}
+
+.fieldLabel {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--crm-text);
+  font-weight: 500;
+}
+
+/* Native inputs and selects share geometry without changing their behavior. */
+.control {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--crm-control-border);
+  border-radius: var(--crm-radius-control);
+  background: var(--crm-canvas);
+  color: var(--crm-text-strong);
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.5;
+  transition: border-color var(--crm-transition);
+}
+
+.control::placeholder {
+  color: var(--crm-text-muted);
+}
+
+.meta {
+  color: var(--crm-text-secondary);
+  font-size: 12px;
+}
+
+.error {
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  border: 1px solid var(--crm-danger);
+  border-radius: var(--crm-radius-control);
+  color: var(--crm-danger);
+  overflow-wrap: anywhere;
+}
+
+.deniedLogout {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 20px;
+  border-top: 1px solid var(--crm-divider);
+}
+
+@media (min-width: 640px) {
+  .content {
+    padding: 32px 24px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .shell {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+  }
+
+  .sidebar {
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 24px;
+    height: 100vh;
+    height: 100dvh;
+    padding: 24px 16px;
+    overflow-y: auto;
+    border-right: 1px solid var(--crm-divider);
+    border-bottom: 0;
+  }
+
+  .brand {
+    flex-direction: column;
+    gap: 0;
+    align-self: center;
+  }
+
+  .brandLogo {
+    width: 96px;
+    height: 96px;
+  }
+
+  .navigation {
+    flex-direction: column;
+    overflow-x: visible;
+  }
+
+  .logout {
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid var(--crm-divider);
+  }
+
+  .logout button {
+    width: 100%;
+  }
+
+  .content {
+    padding: 32px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root *,
+  .root *::before,
+  .root *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
