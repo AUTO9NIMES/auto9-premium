@@ -8,6 +8,12 @@ import {
   type Quote,
   type Appointment,
 } from "../../../lib/crm";
+import {
+  addCustomerVehicle,
+  updateCustomerBirthday,
+  updateCustomerVehicle,
+} from "./actions";
+import VehiclePhotoUpload from "./VehiclePhotoUpload";
 
 export const dynamic = "force-dynamic";
 
@@ -114,6 +120,21 @@ export default async function CustomerV2Page({
             <p className="mt-3 text-sm text-white/45">
               {[c.email, c.phone, c.city].filter(Boolean).join(" · ") || "Coordonnées non renseignées"}
             </p>
+            <form action={updateCustomerBirthday} className="mt-4 flex flex-wrap items-end gap-2">
+              <input type="hidden" name="customerId" value={c.id} />
+              <label className="text-[10px] uppercase tracking-[0.14em] text-white/30">
+                Anniversaire
+                <input
+                  type="date"
+                  name="birthDate"
+                  defaultValue={c.birth_date || ""}
+                  className="mt-2 block rounded-xl border border-white/10 bg-[#081019] px-3 py-2 text-xs text-white"
+                />
+              </label>
+              <button className="rounded-xl border border-cyan-300/20 bg-cyan-300/[0.05] px-3 py-2 text-xs text-cyan-100">
+                Enregistrer
+              </button>
+            </form>
           </div>
           <div className="flex flex-wrap gap-2">
             {c.phone && <a href={"tel:" + c.phone} className="rounded-xl border border-white/10 px-4 py-2.5 text-xs text-white/70">Appeler</a>}
@@ -137,18 +158,59 @@ export default async function CustomerV2Page({
         ))}
       </section>
 
-      <section className="space-y-3">
-        <div>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-cyan-200/45">Parc</p>
-          <h2 className="mt-2 text-xl font-semibold">Véhicules</h2>
+      <section className="space-y-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-cyan-200/45">Parc</p>
+            <h2 className="mt-2 text-xl font-semibold">Véhicules possédés</h2>
+          </div>
+          <p className="text-xs text-white/30">Photo, modèle, plaque et détails modifiables directement.</p>
         </div>
-        <div className="grid gap-3 md:grid-cols-2">
+
+        <form action={addCustomerVehicle} className="grid gap-3 rounded-3xl border border-dashed border-cyan-300/15 bg-cyan-300/[0.025] p-5 md:grid-cols-4">
+          <input type="hidden" name="customerId" value={c.id} />
+          <input name="brand" required placeholder="Marque *" className="rounded-xl border border-white/10 bg-[#081019] px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/25" />
+          <input name="model" required placeholder="Modèle *" className="rounded-xl border border-white/10 bg-[#081019] px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/25" />
+          <input name="variant" placeholder="Version / finition" className="rounded-xl border border-white/10 bg-[#081019] px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/25" />
+          <input name="year" inputMode="numeric" placeholder="Année" className="rounded-xl border border-white/10 bg-[#081019] px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/25" />
+          <input name="color" placeholder="Couleur" className="rounded-xl border border-white/10 bg-[#081019] px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/25" />
+          <input name="plate" placeholder="Immatriculation" className="rounded-xl border border-white/10 bg-[#081019] px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/25" />
+          <input name="mileageKm" inputMode="numeric" placeholder="Kilométrage" className="rounded-xl border border-white/10 bg-[#081019] px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/25" />
+          <button className="rounded-xl border border-cyan-300/25 bg-cyan-300/[0.07] px-4 py-2.5 text-sm font-semibold text-cyan-100">
+            + Ajouter le véhicule
+          </button>
+        </form>
+
+        <div className="grid gap-4 xl:grid-cols-2">
           {result.vehicles.length ? result.vehicles.map((v) => (
-            <article key={v.id} className="rounded-2xl border border-white/8 bg-[#0b121b] p-5">
-              <p className="font-semibold">{[v.brand, v.model, v.variant].filter(Boolean).join(" ") || "Véhicule"}</p>
-              <p className="mt-2 text-xs text-white/40">{[v.year, v.color, v.plate].filter(Boolean).join(" · ") || "Détails non renseignés"}</p>
+            <article key={v.id} className="overflow-hidden rounded-3xl border border-white/8 bg-[#0b121b]">
+              {v.id && c.id && (
+                <VehiclePhotoUpload
+                  vehicleId={v.id}
+                  customerId={c.id}
+                  photoUrl={v.photo_url}
+                />
+              )}
+              <form action={updateCustomerVehicle} className="grid gap-3 p-5 md:grid-cols-2">
+                <input type="hidden" name="customerId" value={c.id} />
+                <input type="hidden" name="vehicleId" value={v.id} />
+                <input name="brand" defaultValue={v.brand || ""} placeholder="Marque" className="rounded-xl border border-white/10 bg-[#081019] px-3 py-2.5 text-sm text-white outline-none" />
+                <input name="model" defaultValue={v.model || ""} placeholder="Modèle" className="rounded-xl border border-white/10 bg-[#081019] px-3 py-2.5 text-sm text-white outline-none" />
+                <input name="variant" defaultValue={v.variant || ""} placeholder="Version / finition" className="rounded-xl border border-white/10 bg-[#081019] px-3 py-2.5 text-sm text-white outline-none" />
+                <input name="year" defaultValue={v.year ?? ""} inputMode="numeric" placeholder="Année" className="rounded-xl border border-white/10 bg-[#081019] px-3 py-2.5 text-sm text-white outline-none" />
+                <input name="color" defaultValue={v.color || ""} placeholder="Couleur" className="rounded-xl border border-white/10 bg-[#081019] px-3 py-2.5 text-sm text-white outline-none" />
+                <input name="plate" defaultValue={v.plate || ""} placeholder="Immatriculation" className="rounded-xl border border-white/10 bg-[#081019] px-3 py-2.5 text-sm text-white outline-none" />
+                <input name="mileageKm" defaultValue={v.mileage_km ?? ""} inputMode="numeric" placeholder="Kilométrage" className="rounded-xl border border-white/10 bg-[#081019] px-3 py-2.5 text-sm text-white outline-none" />
+                <button className="rounded-xl border border-white/10 px-4 py-2.5 text-xs text-white/65 hover:border-cyan-300/25 hover:text-cyan-100">
+                  Enregistrer le véhicule
+                </button>
+              </form>
             </article>
-          )) : <div className="rounded-2xl border border-dashed border-white/10 p-6 text-sm text-white/30">Aucun véhicule.</div>}
+          )) : (
+            <div className="rounded-2xl border border-dashed border-white/10 p-6 text-sm text-white/30">
+              Aucun véhicule.
+            </div>
+          )}
         </div>
       </section>
 
