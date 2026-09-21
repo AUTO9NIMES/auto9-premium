@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CrmAccessError, requireCrmAccess } from "../../lib/auth/dal";
+import { canAccessAutomation } from "../../lib/auth/roles";
 import {
   getAutomationOutboxList,
   type AutomationOutboxDisplayStatus,
@@ -31,7 +32,11 @@ const outboxStatusLabels: Record<AutomationOutboxDisplayStatus, string> = {
 
 async function ensureCrmAccess() {
   try {
-    await requireCrmAccess();
+    const access = await requireCrmAccess();
+
+    if (!canAccessAutomation(access.role)) {
+      throw new CrmAccessError("FORBIDDEN");
+    }
   } catch (error) {
     if (error instanceof CrmAccessError) {
       if (error.code === "UNAUTHENTICATED") redirect("/crm/login");

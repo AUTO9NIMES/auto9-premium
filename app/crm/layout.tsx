@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 
+import { requireCrmAccess } from "../lib/auth/dal";
+import { canAccessAutomation } from "../lib/auth/roles";
+
 export const metadata: Metadata = {
   title: "CRM AUTO9",
   robots: { index: false, follow: false },
@@ -13,6 +16,37 @@ const navigation = [
   { href: "/crm/calendar", label: "Calendrier", detail: "Planning mensuel" },
   { href: "/crm/automation", label: "Automatisations", detail: "Santé des événements" },
 ];
+
+async function CrmNavigation() {
+  let showAutomation = false;
+
+  try {
+    const access = await requireCrmAccess();
+    showAutomation = canAccessAutomation(access.role);
+  } catch {
+    // Login and denied-access routes must remain renderable.
+  }
+
+  const visibleNavigation = navigation.filter(
+    (item) => item.href !== "/crm/automation" || showAutomation,
+  );
+
+  return (
+    <nav aria-label="Navigation CRM" className="flex gap-2 overflow-x-auto px-4 pb-4 md:block md:flex-1 md:space-y-2 md:px-4 md:pb-0">
+      {visibleNavigation.map((item, index) => (
+        <a key={item.href} href={item.href} className="flex min-w-max items-center gap-3 rounded-sm border border-transparent px-3 py-3 text-white/55 transition-colors hover:border-white/10 hover:bg-white/5 hover:text-white md:min-w-0">
+          <span className="flex h-7 w-7 items-center justify-center rounded-full border border-white/15 text-[10px] font-medium text-white/45">
+            {String(index + 1).padStart(2, "0")}
+          </span>
+          <span>
+            <span className="block text-sm font-medium">{item.label}</span>
+            <span className="hidden text-[10px] text-white/35 md:block">{item.detail}</span>
+          </span>
+        </a>
+      ))}
+    </nav>
+  );
+}
 
 export default function CrmLayout({ children }: {
   children: React.ReactNode;
@@ -43,19 +77,7 @@ export default function CrmLayout({ children }: {
             <span className="hidden text-[10px] uppercase tracking-[0.2em] text-white/30 md:block md:pt-12">Espace interne</span>
           </div>
 
-          <nav aria-label="Navigation CRM" className="flex gap-2 overflow-x-auto px-4 pb-4 md:block md:flex-1 md:space-y-2 md:px-4 md:pb-0">
-            {navigation.map((item, index) => (
-              <a key={item.href} href={item.href} className="flex min-w-max items-center gap-3 rounded-sm border border-transparent px-3 py-3 text-white/55 transition-colors hover:border-white/10 hover:bg-white/5 hover:text-white md:min-w-0">
-                <span className="flex h-7 w-7 items-center justify-center rounded-full border border-white/15 text-[10px] font-medium text-white/45">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                <span>
-                  <span className="block text-sm font-medium">{item.label}</span>
-                  <span className="hidden text-[10px] text-white/35 md:block">{item.detail}</span>
-                </span>
-              </a>
-            ))}
-          </nav>
+          <CrmNavigation />
 
           <div className="hidden border-t border-white/10 p-5 md:block md:p-7">
             <div className="mb-4 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-emerald-300/70">

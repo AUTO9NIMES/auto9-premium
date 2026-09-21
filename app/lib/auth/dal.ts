@@ -3,13 +3,17 @@ import "server-only";
 import { resolveCurrentBusinessContext } from "../business";
 import { createAuthServerClient } from "./server";
 import { getAuthConfig } from "./config";
+import {
+  isCrmMembershipRole,
+  type CrmMembershipRole,
+} from "./roles";
 
 const AUTO9_BUSINESS_ID = "00000000-0000-0000-0000-000000000001";
 
 export type CrmAccess = Readonly<{
   userId: string;
   businessId: string;
-  role: "member";
+  role: CrmMembershipRole;
 }>;
 
 export class CrmAccessError extends Error {
@@ -64,7 +68,6 @@ export async function requireCrmAccess(): Promise<CrmAccess> {
     select: "user_id,business_id,role",
     user_id: "eq." + data.user.id,
     business_id: "eq." + businessId,
-    role: "eq.member",
     limit: "2",
   }).toString();
 
@@ -109,7 +112,7 @@ export async function requireCrmAccess(): Promise<CrmAccess> {
     !("role" in membership) ||
     membership.user_id !== data.user.id ||
     membership.business_id !== AUTO9_BUSINESS_ID ||
-    membership.role !== "member"
+    !isCrmMembershipRole(membership.role)
   ) {
     throw new CrmAccessError("FORBIDDEN");
   }
@@ -117,6 +120,6 @@ export async function requireCrmAccess(): Promise<CrmAccess> {
   return {
     userId: data.user.id,
     businessId,
-    role: "member",
+    role: membership.role,
   };
 }
