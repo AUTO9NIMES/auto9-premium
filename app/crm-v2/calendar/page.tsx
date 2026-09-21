@@ -144,32 +144,39 @@ export default async function CrmV2Calendar({
   let eventStorageUnavailable = false;
 
   try {
-    const [eventRows, customerRows, vehicleRows] = await Promise.all([
-      supabaseRest<CalendarEventRow[]>(
-        "crm_calendar_events",
-        "GET",
-        null,
-        `business_id=eq.${businessId}&event_date=gte.${selectedMonth}-01&event_date=lt.${result.nextMonth}-01&order=event_date.asc,event_time.asc&select=*`,
-      ),
-      supabaseRest<CustomerRow[]>(
-        "customers",
-        "GET",
-        null,
-        `business_id=eq.${businessId}&order=full_name.asc&select=id,full_name`,
-      ),
-      supabaseRest<VehicleRow[]>(
-        "vehicles",
-        "GET",
-        null,
-        `business_id=eq.${businessId}&order=created_at.desc&select=id,customer_id,brand,model,plate`,
-      ),
-    ]);
-
+    const eventRows = await supabaseRest<CalendarEventRow[]>(
+      "crm_calendar_events",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&event_date=gte.${selectedMonth}-01&event_date=lt.${result.nextMonth}-01&order=event_date.asc,event_time.asc&select=*`,
+    );
     customEvents = (eventRows as CalendarEventRow[] | null) ?? [];
-    customers = (customerRows as CustomerRow[] | null) ?? [];
-    vehicles = (vehicleRows as VehicleRow[] | null) ?? [];
   } catch {
     eventStorageUnavailable = true;
+  }
+
+  try {
+    const customerRows = await supabaseRest<CustomerRow[]>(
+      "customers",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&order=full_name.asc&select=id,full_name`,
+    );
+    customers = (customerRows as CustomerRow[] | null) ?? [];
+  } catch {
+    customers = [];
+  }
+
+  try {
+    const vehicleRows = await supabaseRest<VehicleRow[]>(
+      "vehicles",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&order=created_at.desc&select=id,customer_id,brand,model,plate`,
+    );
+    vehicles = (vehicleRows as VehicleRow[] | null) ?? [];
+  } catch {
+    vehicles = [];
   }
 
   const customerById = new Map(customers.map((customer) => [customer.id, customer]));
@@ -313,6 +320,40 @@ export default async function CrmV2Calendar({
                 ))}
               </select>
             </label>
+
+            {!formEvent && (
+              <details className="rounded-2xl border border-white/8 bg-white/[0.02] p-4 md:col-span-2">
+                <summary className="cursor-pointer text-sm font-semibold text-cyan-100">
+                  + Créer un nouveau client rapidement
+                </summary>
+                <p className="mt-2 text-xs text-white/35">
+                  Si aucun client existant n'est sélectionné, le CRM créera ce client en même temps que le rendez-vous.
+                </p>
+                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                  <input
+                    name="newClientName"
+                    placeholder="Nom complet"
+                    className="rounded-xl border border-white/10 bg-[#081019] px-4 py-3 text-sm text-white outline-none placeholder:text-white/25"
+                  />
+                  <input
+                    name="newClientPhone"
+                    placeholder="Téléphone"
+                    className="rounded-xl border border-white/10 bg-[#081019] px-4 py-3 text-sm text-white outline-none placeholder:text-white/25"
+                  />
+                  <input
+                    name="newClientEmail"
+                    type="email"
+                    placeholder="Email"
+                    className="rounded-xl border border-white/10 bg-[#081019] px-4 py-3 text-sm text-white outline-none placeholder:text-white/25"
+                  />
+                  <input
+                    name="newClientCity"
+                    placeholder="Ville"
+                    className="rounded-xl border border-white/10 bg-[#081019] px-4 py-3 text-sm text-white outline-none placeholder:text-white/25"
+                  />
+                </div>
+              </details>
+            )}
 
             <label className="text-xs text-white/45">
               Véhicule possédé
