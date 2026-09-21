@@ -1,10 +1,35 @@
 import { getCustomersList } from "../../lib/crm";
+import { resolveCurrentBusinessContext } from "../../lib/business";
+import { supabaseRest } from "../../lib/supabase";
 import EmailEditor from "./EmailEditor";
 
 export const dynamic = "force-dynamic";
 
+type EmailSubscription = {
+  id: string;
+  customer_id: string;
+  service_name: string;
+  price: number | null;
+  booking_token: string | null;
+  active: boolean;
+};
+
 export default async function EmailsPage() {
   const customers = await getCustomersList({ page: 1, limit: 100 });
+  const { businessId } = await resolveCurrentBusinessContext();
+
+  let subscriptions: EmailSubscription[] = [];
+  try {
+    const rows = await supabaseRest<EmailSubscription[]>(
+      "crm_subscriptions",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&active=eq.true&order=created_at.desc&select=id,customer_id,service_name,price,booking_token,active`,
+    );
+    subscriptions = (rows as EmailSubscription[] | null) ?? [];
+  } catch {
+    subscriptions = [];
+  }
 
   return (
     <div className="space-y-7">
@@ -16,7 +41,10 @@ export default async function EmailsPage() {
         </p>
       </header>
 
-      <EmailEditor customers={customers.items.map((item) => item.customer)} />
+      <EmailEditor
+        customers={customers.items.map((item) => item.customer)}
+        subscriptions={subscriptions}
+      />
     </div>
   );
 }
