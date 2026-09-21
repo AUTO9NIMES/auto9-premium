@@ -192,15 +192,301 @@ export default async function LeadDetailPage({ params, searchParams }: {
       )
     : null;
 
+  const latestQuote = quotes[0] ?? null;
+  const activeJob = jobs.find((job) =>
+    ["QUOTE_ACCEPTED", "SCHEDULED", "CONFIRMED", "IN_PROGRESS"].includes(job.status),
+  ) ?? null;
+
+  const scheduledAppointments = appointments
+    .filter((appointment) => Boolean(appointment.scheduled_at))
+    .sort((left, right) => {
+      const leftTime = new Date(left.scheduled_at as string).getTime();
+      const rightTime = new Date(right.scheduled_at as string).getTime();
+      return leftTime - rightTime;
+    });
+
+  const now = Date.now();
+
+  const nextAppointment =
+    scheduledAppointments.find((appointment) => {
+      const scheduledTime = new Date(appointment.scheduled_at as string).getTime();
+
+      return (
+        appointment.status === "CONFIRMED" &&
+        !Number.isNaN(scheduledTime) &&
+        scheduledTime >= now
+      );
+    }) ?? null;
+
+  const commercialSignal = latestQuote
+    ? `${statusLabel(latestQuote.status, quoteStatusLabels)}${
+        latestQuote.total_price !== null && latestQuote.total_price !== undefined
+          ? ` · ${formatAmount(latestQuote.total_price)}`
+          : ""
+      }`
+    : canCreateQuote
+      ? "Devis à créer"
+      : "Aucun devis";
+
   return <div data-crm-route="pipeline" className="space-y-12">
     <Link href="/crm/pipeline" className="inline-block text-xs text-[#d8b477] hover:text-white">← Retour au pipeline</Link>
-    <section className="border-b border-white/10 pb-8"><p className="text-[10px] uppercase tracking-[0.24em] text-[#d8b477]">Pipeline / Détail lead</p><div className="mt-4 flex flex-col justify-between gap-6 md:flex-row md:items-end"><div><h1 className="text-3xl font-semibold tracking-tight text-white md:text-5xl">{customerName(customer)}</h1><p className="mt-4 text-sm text-white/50">{statusLabel(lead.lifecycle_status, leadStatusLabels)} · {lead.source}</p></div><p className="text-xs text-white/35">Créé le {formatDate(lead.created_at) || "date non renseignée"}</p></div></section>
-    <section className="space-y-4">{sectionHeading("Vue rapide", "Résumé du lead")}<div className="grid gap-4 md:grid-cols-2"><div className="border border-white/10 bg-[#101419] p-5">{customerHref ? <Link href={customerHref} className="text-lg font-medium text-white hover:text-[#d8b477]">{customerName(customer)}</Link> : <p className="text-lg font-medium text-white">{customerName(customer)}</p>}{[customer.email, customer.phone, customer.city].filter((value): value is string => Boolean(value?.trim())).map((value) => <p key={value} className="mt-2 text-sm text-white/45">{value}</p>)}<ContactActions phone={customer.phone} email={customer.email} whatsappMessage={leadWhatsAppMessage} /></div><div className="border border-white/10 bg-[#101419] p-5"><p className="text-[10px] uppercase tracking-[0.16em] text-[#d8b477]">Source</p><p className="mt-3 text-sm text-white/70">{lead.source}</p>{lead.source_page && <p className="mt-2 text-xs text-white/40">{lead.source_page}</p>}{lead.utm_source && <p className="mt-2 text-xs text-white/40">UTM : {lead.utm_source}{lead.utm_campaign ? ` · ${lead.utm_campaign}` : ""}</p>}</div></div>{lead.notes && <p className="border border-white/10 bg-[#101419] p-5 text-sm leading-7 text-white/50">{lead.notes}</p>}</section>
+    <section className="relative overflow-hidden border border-white/10 bg-[#101419]">
+      <div aria-hidden="true" className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#d8b477]/80 to-transparent" />
+
+      <div className="grid lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="p-6 md:p-8 lg:p-10">
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="text-[10px] uppercase tracking-[0.24em] text-[#d8b477]">
+              Pipeline / Dossier commercial
+            </p>
+            <span className="border border-[#d8b477]/30 px-2 py-1 text-[9px] uppercase tracking-[0.14em] text-[#d8b477]">
+              {statusLabel(lead.lifecycle_status, leadStatusLabels)}
+            </span>
+          </div>
+
+          <h1 className="mt-5 text-3xl font-semibold tracking-tight text-white md:text-5xl">
+            {displayName}
+          </h1>
+
+          <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm text-white/45">
+            {customer.email && <span>{customer.email}</span>}
+            {customer.phone && <span>{customer.phone}</span>}
+            {customer.city && <span>{customer.city}</span>}
+          </div>
+
+          <div className="mt-6">
+            <ContactActions
+              phone={customer.phone}
+              email={customer.email}
+              whatsappMessage={leadWhatsAppMessage}
+            />
+          </div>
+
+          {customerHref && (
+            <Link
+              href={customerHref}
+              className="mt-6 inline-block text-xs text-[#d8b477] transition-colors hover:text-white"
+            >
+              Ouvrir le Customer 360° →
+            </Link>
+          )}
+        </div>
+
+        <aside className="border-t border-white/10 bg-[#0d1014]/70 p-6 lg:border-l lg:border-t-0 lg:p-8">
+          <p className="text-[10px] uppercase tracking-[0.18em] text-white/30">
+            Signal commercial
+          </p>
+          <p className="mt-3 text-lg font-medium text-white">{commercialSignal}</p>
+
+          <div className="mt-7 space-y-5 border-t border-white/10 pt-6">
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.14em] text-white/30">Source</p>
+              <p className="mt-2 text-sm text-white/70">{lead.source}</p>
+            </div>
+
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.14em] text-white/30">Création</p>
+              <p className="mt-2 text-sm text-white/70">
+                {formatDate(lead.created_at) || "Date non renseignée"}
+              </p>
+            </div>
+
+            {activeJob && (
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.14em] text-white/30">
+                  Prestation active
+                </p>
+                <p className="mt-2 text-sm text-[#d8b477]">
+                  {statusLabel(activeJob.status, jobStatusLabels)}
+                </p>
+              </div>
+            )}
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section className="space-y-4">
+      {sectionHeading("Cockpit", "Vue opérationnelle")}
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {[
+          ["Statut", statusLabel(lead.lifecycle_status, leadStatusLabels)],
+          ["Services", String(services.length)],
+          ["Devis", String(quotes.length)],
+          ["Prestations", String(jobs.length)],
+        ].map(([label, value]) => (
+          <div key={label} className="border border-white/10 bg-[#101419] p-5">
+            <p className="text-[10px] uppercase tracking-[0.16em] text-white/30">{label}</p>
+            <p className="mt-3 text-lg font-medium text-white">{value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="border border-white/10 bg-[#101419] p-5 md:p-6">
+          <p className="text-[10px] uppercase tracking-[0.16em] text-[#d8b477]">
+            Demande
+          </p>
+
+          <p className="mt-3 text-base font-medium text-white">
+            {vehicle ? vehicleName(vehicle) : "Véhicule non renseigné"}
+          </p>
+
+          <p className="mt-2 text-sm text-white/45">
+            {services.length
+              ? services.map((service) => service.service_name).join(" · ")
+              : "Aucun service détaillé"}
+          </p>
+
+          {lead.notes && (
+            <p className="mt-4 border-t border-white/10 pt-4 text-xs leading-6 text-white/40">
+              {lead.notes}
+            </p>
+          )}
+        </div>
+
+        <div className="border border-white/10 bg-[#101419] p-5 md:p-6">
+          <p className="text-[10px] uppercase tracking-[0.16em] text-[#d8b477]">
+            Planning
+          </p>
+
+          {nextAppointment?.scheduled_at ? (
+            <>
+              <p className="mt-3 text-base font-medium text-white">
+                {formatDateTime(nextAppointment.scheduled_at)}
+              </p>
+              <p className="mt-2 text-xs text-white/40">
+                Rendez-vous confirmé · créneau opérationnel
+              </p>
+            </>
+          ) : requestedAvailability ? (
+            <>
+              <p className="mt-3 text-base font-medium text-white">
+                {formatDateTime(requestedAvailability) || requestedAvailability}
+              </p>
+              <p className="mt-2 text-xs text-white/40">
+                Souhait client · pas encore confirmé
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="mt-3 text-base font-medium text-white">Aucun créneau</p>
+              <p className="mt-2 text-xs text-white/40">
+                Aucun souhait ou rendez-vous confirmé.
+              </p>
+            </>
+          )}
+        </div>
+      </div>
+
+      {(lead.source_page || lead.utm_source) && (
+        <details className="border border-white/10 bg-[#101419]">
+          <summary className="cursor-pointer list-none p-5 text-xs text-white/45">
+            Détails d’acquisition
+          </summary>
+          <div className="border-t border-white/10 p-5 text-xs text-white/40">
+            {lead.source_page && <p>{lead.source_page}</p>}
+            {lead.utm_source && (
+              <p className="mt-2">
+                UTM : {lead.utm_source}
+                {lead.utm_campaign ? ` · ${lead.utm_campaign}` : ""}
+              </p>
+            )}
+          </div>
+        </details>
+      )}
+    </section>
     <section className="space-y-4">{sectionHeading("01 / Véhicule", "Véhicule associé")}{vehicle ? <div className="border border-white/10 bg-[#101419] p-5"><p className="text-sm font-medium text-white">{vehicleName(vehicle)}</p><p className="mt-2 text-xs text-white/45">{[vehicle.year ? String(vehicle.year) : null, vehicle.color, vehicle.plate].filter((value): value is string => Boolean(value?.trim())).join(" · ") || "Détails non renseignés"}</p>{vehicle.mileage_km !== null && vehicle.mileage_km !== undefined && <p className="mt-2 text-xs text-white/35">{vehicle.mileage_km.toLocaleString("fr-FR")} km</p>}</div> : emptySection("Aucun véhicule associé à ce lead.")}</section>
     <section className="space-y-4">{sectionHeading("02 / Services", "Services demandés")}<div className="border border-white/10 bg-[#101419]">{services.length ? services.map((service: LeadService) => <article key={service.id || service.service_name} className="border-b border-white/10 px-5 py-5 last:border-b-0 md:px-7"><p className="text-sm font-medium text-white">{service.service_name}</p>{service.service_slug && <p className="mt-1 text-xs text-white/35">{service.service_slug}</p>}{service.base_price !== null && service.base_price !== undefined && <p className="mt-2 text-xs text-[#d8b477]">{formatAmount(service.base_price)}</p>}{service.estimated_time && <p className="mt-2 text-xs text-white/40">{service.estimated_time}</p>}{service.customer_comment && <p className="mt-3 text-xs leading-6 text-white/45">{service.customer_comment}</p>}</article>) : emptySection("Aucun service détaillé pour ce lead.")}</div></section>
     <section className="space-y-4">{sectionHeading("03 / Devis", "Historique des devis")}{quoteShareError && <p role="alert" className="border border-red-300/30 bg-red-300/5 px-4 py-3 text-sm text-red-200">{quoteShareError === "invalid" ? "Action invalide." : quoteShareError === "access" ? "Action non autorisée." : "Partage du devis momentanément indisponible."}</p>}{quoteSharedUrl && <div role="status" className="border border-emerald-300/30 bg-emerald-300/5 px-4 py-4 text-sm text-emerald-200"><p className="font-medium">Lien de devis généré. Partagez-le avec le client.</p><p className="mt-2 break-all text-xs text-emerald-100/80">{quoteSharedUrl}</p><p className="mt-2 text-[11px] text-emerald-200/70">Régénérer le lien invalide le lien précédent.</p><div className="mt-3 flex flex-wrap gap-2"><a href={quoteSharedUrl} target="_blank" rel="noopener noreferrer" className="border border-emerald-300/40 px-3 py-2 text-xs text-emerald-100 transition-colors hover:bg-emerald-300/10">Ouvrir le devis</a>{quoteShareWhatsAppHref && <a href={quoteShareWhatsAppHref} target="_blank" rel="noopener noreferrer" className="border border-emerald-300/40 px-3 py-2 text-xs text-emerald-100 transition-colors hover:bg-emerald-300/10">Envoyer sur WhatsApp</a>}</div></div>}{quoteAmount === "updated" && <p role="status" className="border border-emerald-300/30 bg-emerald-300/5 px-4 py-3 text-sm text-emerald-200">Montant mis à jour.</p>}{quoteAmount === "noop" && <p role="status" className="border border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-white/55">Le montant est déjà à jour.</p>}{quoteAmountError && <p role="alert" className="border border-red-300/30 bg-red-300/5 px-4 py-3 text-sm text-red-200">{quoteAmountError === "conflict" ? "Le montant a été modifié entre-temps. Rechargez la page." : quoteAmountError === "lifecycle" ? "Ce devis ne peut plus être modifié." : quoteAmountError === "not_found" ? "Ce devis est introuvable." : quoteAmountError === "invalid" ? "Montant invalide." : "Mise à jour momentanément indisponible."}</p>}{quoteError && <p role="alert" className="border border-red-300/30 bg-red-300/5 px-4 py-3 text-sm text-red-200">{quoteError === "invalid" ? "Vérifiez les informations du devis." : quoteError === "access" ? "Action non autorisée." : "Création du devis momentanément indisponible."}</p>}{canCreateQuote && <form action={createCrmQuoteAction} className="grid gap-4 border border-[#d8b477]/30 bg-[#101419] p-5 md:grid-cols-2 md:p-7"><input type="hidden" name="leadId" value={normalizedLeadId} /><input type="hidden" name="idempotencyKey" value={quoteIdempotencyKey} /><div className="md:col-span-2"><p className="text-[10px] uppercase tracking-[0.16em] text-[#d8b477]">Créer un devis brouillon</p><p className="mt-2 text-xs leading-6 text-white/45">Le service demandé sera conservé dans le devis comme instantané commercial.</p></div>{prefillService && <div className="md:col-span-2 border border-white/10 bg-[#0d1014] p-4"><p className="text-xs text-white/45">Service demandé</p><p className="mt-2 text-sm text-white">{prefillService.service_name}</p>{prefillService.service_slug && <p className="mt-1 text-xs text-white/35">{prefillService.service_slug}</p>}</div>}<div><label htmlFor="totalPrice" className="block text-xs text-white/55">Prix total</label><input id="totalPrice" name="totalPrice" required type="number" min="0" max="10000000" step="0.01" inputMode="decimal" defaultValue={prefillService?.base_price ?? ""} className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[#d8b477]" /></div><div><label htmlFor="estimatedTime" className="block text-xs text-white/55">Durée estimée <span className="text-white/30">(optionnel)</span></label><input id="estimatedTime" name="estimatedTime" maxLength={100} defaultValue={prefillService?.estimated_time || ""} className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[#d8b477]" /></div><div className="md:col-span-2"><button type="submit" className="border border-[#d8b477] px-5 py-2.5 text-xs font-medium uppercase tracking-[0.14em] text-[#d8b477] transition-colors hover:bg-[#d8b477] hover:text-[#080a0d]">Créer le devis</button></div></form>}{eligibleDraftQuote && <form action={updateDraftQuoteAmountAction} className="grid gap-4 border border-[#d8b477]/30 bg-[#101419] p-5 md:grid-cols-[1fr_auto] md:items-end md:p-7"><input type="hidden" name="leadId" value={normalizedLeadId} /><input type="hidden" name="quoteId" value={eligibleDraftQuote.id || ""} /><input type="hidden" name="expectedTotalPrice" value={eligibleDraftQuote.total_price ?? ""} /><div><label htmlFor="draftTotalPrice" className="block text-xs text-white/55">Montant total</label><input id="draftTotalPrice" name="totalPrice" required type="number" min="0.01" max="10000000" step="0.01" inputMode="decimal" defaultValue={eligibleDraftQuote.total_price ?? ""} className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[#d8b477]" /></div><button type="submit" className="border border-[#d8b477] px-5 py-2.5 text-xs font-medium uppercase tracking-[0.14em] text-[#d8b477] transition-colors hover:bg-[#d8b477] hover:text-[#080a0d]">Mettre à jour le montant</button></form>}{shareableQuote && shareableQuote.id && <form action={sharePipelineQuote} className="flex flex-col justify-between gap-3 border border-[#d8b477]/30 bg-[#101419] p-5 md:flex-row md:items-center md:p-7"><input type="hidden" name="leadId" value={normalizedLeadId} /><input type="hidden" name="quoteId" value={shareableQuote.id} /><div><p className="text-[10px] uppercase tracking-[0.16em] text-[#d8b477]">Partager le devis</p><p className="mt-2 text-xs leading-6 text-white/45">{shareableQuote.status === "DRAFT" ? "Génère un lien client sécurisé et marque le devis comme envoyé." : "Régénère le lien client sécurisé. Le lien précédent est invalidé."}</p></div><button type="submit" className="border border-[#d8b477] px-5 py-2.5 text-xs font-medium uppercase tracking-[0.14em] text-[#d8b477] transition-colors hover:bg-[#d8b477] hover:text-[#080a0d]">Partager le devis</button></form>}{<div className="border border-white/10 bg-[#101419]">{quotes.length ? quotes.map((quote) => <article key={quote.id || `${quote.quote_version}-${quote.created_at}`} className="flex flex-col justify-between gap-3 border-b border-white/10 px-5 py-5 last:border-b-0 md:flex-row md:items-center md:px-7"><div><p className="text-sm font-medium text-white">Version {quote.quote_version}</p><p className="mt-1 text-xs text-white/40">{statusLabel(quote.status, quoteStatusLabels)}{quote.estimated_time ? ` · ${quote.estimated_time}` : ""}</p></div><div className="md:text-right">{quote.total_price !== null && quote.total_price !== undefined && <p className="text-sm text-[#d8b477]">{formatAmount(quote.total_price)}</p>}<p className="mt-1 text-xs text-white/35">{formatDate(quote.created_at) || "Date non renseignée"}</p></div></article>) : emptySection("Aucun devis associé à ce lead.")}</div>}</section>
     <section className="space-y-4">{sectionHeading("04 / Opérations", "Prestations liées")}{jobs.length ? <div className="grid gap-4 md:grid-cols-2">{jobs.map((job: Job) => <article key={job.id || `${job.job_number}-${job.created_at}`} className="border border-white/10 bg-[#101419] p-5"><p className="text-sm font-medium text-white">{job.title || job.job_number || "Prestation"}</p><p className="mt-2 text-xs text-[#d8b477]">{statusLabel(job.status, jobStatusLabels)}</p>{job.total_amount !== null && job.total_amount !== undefined && <p className="mt-2 text-sm text-white">{formatAmount(job.total_amount)}</p>}<p className="mt-2 text-xs text-white/35">{formatDateTime(job.scheduled_at) || formatDate(job.created_at) || "Date non renseignée"}</p>{job.id && UUID_REGEX.test(job.id) && <Link href={`/crm/jobs/${job.id}`} className="mt-4 inline-block text-xs text-[#d8b477] hover:text-white">Voir la prestation →</Link>}</article>)}</div> : emptySection("Aucune prestation associée à ce lead.")}</section>
-    <section className="space-y-4">{sectionHeading("05 / Planning", "Rendez-vous")}{requestedAvailability && <div className="border border-[#d8b477]/30 bg-[#101419] p-5"><p className="text-[10px] uppercase tracking-[0.16em] text-[#d8b477]">Créneau souhaité par le client</p><p className="mt-3 text-sm font-medium text-white">{formatDateTime(requestedAvailability) || requestedAvailability}</p><p className="mt-2 text-xs leading-5 text-white/40">Préférence issue de la demande web. Ce créneau n’est pas encore planifié ni confirmé.</p></div>}{appointments.length ? <div className="border border-white/10 bg-[#101419]">{appointments.map((appointment) => <article key={appointment.id || appointment.requested_at} className="border-b border-white/10 px-5 py-5 last:border-b-0 md:px-7"><p className="text-sm font-medium text-white">{statusLabel(appointment.status, appointmentStatusLabels)}</p><p className="mt-2 text-sm text-white/55">Demandé le {formatDateTime(appointment.requested_at) || "date non renseignée"}</p>{appointment.confirmed_at && <p className="mt-2 text-xs text-white/40">Confirmé le {formatDateTime(appointment.confirmed_at)}</p>}{appointment.completed_at && <p className="mt-2 text-xs text-white/40">Terminé le {formatDateTime(appointment.completed_at)}</p>}{appointment.cancelled_at && <p className="mt-2 text-xs text-white/40">Annulé le {formatDateTime(appointment.cancelled_at)}</p>}{appointment.notes && <p className="mt-3 text-xs text-white/45">{appointment.notes}</p>}</article>)}</div> : emptySection("Aucun rendez-vous planifié pour ce lead.")}</section>
+    <section className="space-y-4">
+      {sectionHeading("05 / Planning", "Rendez-vous")}
+
+      {requestedAvailability && (
+        <div className="border border-[#d8b477]/30 bg-[#101419] p-5 md:p-6">
+          <p className="text-[10px] uppercase tracking-[0.16em] text-[#d8b477]">
+            Créneau souhaité par le client
+          </p>
+          <p className="mt-3 text-sm font-medium text-white">
+            {formatDateTime(requestedAvailability) || requestedAvailability}
+          </p>
+          <p className="mt-2 text-xs leading-5 text-white/40">
+            Préférence issue de la demande web. Elle reste distincte du planning opérationnel.
+          </p>
+        </div>
+      )}
+
+      {appointments.length ? (
+        <div className="border border-white/10 bg-[#101419]">
+          {appointments.map((appointment) => {
+            const operationalDate = formatDateTime(appointment.scheduled_at);
+            const requestedDate = formatDateTime(appointment.requested_at);
+
+            return (
+              <article
+                key={appointment.id || appointment.requested_at}
+                className="border-b border-white/10 px-5 py-5 transition-colors last:border-b-0 hover:bg-white/[0.015] md:px-7"
+              >
+                <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
+                  <div>
+                    <p className="text-sm font-medium text-white">
+                      {statusLabel(appointment.status, appointmentStatusLabels)}
+                    </p>
+
+                    {appointment.notes && (
+                      <p className="mt-3 text-xs leading-6 text-white/45">
+                        {appointment.notes}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="md:text-right">
+                    {operationalDate ? (
+                      <>
+                        <p className="text-sm font-medium text-[#d8b477]">
+                          {operationalDate}
+                        </p>
+                        <p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-white/30">
+                          Créneau opérationnel
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm text-white/55">
+                          {requestedDate || "Date non renseignée"}
+                        </p>
+                        <p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-white/30">
+                          Demande · non planifiée
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-t border-white/10 pt-3 text-xs text-white/35">
+                  {operationalDate && requestedDate && (
+                    <span>Demande initiale : {requestedDate}</span>
+                  )}
+                  {appointment.confirmed_at && (
+                    <span>Confirmé le {formatDateTime(appointment.confirmed_at)}</span>
+                  )}
+                  {appointment.completed_at && (
+                    <span>Terminé le {formatDateTime(appointment.completed_at)}</span>
+                  )}
+                  {appointment.cancelled_at && (
+                    <span>Annulé le {formatDateTime(appointment.cancelled_at)}</span>
+                  )}
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      ) : (
+        emptySection("Aucun rendez-vous planifié pour ce lead.")
+      )}
+    </section>
     <section className="space-y-4">{sectionHeading("06 / Historique", "Activité")}{activities.length ? <div className="border border-white/10 bg-[#101419] p-5 md:p-7">{activities.map((activity) => <ActivityRow key={activity.id} activity={activity} />)}</div> : emptySection("Aucune activité enregistrée pour ce lead.")}</section>
   </div>;
 }
