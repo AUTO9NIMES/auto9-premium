@@ -81,10 +81,10 @@ export default async function CrmV2Dashboard() {
     .slice(0, 5);
 
   const cards = [
-    { label: "CA du mois", value: eur.format(monthlyRevenue), detail: `${paymentsThisMonth.length} encaissement${paymentsThisMonth.length > 1 ? "s" : ""}`, accent: true },
-    { label: "CA espèces", value: eur.format(cashRevenue), detail: "Paiements en espèces" },
-    { label: "CA carte + virement", value: eur.format(bankRevenue), detail: "Encaissements bancaires" },
-    { label: "Clients", value: String(metrics.customersTotal), detail: `${metrics.activeLeads} lead${metrics.activeLeads > 1 ? "s" : ""} actif${metrics.activeLeads > 1 ? "s" : ""}` },
+    { label: "CA du mois", value: eur.format(monthlyRevenue), detail: `${paymentsThisMonth.length} encaissement${paymentsThisMonth.length > 1 ? "s" : ""}`, accent: true, href: "/crm/jobs?status=PAID" },
+    { label: "CA espèces", value: eur.format(cashRevenue), detail: "Paiements en espèces", href: "/crm/jobs?status=PAID" },
+    { label: "CA carte + virement", value: eur.format(bankRevenue), detail: "Encaissements bancaires", href: "/crm/jobs?status=PAID" },
+    { label: "Clients", value: String(metrics.customersTotal), detail: `${metrics.activeLeads} lead${metrics.activeLeads > 1 ? "s" : ""} actif${metrics.activeLeads > 1 ? "s" : ""}`, href: "/crm-v2/clients" },
   ];
 
   return (
@@ -103,11 +103,18 @@ export default async function CrmV2Dashboard() {
 
       <section className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
         {cards.map((card) => (
-          <div key={card.label} className={`rounded-2xl border p-5 ${card.accent ? "border-cyan-300/25 bg-gradient-to-br from-cyan-300/10 to-blue-500/[0.04]" : "border-white/8 bg-white/[0.025]"}`}>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-white/35">{card.label}</p>
+          <Link
+            key={card.label}
+            href={card.href}
+            className={`group rounded-2xl border p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-300/30 hover:bg-cyan-300/[0.045] hover:shadow-[0_12px_35px_rgba(34,211,238,0.07)] ${card.accent ? "border-cyan-300/25 bg-gradient-to-br from-cyan-300/10 to-blue-500/[0.04]" : "border-white/8 bg-white/[0.025]"}`}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-white/35">{card.label}</p>
+              <span className="text-sm text-white/20 transition group-hover:translate-x-0.5 group-hover:text-cyan-200/70">→</span>
+            </div>
             <p className={`mt-4 text-3xl font-bold ${card.accent ? "text-cyan-100" : "text-white"}`}>{card.value}</p>
             <p className="mt-2 text-xs text-white/35">{card.detail}</p>
-          </div>
+          </Link>
         ))}
       </section>
 
