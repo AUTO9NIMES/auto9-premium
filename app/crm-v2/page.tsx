@@ -39,6 +39,21 @@ function MiniEvent({ item }: { item: CalendarAppointmentItem }) {
 
 export default async function CrmV2Dashboard() {
   const { businessId } = await resolveCurrentBusinessContext();
+  let subscriptionsDue = 0;
+  try {
+    const subscriptionRows = await supabaseRest<Array<{ next_due_on: string; active: boolean }>>(
+      "crm_subscriptions",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&active=eq.true&select=next_due_on,active`,
+    );
+    const current = monthKey();
+    subscriptionsDue = ((subscriptionRows as Array<{ next_due_on: string; active: boolean }> | null) ?? [])
+      .filter((item) => item.next_due_on?.startsWith(current)).length;
+  } catch {
+    subscriptionsDue = 0;
+  }
+
   const [metrics, calendar, paymentsRaw] = await Promise.all([
     getCrmDashboardMetrics(),
     getCalendarMonth({ month: monthKey() }),
@@ -136,7 +151,15 @@ export default async function CrmV2Dashboard() {
         </section>
       </div>
 
-      <section className="grid gap-3 md:grid-cols-3">
+      {subscriptionsDue > 0 && (
+        <Link href="/crm-v2/subscriptions" className="block rounded-2xl border border-amber-300/20 bg-amber-300/[0.05] p-5 transition hover:border-amber-300/35">
+          <p className="text-[10px] uppercase tracking-[0.18em] text-amber-100/60">Rappel abonnements</p>
+          <p className="mt-2 text-lg font-semibold text-amber-100">{subscriptionsDue} abonnement{subscriptionsDue > 1 ? "s" : ""} à planifier ce mois-ci</p>
+          <p className="mt-2 text-xs text-white/40">Ouvrir l'espace abonnements →</p>
+        </Link>
+      )}
+
+      <section className="grid gap-3 md:grid-cols-4">
         <Link href="/crm-v2/pipeline" className="rounded-2xl border border-white/8 bg-white/[0.025] p-5 transition hover:border-cyan-300/25">
           <p className="text-sm font-semibold">Pipeline checklist</p>
           <p className="mt-2 text-xs leading-5 text-white/40">Chaque client, chaque étape, un seul coup d'œil.</p>
@@ -144,6 +167,10 @@ export default async function CrmV2Dashboard() {
         <Link href="/crm-v2/clients" className="rounded-2xl border border-white/8 bg-white/[0.025] p-5 transition hover:border-cyan-300/25">
           <p className="text-sm font-semibold">Clients</p>
           <p className="mt-2 text-xs leading-5 text-white/40">Créer, retrouver et gérer la base clients.</p>
+        </Link>
+        <Link href="/crm-v2/subscriptions" className="rounded-2xl border border-white/8 bg-white/[0.025] p-5 transition hover:border-cyan-300/25">
+          <p className="text-sm font-semibold">Abonnements</p>
+          <p className="mt-2 text-xs leading-5 text-white/40">Clients récurrents et rappels mensuels.</p>
         </Link>
         <Link href="/crm/jobs" className="rounded-2xl border border-white/8 bg-white/[0.025] p-5 transition hover:border-cyan-300/25">
           <p className="text-sm font-semibold">Prestations</p>
