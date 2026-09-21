@@ -1,5 +1,12 @@
 import { hasSupabaseWriteConfig, supabaseRest } from "./supabase";
 import { resolveCurrentBusinessContext } from "./business";
+import {
+  hasCanonicalPaidJob,
+  hasCanonicalReviewRequest,
+  hasCanonicalScheduledJob,
+  hasCanonicalStartedJob,
+  hasCanonicalRescheduledJob,
+} from "./crm-lifecycle-invariants";
 
 export type LeadLifecycleStatus =
   | "NEW"
@@ -3137,16 +3144,13 @@ function validateScheduleJobResult(
     : value.activity;
 
   if (
-    appointment.business_id !== businessId ||
-    appointment.job_id !== jobId ||
-    appointment.status !== "REQUESTED" ||
-    typeof appointment.scheduled_at !== "string" ||
-    job.business_id !== businessId ||
-    job.id !== jobId ||
-    job.status !== "SCHEDULED" ||
-    typeof job.scheduled_at !== "string" ||
-    appointment.scheduled_at !== job.scheduled_at ||
-    (activity !== null && !isRecord(activity))
+    !hasCanonicalScheduledJob({
+      appointment,
+      job,
+      activity,
+      businessId,
+      jobId,
+    })
   ) {
     throw new Error("Supabase returned an inconsistent scheduling result.");
   }
@@ -3207,33 +3211,15 @@ function validateRescheduleJobResult(
     ? null
     : value.activity;
 
-  const eligibleState =
-    (appointment.status === "REQUESTED" && job.status === "SCHEDULED") ||
-    (appointment.status === "CONFIRMED" && job.status === "CONFIRMED");
-
-  const validActivity =
-    activity === null ||
-    (
-      isRecord(activity) &&
-      activity.business_id === businessId &&
-      activity.job_id === jobId &&
-      activity.event_type === "appointment.rescheduled"
-    );
-
   if (
-    appointment.business_id !== businessId ||
-    appointment.job_id !== jobId ||
-    typeof appointment.id !== "string" ||
-    typeof appointment.requested_at !== "string" ||
-    typeof appointment.scheduled_at !== "string" ||
-    job.business_id !== businessId ||
-    job.id !== jobId ||
-    typeof job.scheduled_at !== "string" ||
-    appointment.scheduled_at !== job.scheduled_at ||
-    !eligibleState ||
-    !validActivity ||
-    (value.no_op && activity !== null) ||
-    (!value.no_op && activity === null)
+    !hasCanonicalRescheduledJob({
+      appointment,
+      job,
+      activity,
+      businessId,
+      jobId,
+      noOp: value.no_op,
+    })
   ) {
     throw new Error("Supabase returned an inconsistent rescheduling result.");
   }
@@ -3301,11 +3287,12 @@ function validateStartJobResult(
     : value.activity;
 
   if (
-    job.id !== jobId ||
-    job.business_id !== businessId ||
-    job.status !== "IN_PROGRESS" ||
-    typeof job.started_at !== "string" ||
-    (activity !== null && !isRecord(activity))
+    !hasCanonicalStartedJob({
+      job,
+      activity,
+      businessId,
+      jobId,
+    })
   ) {
     throw new Error("Supabase returned an inconsistent job start result.");
   }
@@ -3356,16 +3343,13 @@ function validateRecordJobPaymentResult(
     : value.activity;
 
   if (
-    payment.business_id !== businessId ||
-    payment.job_id !== jobId ||
-    typeof payment.id !== "string" ||
-    typeof payment.amount !== "number" ||
-    !["CASH", "CARD", "BANK_TRANSFER", "OTHER"].includes(payment.method as string) ||
-    typeof payment.received_at !== "string" ||
-    job.business_id !== businessId ||
-    job.id !== jobId ||
-    job.status !== "PAID" ||
-    (activity !== null && !isRecord(activity))
+    !hasCanonicalPaidJob({
+      payment,
+      job,
+      activity,
+      businessId,
+      jobId,
+    })
   ) {
     throw new Error("Supabase returned an inconsistent payment result.");
   }
@@ -3468,13 +3452,13 @@ function validateRequestJobReviewResult(
     : value.activity;
 
   if (
-    reviewRequest.business_id !== businessId ||
-    reviewRequest.job_id !== jobId ||
-    typeof reviewRequest.id !== "string" ||
-    typeof reviewRequest.requested_at !== "string" ||
-    lead.business_id !== businessId ||
-    lead.lifecycle_status !== "REVIEW_REQUESTED" ||
-    (activity !== null && !isRecord(activity))
+    !hasCanonicalReviewRequest({
+      reviewRequest,
+      lead,
+      activity,
+      businessId,
+      jobId,
+    })
   ) {
     throw new Error("Supabase returned an inconsistent review request result.");
   }
