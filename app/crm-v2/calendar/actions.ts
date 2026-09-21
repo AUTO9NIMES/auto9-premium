@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { requireCrmAccess } from "../../lib/auth/dal";
 import { resolveCurrentBusinessContext } from "../../lib/business";
 import { supabaseRest } from "../../lib/supabase";
-import { upsertCustomer } from "../../lib/crm";
+import { createManualLead, upsertCustomer } from "../../lib/crm";
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -33,8 +33,15 @@ export async function createCalendarEvent(formData: FormData) {
   const eventDate = String(formData.get("eventDate") || "").trim();
   const eventTime = String(formData.get("eventTime") || "").trim();
   const notes = String(formData.get("notes") || "").trim();
+  const priceRaw = String(formData.get("price") || "").trim();
+  const price = priceRaw ? Number(priceRaw.replace(",", ".")) : null;
 
-  if (!title || !validDate(eventDate) || !validTime(eventTime)) {
+  if (
+    !title ||
+    !validDate(eventDate) ||
+    !validTime(eventTime) ||
+    (price !== null && (!Number.isFinite(price) || price < 0))
+  ) {
     redirect("/crm-v2/calendar?event_error=invalid");
   }
 
@@ -91,7 +98,7 @@ export async function createCalendarEvent(formData: FormData) {
     }
   }
 
-  await supabaseRest(
+  const createdEvent = await supabaseRest<{ id: string }>(
     "crm_calendar_events",
     "POST",
     {
@@ -100,6 +107,7 @@ export async function createCalendarEvent(formData: FormData) {
       vehicle_id: vehicleId || null,
       title,
       service_name: serviceName || null,
+      price,
       event_date: eventDate,
       event_time: eventTime,
       notes: notes || null,
@@ -108,9 +116,50 @@ export async function createCalendarEvent(formData: FormData) {
     "select=id",
   );
 
+  let leadCreated = false;
+  let leadCreationFailed = false;
+
+  if (customerId) {
+    try {
+      const lead = await createManualLead({
+        idempotencyKey: crypto.randomUUID(),
+        customerId,
+        vehicleId: vehicleId || null,
+        serviceName: serviceName || title,
+        basePrice: price,
+        estimatedTime: null,
+        customerComment:
+          notes ||
+          `RDV créé depuis le calendrier V2 pour le ${eventDate} à ${eventTime}`,
+      });
+
+      leadCreated = Boolean(lead.leadId);
+
+      if (lead.leadId && createdEvent && !Array.isArray(createdEvent)) {
+        await supabaseRest(
+          "crm_calendar_events",
+          "PATCH",
+          { lead_id: lead.leadId, updated_at: new Date().toISOString() },
+          `business_id=eq.${businessId}&id=eq.${createdEvent.id}`,
+        );
+      }
+    } catch {
+      leadCreationFailed = true;
+    }
+  }
+
   revalidatePath("/crm-v2");
   revalidatePath("/crm-v2/calendar");
-  redirect(`/crm-v2/calendar?month=${eventDate.slice(0, 7)}&event_created=1`);
+  revalidatePath("/crm-v2/pipeline");
+
+  const query = new URLSearchParams({
+    month: eventDate.slice(0, 7),
+    event_created: "1",
+  });
+  if (leadCreated) query.set("lead_created", "1");
+  if (leadCreationFailed) query.set("lead_error", "1");
+
+  redirect(`/crm-v2/calendar?${query.toString()}`);
 }
 
 export async function updateCalendarEvent(formData: FormData) {
@@ -125,8 +174,16 @@ export async function updateCalendarEvent(formData: FormData) {
   const eventDate = String(formData.get("eventDate") || "").trim();
   const eventTime = String(formData.get("eventTime") || "").trim();
   const notes = String(formData.get("notes") || "").trim();
+  const priceRaw = String(formData.get("price") || "").trim();
+  const price = priceRaw ? Number(priceRaw.replace(",", ".")) : null;
 
-  if (!UUID_REGEX.test(eventId) || !title || !validDate(eventDate) || !validTime(eventTime)) {
+  if (
+    !UUID_REGEX.test(eventId) ||
+    !title ||
+    !validDate(eventDate) ||
+    !validTime(eventTime) ||
+    (price !== null && (!Number.isFinite(price) || price < 0))
+  ) {
     redirect("/crm-v2/calendar?event_error=invalid");
   }
 
@@ -138,6 +195,7 @@ export async function updateCalendarEvent(formData: FormData) {
       vehicle_id: vehicleId && UUID_REGEX.test(vehicleId) ? vehicleId : null,
       title,
       service_name: serviceName || null,
+      price,
       event_date: eventDate,
       event_time: eventTime,
       notes: notes || null,
