@@ -2,21 +2,18 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CrmAccessError, requireCrmAccess } from "../lib/auth/dal";
 import {
-  getCustomersList,
-  getJobsList,
-  getLeadsList,
+  DASHBOARD_JOB_STATUSES,
+  DASHBOARD_LEAD_STATUSES,
+  getCrmDashboardMetrics,
   getRecentActivity,
-  type CustomerListResult,
+  type CrmDashboardMetrics,
   type JobStatus,
-  type JobListResult,
-  type LeadListResult,
   type LeadLifecycleStatus,
   type RecentActivity,
 } from "../lib/crm";
 
 export const dynamic = "force-dynamic";
 
-const DASHBOARD_LIST_LIMIT = 20;
 const RECENT_ACTIVITY_LIMIT = 10;
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -31,17 +28,7 @@ const activityLabels: Record<string, string> = {
   "lead.status_changed": "Statut du lead modifié",
 };
 
-const leadStatuses: LeadLifecycleStatus[] = [
-  "NEW",
-  "QUALIFIED",
-  "CONTACTED",
-  "QUOTE_SENT",
-  "BOOKED",
-  "IN_PROGRESS",
-  "COMPLETED",
-  "REVIEW_REQUESTED",
-  "CLOSED_LOST",
-];
+const leadStatuses: LeadLifecycleStatus[] = DASHBOARD_LEAD_STATUSES;
 
 const leadStatusLabels: Record<LeadLifecycleStatus, string> = {
   NEW: "Nouveau",
@@ -55,15 +42,7 @@ const leadStatusLabels: Record<LeadLifecycleStatus, string> = {
   CLOSED_LOST: "Clôturé",
 };
 
-const jobStatuses: JobStatus[] = [
-  "QUOTE_ACCEPTED",
-  "SCHEDULED",
-  "CONFIRMED",
-  "IN_PROGRESS",
-  "COMPLETED",
-  "CANCELLED",
-  "PAID",
-];
+const jobStatuses: JobStatus[] = DASHBOARD_JOB_STATUSES;
 
 const jobStatusLabels: Record<JobStatus, string> = {
   QUOTE_ACCEPTED: "Devis accepté",
@@ -148,22 +127,24 @@ function ActivityRow({ activity }: { activity: RecentActivity }) {
 export default async function CrmPage() {
   await ensureCrmAccess();
 
-  let customersResult: CustomerListResult | undefined;
-  let leadsResult: LeadListResult | undefined;
-  let jobsResult: JobListResult | undefined;
-  let failed = false;
+  let metrics: CrmDashboardMetrics | undefined;
+  let recentActivity: RecentActivity[] = [];
+  let metricsFailed = false;
+  let activityFailed = false;
 
   try {
-    [customersResult, leadsResult, jobsResult] = await Promise.all([
-      getCustomersList({ page: 1, limit: DASHBOARD_LIST_LIMIT }),
-      getLeadsList({ page: 1, limit: DASHBOARD_LIST_LIMIT }),
-      getJobsList({ page: 1, limit: DASHBOARD_LIST_LIMIT }),
-    ]);
+    metrics = await getCrmDashboardMetrics();
   } catch {
-    failed = true;
+    metricsFailed = true;
   }
 
-  if (failed || !customersResult || !leadsResult || !jobsResult) {
+  try {
+    recentActivity = await getRecentActivity({ limit: RECENT_ACTIVITY_LIMIT });
+  } catch {
+    activityFailed = true;
+  }
+
+  if (metricsFailed || !metrics) {
     return (
       <div data-crm-route="dashboard" className="space-y-8">
         <section className="border-b border-white/10 pb-8">
@@ -172,27 +153,10 @@ export default async function CrmPage() {
         </section>
         <section className="border border-white/10 bg-[#101419] p-7">
           <p className="text-sm text-white/70">Le dashboard est momentanément indisponible.</p>
-          <p className="mt-2 text-xs text-white/35">Les données CRM n&apos;ont pas pu être chargées.</p>
+          <p className="mt-2 text-xs text-white/35">Les métriques CRM n&apos;ont pas pu être chargées.</p>
         </section>
       </div>
     );
-  }
-
-  const leadCounts = leadStatuses.map((status) =>
-    leadsResult.items.filter((item) => item.lead.lifecycle_status === status).length,
-  );
-  const jobCounts = jobStatuses.map((status) =>
-    jobsResult.items.filter((item) => item.job.status === status).length,
-  );
-  const hasMoreResults = customersResult.pagination.hasNextPage ||
-    leadsResult.pagination.hasNextPage || jobsResult.pagination.hasNextPage;
-  let recentActivity: RecentActivity[] = [];
-  let activityFailed = false;
-
-  try {
-    recentActivity = await getRecentActivity({ limit: RECENT_ACTIVITY_LIMIT });
-  } catch {
-    activityFailed = true;
   }
 
   return (
@@ -200,24 +164,24 @@ export default async function CrmPage() {
       <section className="max-w-3xl">
         <p className="mb-4 text-xs uppercase tracking-[0.24em] text-[#d8b477]">Dashboard / Vue d&apos;ensemble</p>
         <h1 className="text-3xl font-semibold tracking-tight text-white md:text-5xl">CRM AUTO9</h1>
-        <p className="mt-5 max-w-xl text-sm leading-7 text-white/50 md:text-base">Un point de départ opérationnel construit à partir des données CRM actuellement chargées.</p>
+        <p className="mt-5 max-w-xl text-sm leading-7 text-white/50 md:text-base">Une vue opérationnelle globale de l&apos;activité CRM AUTO9.</p>
       </section>
 
       <section aria-labelledby="dashboard-summary" className="space-y-4">
         <div className="flex items-center justify-between border-b border-white/10 pb-4">
-          <h2 id="dashboard-summary" className="text-sm font-medium text-white">Aperçu chargé</h2>
-          <span className="text-[10px] uppercase tracking-[0.18em] text-white/30">Première page</span>
+          <h2 id="dashboard-summary" className="text-sm font-medium text-white">Vue globale</h2>
+          <span className="text-[10px] uppercase tracking-[0.18em] text-white/30">Tous les enregistrements</span>
         </div>
         <div className="grid gap-px overflow-hidden border border-white/10 bg-white/10 md:grid-cols-3">
           {[
-            ["Clients chargés", customersResult.pagination.returned],
-            ["Leads chargés", leadsResult.pagination.returned],
-            ["Prestations chargées", jobsResult.pagination.returned],
+            ["Clients", metrics.customersTotal],
+            ["Leads actifs", metrics.activeLeads],
+            ["Prestations actives", metrics.activeJobs],
           ].map(([label, value]) => (
             <div key={label} className="bg-[#101419] p-5 md:p-6">
               <p className="text-xs text-white/40">{label}</p>
               <p className="mt-4 text-3xl font-semibold text-white">{value}</p>
-              <p className="mt-2 text-[10px] uppercase tracking-[0.16em] text-white/25">Résultats chargés</p>
+              <p className="mt-2 text-[10px] uppercase tracking-[0.16em] text-white/25">Total global</p>
             </div>
           ))}
         </div>
@@ -228,10 +192,10 @@ export default async function CrmPage() {
           <SectionHeading eyebrow="01 / Pipeline" title="Répartition des leads" />
           <div className="border border-white/10 bg-[#101419] p-5 md:p-7">
             <div className="divide-y divide-white/10">
-              {leadStatuses.map((status, index) => (
+              {leadStatuses.map((status) => (
                 <div key={status} className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
                   <span className="text-xs text-white/60">{leadStatusLabels[status]}</span>
-                  <span className="text-sm font-medium text-white">{leadCounts[index]}</span>
+                  <span className="text-sm font-medium text-white">{metrics.leadsByStatus[status]}</span>
                 </div>
               ))}
             </div>
@@ -242,10 +206,10 @@ export default async function CrmPage() {
           <SectionHeading eyebrow="02 / Opérations" title="Répartition des prestations" />
           <div className="border border-white/10 bg-[#101419] p-5 md:p-7">
             <div className="divide-y divide-white/10">
-              {jobStatuses.map((status, index) => (
+              {jobStatuses.map((status) => (
                 <div key={status} className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
                   <span className="text-xs text-white/60">{jobStatusLabels[status]}</span>
-                  <span className="text-sm font-medium text-white">{jobCounts[index]}</span>
+                  <span className="text-sm font-medium text-white">{metrics.jobsByStatus[status]}</span>
                 </div>
               ))}
             </div>
@@ -283,9 +247,6 @@ export default async function CrmPage() {
         </div>
       </section>
 
-      {hasMoreResults && (
-        <p className="text-xs text-white/35">Les cartes et répartitions concernent uniquement les {DASHBOARD_LIST_LIMIT} premiers résultats chargés de chaque registre. Elles ne représentent pas des totaux globaux.</p>
-      )}
     </div>
   );
 }

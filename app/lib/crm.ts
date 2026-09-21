@@ -1,4 +1,9 @@
-import { hasSupabaseWriteConfig, supabaseRest } from "./supabase";
+import {
+  hasSupabaseWriteConfig,
+  supabaseRest,
+  supabaseServiceRoleKey,
+  supabaseUrl,
+} from "./supabase";
 import { resolveCurrentBusinessContext } from "./business";
 import {
   hasCanonicalPaidJob,
@@ -27,6 +32,60 @@ export type JobStatus =
   | "COMPLETED"
   | "CANCELLED"
   | "PAID";
+
+export const DASHBOARD_LEAD_STATUSES: LeadLifecycleStatus[] = [
+  "NEW",
+  "QUALIFIED",
+  "CONTACTED",
+  "QUOTE_SENT",
+  "BOOKED",
+  "IN_PROGRESS",
+  "COMPLETED",
+  "REVIEW_REQUESTED",
+  "CLOSED_LOST",
+];
+
+export const DASHBOARD_JOB_STATUSES: JobStatus[] = [
+  "QUOTE_ACCEPTED",
+  "SCHEDULED",
+  "CONFIRMED",
+  "IN_PROGRESS",
+  "COMPLETED",
+  "CANCELLED",
+  "PAID",
+];
+
+export const DASHBOARD_ACTIVE_LEAD_STATUSES: LeadLifecycleStatus[] = [
+  "NEW",
+  "QUALIFIED",
+  "CONTACTED",
+  "QUOTE_SENT",
+  "BOOKED",
+  "IN_PROGRESS",
+];
+
+export const DASHBOARD_ATTENTION_LEAD_STATUSES: LeadLifecycleStatus[] = [
+  "NEW",
+  "QUALIFIED",
+  "CONTACTED",
+  "QUOTE_SENT",
+];
+
+export const DASHBOARD_ACTIVE_JOB_STATUSES: JobStatus[] = [
+  "QUOTE_ACCEPTED",
+  "SCHEDULED",
+  "CONFIRMED",
+  "IN_PROGRESS",
+];
+
+export type CrmDashboardMetrics = {
+  customersTotal: number;
+  activeLeads: number;
+  leadsRequiringAttention: number;
+  activeJobs: number;
+  leadsByStatus: Record<LeadLifecycleStatus, number>;
+  jobsByStatus: Record<JobStatus, number>;
+};
 
 export type Customer = {
   id?: string;
@@ -2673,6 +2732,121 @@ export async function getCustomersList(
       returned: items.length,
       hasNextPage,
     },
+  };
+}
+
+type DashboardCountTable = "customers" | "leads" | "jobs";
+
+async function getExactDashboardCount(
+  table: DashboardCountTable,
+  businessId: string,
+  filter?: {
+    column: "lifecycle_status" | "status";
+    value: LeadLifecycleStatus | JobStatus;
+  },
+): Promise<number> {
+  const url = new URL(`${supabaseUrl}/rest/v1/${table}`);
+
+  url.searchParams.set("business_id", `eq.${businessId}`);
+  url.searchParams.set("select", "id");
+  url.searchParams.set("limit", "1");
+
+  if (filter) {
+    url.searchParams.set(filter.column, `eq.${filter.value}`);
+  }
+
+  const response = await fetch(url.toString(), {
+    method: "GET",
+    headers: {
+      apikey: supabaseServiceRoleKey,
+      Authorization: `Bearer ${supabaseServiceRoleKey}`,
+      Accept: "application/json",
+      Prefer: "count=exact",
+    },
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(`Dashboard count request failed for ${table}.`);
+  }
+
+  const contentRange = response.headers.get("content-range");
+  const totalMatch = contentRange?.match(/\/(\d+)$/);
+
+  if (!totalMatch) {
+    throw new Error(`Dashboard count response is missing an exact total for ${table}.`);
+  }
+
+  const total = Number.parseInt(totalMatch[1], 10);
+
+  if (!Number.isSafeInteger(total) || total < 0) {
+    throw new Error(`Dashboard count response is invalid for ${table}.`);
+  }
+
+  return total;
+}
+
+function sumDashboardStatuses<T extends string>(
+  counts: Record<T, number>,
+  statuses: readonly T[],
+): number {
+  return statuses.reduce((total, status) => total + counts[status], 0);
+}
+
+export async function getCrmDashboardMetrics(): Promise<CrmDashboardMetrics> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const businessId = await getCurrentBusinessId();
+
+  const [customersTotal, leadCountEntries, jobCountEntries] = await Promise.all([
+    getExactDashboardCount("customers", businessId),
+    Promise.all(
+      DASHBOARD_LEAD_STATUSES.map(async (status) => [
+        status,
+        await getExactDashboardCount("leads", businessId, {
+          column: "lifecycle_status",
+          value: status,
+        }),
+      ] as const),
+    ),
+    Promise.all(
+      DASHBOARD_JOB_STATUSES.map(async (status) => [
+        status,
+        await getExactDashboardCount("jobs", businessId, {
+          column: "status",
+          value: status,
+        }),
+      ] as const),
+    ),
+  ]);
+
+  const leadsByStatus = Object.fromEntries(leadCountEntries) as Record<
+    LeadLifecycleStatus,
+    number
+  >;
+  const jobsByStatus = Object.fromEntries(jobCountEntries) as Record<
+    JobStatus,
+    number
+  >;
+
+  return {
+    customersTotal,
+    activeLeads: sumDashboardStatuses(
+      leadsByStatus,
+      DASHBOARD_ACTIVE_LEAD_STATUSES,
+    ),
+    leadsRequiringAttention: sumDashboardStatuses(
+      leadsByStatus,
+      DASHBOARD_ATTENTION_LEAD_STATUSES,
+    ),
+    activeJobs: sumDashboardStatuses(
+      jobsByStatus,
+      DASHBOARD_ACTIVE_JOB_STATUSES,
+    ),
+    leadsByStatus,
+    jobsByStatus,
   };
 }
 
