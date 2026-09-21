@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getCalendarMonth, getCrmDashboardMetrics, getJobsList, type CalendarAppointmentItem } from "../lib/crm";
+import { getCalendarMonth, getCrmDashboardMetrics, type CalendarAppointmentItem, type Payment } from "../lib/crm";\nimport { resolveCurrentBusinessContext } from "../lib/business";\nimport { supabaseRest } from "../lib/supabase";
 
 export const dynamic = "force-dynamic";
 
@@ -11,11 +11,14 @@ function monthKey(date = new Date()) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
-function isThisMonth(value?: string | null) {
-  if (!value) return false;
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return false;
-  return d.getFullYear() === new Date().getFullYear() && d.getMonth() === new Date().getMonth();
+function parisMonthKey(value: string | Date) {
+  const d = typeof value === "string" ? new Date(value) : value;
+  if (Number.isNaN(d.getTime())) return "";
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Paris",
+    year: "numeric",
+    month: "2-digit",
+  }).format(d);
 }
 
 function MiniEvent({ item }: { item: CalendarAppointmentItem }) {
@@ -35,26 +38,38 @@ function MiniEvent({ item }: { item: CalendarAppointmentItem }) {
 }
 
 export default async function CrmV2Dashboard() {
-  const [metrics, calendar, paid] = await Promise.all([
+  const { businessId } = await resolveCurrentBusinessContext();
+  const [metrics, calendar, paymentsRaw] = await Promise.all([
     getCrmDashboardMetrics(),
     getCalendarMonth({ month: monthKey() }),
-    getJobsList({ page: 1, limit: 100, status: "PAID" }),
+    supabaseRest<Payment[]>(
+      "payments",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&order=received_at.desc&limit=500&select=id,business_id,job_id,amount,method,idempotency_key,received_at,created_at`,
+    ),
   ]);
 
-  const paidThisMonth = paid.items.filter(({ job }) =>
-    isThisMonth(job.completed_at || job.scheduled_at || job.created_at)
-  );
-  const monthlyRevenue = paidThisMonth.reduce((sum, { job }) => sum + (job.total_amount || 0), 0);
+  const payments = (paymentsRaw as Payment[] | null) ?? [];
+  const currentMonth = monthKey();
+  const paymentsThisMonth = payments.filter((payment) => parisMonthKey(payment.received_at) === currentMonth);
+  const monthlyRevenue = paymentsThisMonth.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+  const cashRevenue = paymentsThisMonth
+    .filter((payment) => payment.method === "CASH")
+    .reduce((sum, payment) => sum + (payment.amount || 0), 0);
+  const bankRevenue = paymentsThisMonth
+    .filter((payment) => payment.method === "CARD" || payment.method === "BANK_TRANSFER")
+    .reduce((sum, payment) => sum + (payment.amount || 0), 0);
   const nextEvents = calendar.items
     .filter((item) => new Date(item.appointment.scheduledAt).getTime() >= Date.now())
     .sort((a, b) => new Date(a.appointment.scheduledAt).getTime() - new Date(b.appointment.scheduledAt).getTime())
     .slice(0, 5);
 
   const cards = [
-    { label: "CA du mois", value: eur.format(monthlyRevenue), detail: `${paidThisMonth.length} prestation${paidThisMonth.length > 1 ? "s" : ""} payée${paidThisMonth.length > 1 ? "s" : ""}`, accent: true },
-    { label: "Clients", value: String(metrics.customersTotal), detail: "Base clients AUTO 9" },
-    { label: "Leads actifs", value: String(metrics.activeLeads), detail: `${metrics.leadsRequiringAttention} à traiter` },
-    { label: "Prestations actives", value: String(metrics.activeJobs), detail: "À venir / en cours" },
+    { label: "CA du mois", value: eur.format(monthlyRevenue), detail: `${paymentsThisMonth.length} encaissement${paymentsThisMonth.length > 1 ? "s" : ""}`, accent: true },
+    { label: "CA espèces", value: eur.format(cashRevenue), detail: "Paiements en espèces" },
+    { label: "CA carte + virement", value: eur.format(bankRevenue), detail: "Encaissements bancaires" },
+    { label: "Clients", value: String(metrics.customersTotal), detail: `${metrics.activeLeads} lead${metrics.activeLeads > 1 ? "s" : ""} actif${metrics.activeLeads > 1 ? "s" : ""}` },
   ];
 
   return (
