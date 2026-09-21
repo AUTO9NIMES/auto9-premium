@@ -96,6 +96,7 @@ export type Customer = {
   email?: string | null;
   phone?: string | null;
   city?: string | null;
+  birth_date?: string | null;
   source?: string | null;
   created_at?: string;
   updated_at?: string;
@@ -125,6 +126,7 @@ export type Vehicle = {
   plate?: string | null;
   mileage_km?: number | null;
   vehicle_type?: string | null;
+  photo_url?: string | null;
   created_at?: string;
   updated_at?: string;
 };
