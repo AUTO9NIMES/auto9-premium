@@ -15,6 +15,7 @@ type Subscription = {
   frequency_months: number;
   next_due_on: string;
   active: boolean;
+  booking_token?: string | null;
   notes: string | null;
   created_at: string;
 };
@@ -34,7 +35,7 @@ function emailHref(customer: Customer | undefined, subscription: Subscription) {
   if (!customer?.email) return "#";
   const subject = encodeURIComponent("Votre entretien AUTO 9 - réservation du prochain rendez-vous");
   const body = encodeURIComponent(
-    `Bonjour ${customer.first_name || customer.full_name || ""},\n\nVotre entretien AUTO 9 est à planifier pour ce mois-ci.\n\nPrestation : ${subscription.service_name}\n\nVous pouvez choisir directement votre jour et votre horaire ici :\nhttps://auto9nimes.com/book-online\n\nÀ bientôt,\nAUTO 9\nRetrouvez la joie du neuf`
+    `Bonjour ${customer.first_name || customer.full_name || ""},\n\nVotre entretien AUTO 9 est à planifier pour ce mois-ci.\n\nPrestation : ${subscription.service_name}\n\nVous pouvez choisir directement votre jour et votre horaire ici :\n${subscription.booking_token ? `https://auto9nimes.com/reservation-abonnement/${subscription.booking_token}` : "https://auto9nimes.com"}\n\nÀ bientôt,\nAUTO 9\nRetrouvez la joie du neuf`
   );
   return `mailto:${customer.email}?subject=${subject}&body=${body}`;
 }
@@ -153,7 +154,7 @@ export default async function SubscriptionsPage({
         {subscriptions.map((subscription) => {
           const customer = customerById.get(subscription.customer_id);
           const due = subscription.active && dueThisMonth(subscription.next_due_on);
-          const emailReady = Boolean(customer?.email);
+          const emailReady = Boolean(customer?.email && subscription.booking_token);
 
           return (
             <article key={subscription.id} className={`rounded-3xl border p-5 md:p-6 ${due ? "border-amber-300/20 bg-amber-300/[0.035]" : "border-white/8 bg-[#0b121b]"}`}>
@@ -179,7 +180,7 @@ export default async function SubscriptionsPage({
                       Préparer l'email
                     </a>
                   ) : (
-                    <span className="rounded-xl border border-white/8 px-3 py-2.5 text-xs text-white/25">Email manquant</span>
+                    <span className="rounded-xl border border-white/8 px-3 py-2.5 text-xs text-white/25">{customer?.email ? "Lien privé indisponible" : "Email manquant"}</span>
                   )}
                   <form action={advanceSubscription}>
                     <input type="hidden" name="subscriptionId" value={subscription.id} />
