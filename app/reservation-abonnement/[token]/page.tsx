@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { supabaseRest } from "../../../lib/supabase";
+import { supabaseRest } from "../../lib/supabase";
 import { submitSubscriptionBookingRequest } from "./actions";
 
 export const dynamic = "force-dynamic";
