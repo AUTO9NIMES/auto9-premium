@@ -179,97 +179,204 @@ function leadActions(status: LeadLifecycleStatus): Array<{
   return [];
 }
 
+function jobStatusLabel(status: string) {
+  const labels: Record<string, string> = {
+    QUOTE_ACCEPTED: "Devis accepté",
+    SCHEDULED: "Planifiée",
+    CONFIRMED: "Confirmée",
+    IN_PROGRESS: "En cours",
+    COMPLETED: "Terminée",
+    CANCELLED: "Annulée",
+    PAID: "Payée",
+  };
+
+  return labels[status] || status;
+}
+
+function sourceLabel(source: string | null | undefined) {
+  const labels: Record<string, string> = {
+    website_quote_request: "Demande devis web",
+  };
+
+  if (!source) return "Non renseignée";
+  return labels[source] || source.replaceAll("_", " ");
+}
+
 function LeadCard({ item }: { item: LeadListItem }) {
-  const lead = item.lead;
-  const leadHref = lead.id && UUID_REGEX.test(lead.id)
-    ? `/crm/pipeline/${lead.id}`
-    : null;
-  const customerHref = item.customer.id
-    ? `/crm/clients/${item.customer.id}`
-    : null;
-  const vehicle = vehicleName(item);
-  const quoteAmount = formatAmount(item.latestQuote?.total_price);
-  const appointmentDate = formatDateTime(item.latestAppointment?.requested_at);
-  const quoteService = item.latestQuote ? quoteServiceName(item.latestQuote) : null;
+  const { lead, customer, vehicle, latestQuote, latestJob, latestAppointment } = item;
+  const leadHref = lead.id && UUID_REGEX.test(lead.id) ? `/crm/pipeline/${lead.id}` : null;
+  const customerHref = customer.id && UUID_REGEX.test(customer.id) ? `/crm/clients/${customer.id}` : null;
+  const name = customerName(item);
+  const vehicleLabel = vehicleName(item);
+  const quoteAmount = latestQuote ? formatAmount(latestQuote.total_price) : null;
+  const quoteService = latestQuote ? quoteServiceName(latestQuote) : null;
+  const requestedDate = formatDateTime(latestAppointment?.requested_at);
+  const scheduledDate = formatDateTime(latestAppointment?.scheduled_at);
+  const isOperationalAppointment = Boolean(
+    latestAppointment?.scheduled_at &&
+    (latestAppointment.status === "CONFIRMED" || latestAppointment.status === "COMPLETED"),
+  );
   const canSendQuote = Boolean(
-    item.latestQuote?.id &&
-    UUID_REGEX.test(item.latestQuote.id) &&
-    item.latestQuote.status === "DRAFT" &&
+    latestQuote?.id &&
+    UUID_REGEX.test(latestQuote.id) &&
+    latestQuote.status === "DRAFT" &&
     lead.lifecycle_status === "CONTACTED",
   );
   const canAcceptQuote = Boolean(
-    item.latestQuote?.id &&
-    UUID_REGEX.test(item.latestQuote.id) &&
-    (lead.lifecycle_status === "NEW" ||
-      lead.lifecycle_status === "QUALIFIED" ||
-      lead.lifecycle_status === "CONTACTED" ||
-      lead.lifecycle_status === "QUOTE_SENT") &&
-    (item.latestQuote.status === "DRAFT" || item.latestQuote.status === "SENT"),
+    latestQuote?.id &&
+    UUID_REGEX.test(latestQuote.id) &&
+    ["NEW", "QUALIFIED", "CONTACTED", "QUOTE_SENT"].includes(lead.lifecycle_status) &&
+    ["DRAFT", "SENT"].includes(latestQuote.status),
   );
+  const actions = lead.id && UUID_REGEX.test(lead.id) ? leadActions(lead.lifecycle_status) : [];
 
   return (
-    <article className="border border-white/10 bg-[#101419] p-4 transition-colors hover:border-[#d8b477]/50">
-      <div className="flex items-start justify-between gap-3">
-        {customerHref ? (
-          <Link href={customerHref} className="min-w-0 text-sm font-medium text-white hover:text-[#d8b477]">
-            <span className="block truncate">{customerName(item)}</span>
-          </Link>
-        ) : (
-          <p className="min-w-0 truncate text-sm font-medium text-white">{customerName(item)}</p>
-        )}
-        <span className="shrink-0 text-[10px] text-white/30">{formatDate(lead.created_at) || "Date inconnue"}</span>
-      </div>
+    <article className="group border border-white/10 bg-[#101419] transition-colors hover:border-white/20">
+      <div className="border-b border-white/10 px-4 py-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium text-white">{name}</p>
+            <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-white/30">
+              {formatDate(lead.created_at)}
+            </p>
+          </div>
 
-      {leadHref && <Link href={leadHref} className="mt-3 inline-block text-xs text-[#d8b477] hover:text-white">Voir le lead →</Link>}
-
-      <div className="mt-4 space-y-2 text-xs text-white/45">
-        {customerHref && <Link href={customerHref} className="block truncate text-white/45 hover:text-white">{item.customer.email || item.customer.phone || "Coordonnées non renseignées"}</Link>}
-        {!customerHref && <p className="truncate">{item.customer.email || item.customer.phone || "Coordonnées non renseignées"}</p>}
-        {vehicle && <p className="truncate">{vehicle}{item.vehicle?.plate ? ` · ${item.vehicle.plate}` : ""}</p>}
-        <p>Source : {lead.source}</p>
-      </div>
-
-      {(quoteAmount || item.latestQuote || item.latestJob || appointmentDate) && (
-        <div className="mt-4 border-t border-white/10 pt-3 text-[11px] text-white/35">
-          {item.latestQuote && <p>Devis : {quoteStatusLabels[item.latestQuote.status]}{quoteAmount ? ` · ${quoteAmount}` : ""}</p>}
-          {item.latestQuote?.estimated_time && <p>Durée estimée : {item.latestQuote.estimated_time}</p>}
-          {quoteService && <p>Service : {quoteService}</p>}
-          {item.latestJob && <p>Prestation : {item.latestJob.status}</p>}
-          {appointmentDate && <p>Rendez-vous : {appointmentDate}</p>}
+          <span className="shrink-0 border border-[#d8b477]/25 bg-[#d8b477]/5 px-2 py-1 text-[9px] uppercase tracking-[0.14em] text-[#d8b477]">
+            {leadStatusLabels[lead.lifecycle_status]}
+          </span>
         </div>
-      )}
 
-      {canAcceptQuote && item.latestQuote?.id && (
-        <form action={acceptPipelineQuote} className="mt-4 border-t border-white/10 pt-4">
-          <input type="hidden" name="quoteId" value={item.latestQuote.id} />
-          <button type="submit" className="w-full border border-[#d8b477] px-3 py-2.5 text-xs font-medium uppercase tracking-[0.12em] text-[#d8b477] transition-colors hover:bg-[#d8b477] hover:text-[#080a0d]">
-            Accepter le devis
-          </button>
-        </form>
-      )}
+        <div className="mt-4 flex flex-wrap gap-2">
+          {leadHref && (
+            <Link href={leadHref} className="text-[10px] uppercase tracking-[0.14em] text-[#d8b477] transition-colors hover:text-white">
+              Ouvrir le dossier →
+            </Link>
+          )}
+          {customerHref && (
+            <Link href={customerHref} className="text-[10px] uppercase tracking-[0.14em] text-white/35 transition-colors hover:text-white">
+              Client 360 →
+            </Link>
+          )}
+        </div>
+      </div>
 
-      {canSendQuote && item.latestQuote?.id && (
-        <form action={markPipelineQuoteSent} className="mt-4 border-t border-white/10 pt-4">
-          <input type="hidden" name="quoteId" value={item.latestQuote.id} />
-          <button type="submit" className="w-full border border-white/15 px-3 py-2.5 text-xs font-medium uppercase tracking-[0.12em] text-white/70 transition-colors hover:border-[#d8b477] hover:text-[#d8b477]">
-            Marquer comme envoyé
-          </button>
-        </form>
-      )}
+      <div className="space-y-4 px-4 py-4">
+        <div className="grid grid-cols-2 gap-px bg-white/10">
+          <div className="bg-[#0d1014] p-3">
+            <p className="text-[9px] uppercase tracking-[0.16em] text-white/25">Véhicule</p>
+            <p className="mt-1.5 text-xs text-white/70">{vehicleLabel || "Non renseigné"}</p>
+            {vehicle?.plate && <p className="mt-1 text-[10px] uppercase tracking-[0.12em] text-white/35">{vehicle.plate}</p>}
+          </div>
 
-      {lead.notes && <p className="mt-4 line-clamp-3 text-xs leading-5 text-white/40">{lead.notes}</p>}
+          <div className="bg-[#0d1014] p-3">
+            <p className="text-[9px] uppercase tracking-[0.16em] text-white/25">Source</p>
+            <p className="mt-1.5 break-words text-xs text-white/70">{sourceLabel(lead.source)}</p>
+          </div>
+        </div>
 
-      {lead.id && leadActions(lead.lifecycle_status).length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2 border-t border-white/10 pt-4">
-          {leadActions(lead.lifecycle_status).map((action) => (
-            <form key={action.targetStatus} action={transitionPipelineLead}>
-              <input type="hidden" name="leadId" value={lead.id} />
-              <input type="hidden" name="targetStatus" value={action.targetStatus} />
-              <button type="submit" className="border border-white/15 px-3 py-2 text-xs text-white/65 transition-colors hover:border-[#d8b477] hover:text-[#d8b477]">
-                {action.label}
-              </button>
-            </form>
-          ))}
+        {(customer.phone || customer.email) && (
+          <div>
+            <p className="text-[9px] uppercase tracking-[0.16em] text-white/25">Contact</p>
+            <div className="mt-2 space-y-1">
+              {customer.phone && <p className="text-xs text-white/60">{customer.phone}</p>}
+              {customer.email && <p className="break-all text-xs text-white/60">{customer.email}</p>}
+            </div>
+          </div>
+        )}
+
+        <div className="border-t border-white/10 pt-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[9px] uppercase tracking-[0.16em] text-white/25">Devis</p>
+              <p className="mt-1.5 text-xs text-white/65">
+                {latestQuote ? quoteStatusLabels[latestQuote.status] : "Aucun devis"}
+              </p>
+            </div>
+            {quoteAmount && <p className="text-sm font-medium text-[#d8b477]">{quoteAmount}</p>}
+          </div>
+
+          {quoteService && <p className="mt-2 text-[11px] leading-5 text-white/40">{quoteService}</p>}
+        </div>
+
+        {latestJob && (
+          <div className="border-t border-white/10 pt-4">
+            <p className="text-[9px] uppercase tracking-[0.16em] text-white/25">Prestation</p>
+            <p className="mt-1.5 text-xs text-white/65">{jobStatusLabel(latestJob.status)}</p>
+          </div>
+        )}
+
+        {latestAppointment && (
+          <div className="border-t border-white/10 pt-4">
+            <p className="text-[9px] uppercase tracking-[0.16em] text-white/25">Planning</p>
+
+            {isOperationalAppointment && scheduledDate ? (
+              <>
+                <p className="mt-1.5 text-sm font-medium text-[#d8b477]">{scheduledDate}</p>
+                <p className="mt-1 text-[10px] uppercase tracking-[0.12em] text-white/35">
+                  {latestAppointment.status === "COMPLETED" ? "Créneau réalisé" : "Rendez-vous confirmé"}
+                </p>
+              </>
+            ) : latestAppointment.scheduled_at && scheduledDate ? (
+              <>
+                <p className="mt-1.5 text-sm font-medium text-white/75">{scheduledDate}</p>
+                <p className="mt-1 text-[10px] uppercase tracking-[0.12em] text-white/35">Créneau planifié</p>
+              </>
+            ) : requestedDate ? (
+              <>
+                <p className="mt-1.5 text-sm text-white/70">{requestedDate}</p>
+                <p className="mt-1 text-[10px] uppercase tracking-[0.12em] text-white/35">Souhait client · non planifié</p>
+              </>
+            ) : (
+              <p className="mt-1.5 text-xs text-white/35">Aucun créneau renseigné</p>
+            )}
+
+            {requestedDate && latestAppointment.scheduled_at && (
+              <p className="mt-2 text-[10px] leading-4 text-white/30">Demande initiale : {requestedDate}</p>
+            )}
+          </div>
+        )}
+
+        {lead.notes && (
+          <div className="border-t border-white/10 pt-4">
+            <p className="text-[9px] uppercase tracking-[0.16em] text-white/25">Note</p>
+            <p className="mt-2 line-clamp-3 text-xs leading-5 text-white/45">{lead.notes}</p>
+          </div>
+        )}
+      </div>
+
+      {(canAcceptQuote || canSendQuote || actions.length > 0) && (
+        <div className="border-t border-white/10 bg-[#0d1014] px-4 py-4">
+          <p className="mb-3 text-[9px] uppercase tracking-[0.16em] text-white/25">Actions</p>
+
+          <div className="flex flex-wrap gap-2">
+            {canAcceptQuote && latestQuote?.id && (
+              <form action={acceptPipelineQuote}>
+                <input type="hidden" name="quoteId" value={latestQuote.id} />
+                <button type="submit" className="border border-[#d8b477]/50 px-3 py-2 text-[10px] uppercase tracking-[0.12em] text-[#d8b477] transition-colors hover:bg-[#d8b477] hover:text-[#080a0d]">
+                  Accepter le devis
+                </button>
+              </form>
+            )}
+
+            {canSendQuote && latestQuote?.id && (
+              <form action={markPipelineQuoteSent}>
+                <input type="hidden" name="quoteId" value={latestQuote.id} />
+                <button type="submit" className="border border-white/15 px-3 py-2 text-[10px] uppercase tracking-[0.12em] text-white/60 transition-colors hover:border-white/35 hover:text-white">
+                  Marquer envoyé
+                </button>
+              </form>
+            )}
+
+            {actions.map((action) => (
+              <form key={action.targetStatus} action={transitionPipelineLead}>
+                <input type="hidden" name="leadId" value={lead.id} />
+                <input type="hidden" name="targetStatus" value={action.targetStatus} />
+                <button type="submit" className="border border-white/15 px-3 py-2 text-[10px] uppercase tracking-[0.12em] text-white/60 transition-colors hover:border-[#d8b477] hover:text-[#d8b477]">
+                  {action.label}
+                </button>
+              </form>
+            ))}
+          </div>
         </div>
       )}
     </article>
@@ -281,10 +388,13 @@ function PipelineColumn({ status, items }: {
   items: LeadListItem[];
 }) {
   return (
-    <section aria-labelledby={`pipeline-${status}`} className="min-w-[280px] flex-1 bg-[#0d1014] p-4">
+    <section aria-labelledby={`pipeline-${status}`} className="min-w-[320px] flex-1 bg-[#0d1014] p-4 lg:min-w-[340px]">
       <div className="mb-4 flex items-center justify-between border-b border-white/10 pb-3">
-        <h3 id={`pipeline-${status}`} className="text-xs font-medium text-white">{leadStatusLabels[status]}</h3>
-        <span className="text-[10px] text-white/30">{items.length}</span>
+        <div>
+          <p className="text-[9px] uppercase tracking-[0.18em] text-white/25">Étape</p>
+          <h3 id={`pipeline-${status}`} className="mt-1 text-sm font-medium text-white">{leadStatusLabels[status]}</h3>
+        </div>
+        <span className="flex h-7 min-w-7 items-center justify-center border border-white/10 px-2 text-[10px] text-white/40">{items.length}</span>
       </div>
       <div className="space-y-3">
         {items.length > 0 ? items.map((item) => (
@@ -355,9 +465,17 @@ export default async function PipelinePage({ searchParams }: {
       {quoteSendError && <p role="alert" className="border border-red-300/30 bg-red-300/5 px-4 py-3 text-sm text-red-200">{quoteSendError === "invalid" ? "Action invalide." : quoteSendError === "access" ? "Action non autorisée." : "Action momentanément indisponible."}</p>}
 
       <section aria-labelledby="pipeline-board" className="border border-white/10 bg-[#101419]">
-        <div className="flex items-center justify-between border-b border-white/10 px-5 py-4 md:px-7">
-          <h2 id="pipeline-board" className="text-sm font-medium text-white">Vue pipeline</h2>
-          {!failed && <span className="text-xs text-white/30">{result?.pagination.returned ?? 0} lead{result?.pagination.returned === 1 ? "" : "s"} chargé{result?.pagination.returned === 1 ? "" : "s"}</span>}
+        <div className="flex flex-col gap-3 border-b border-white/10 px-5 py-5 md:flex-row md:items-end md:justify-between md:px-7">
+          <div>
+            <p className="text-[9px] uppercase tracking-[0.2em] text-[#d8b477]">Flux commercial</p>
+            <h2 id="pipeline-board" className="mt-1 text-lg font-medium text-white">Vue pipeline</h2>
+            <p className="mt-1 text-xs text-white/35">Suivez chaque dossier de la demande entrante jusqu&apos;à la prestation.</p>
+          </div>
+          {!failed && (
+            <span className="text-[10px] uppercase tracking-[0.14em] text-white/30">
+              {result?.pagination.returned ?? 0} dossier{result?.pagination.returned === 1 ? "" : "s"} sur cette page
+            </span>
+          )}
         </div>
         <div className="border-b border-white/10 px-5 py-5 md:px-7">
           <form method="get" className="flex flex-col gap-3 lg:flex-row">
@@ -390,7 +508,7 @@ export default async function PipelinePage({ searchParams }: {
             </div>
           </div>
         ) : (
-          <div className="flex gap-px overflow-x-auto bg-white/10 p-px">
+          <div className="flex gap-3 overflow-x-auto bg-[#080a0d] p-3 md:p-4">
             {leadStatuses.map((leadStatus) => <PipelineColumn key={leadStatus} status={leadStatus} items={itemsByStatus.get(leadStatus) || []} />)}
           </div>
         )}
