@@ -109,6 +109,31 @@ function formatStepDate(value?: string | null) {
   }).format(date);
 }
 
+
+function cancellationInfo(
+  activity: StepActivity[],
+  leadId?: string,
+) {
+  if (!leadId) return null;
+
+  const row = activity.find(
+    (entry) =>
+      entry.lead_id === leadId &&
+      entry.event_type === "lead.cancelled",
+  );
+
+  if (!row) return null;
+
+  const rawComment = row.event_data?.comment;
+  return {
+    comment:
+      typeof rawComment === "string" && rawComment.trim()
+        ? rawComment.trim()
+        : null,
+    createdAt: row.created_at,
+  };
+}
+
 function fallbackDone(item: LeadListItem, key: StepKey) {
   if (key === "NEW") return true;
   if (key === "PAID") return item.latestJob?.status === "PAID";
@@ -208,6 +233,7 @@ function LeadProgress({
   const amount = money(item.latestQuote?.total_price || item.latestJob?.total_amount);
   const closed = item.lead.lifecycle_status === "CLOSED_LOST";
   const canRecordPayment = Boolean(item.latestJob?.id && item.latestJob.status === "COMPLETED");
+  const cancelled = cancellationInfo(activity, item.lead.id);
   const states = steps.map((step) => stepState(item, step.key, activity));
   const firstPending = states.findIndex((state) => !state.done);
 
@@ -225,6 +251,18 @@ function LeadProgress({
           </div>
           <p className="mt-1 text-xs text-white/40">{vehicle(item)}</p>
           <p className="mt-3 text-sm text-white/65">{serviceName(item)}</p>
+          {closed && cancelled && (
+            <div className="mt-3 rounded-xl border border-amber-300/12 bg-amber-300/[0.035] px-3 py-2">
+              <p className="text-[10px] uppercase tracking-[0.14em] text-amber-100/55">
+                Annulée le {formatStepDate(cancelled.createdAt)}
+              </p>
+              {cancelled.comment && (
+                <p className="mt-1 text-xs leading-5 text-amber-50/70">
+                  {cancelled.comment}
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="shrink-0 text-left md:text-right">
