@@ -52,6 +52,14 @@ describe("canonical CRM emails", () => {
     expect(editor).not.toContain('"https://auto9nimes.com/book-online"');
   });
 
+  it("forces the canonical private booking URL for subscription messages", () => {
+    expect(editor).toContain('templateKey === "subscription"');
+    expect(editor).toContain("? privateSubscriptionUrl");
+    expect(editor).toContain(": urlOverrides[templateKey] ?? privateSubscriptionUrl");
+    expect(editor).toContain('readOnly={templateKey === "subscription"}');
+    expect(editor).toContain('if (templateKey === "subscription") return;');
+  });
+
   it("is manual mailto composition rather than a Resend or outbox sender", () => {
     expect(editor).toContain("mailto:");
     expect(page).not.toContain("Resend");
