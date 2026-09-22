@@ -160,7 +160,10 @@ export default function EmailEditor({
       ? `https://auto9nimes.com/reservation-abonnement/${selectedSubscription.booking_token}`
       : base.url;
 
-  const url = urlOverrides[templateKey] ?? privateSubscriptionUrl;
+  const url =
+    templateKey === "subscription"
+      ? privateSubscriptionUrl
+      : urlOverrides[templateKey] ?? privateSubscriptionUrl;
 
   const renderedSubject = replaceVars(subject, selectedCustomer);
   const renderedBody = replaceVars(body, selectedCustomer);
@@ -318,12 +321,15 @@ export default function EmailEditor({
               Destination
               <input
                 value={url}
-                onChange={(event) =>
+                readOnly={templateKey === "subscription"}
+                onChange={(event) => {
+                  if (templateKey === "subscription") return;
+
                   setUrlOverrides((previous) => ({
                     ...previous,
                     [templateKey]: event.target.value,
-                  }))
-                }
+                  }));
+                }}
                 className="mt-2 w-full border border-white/10 bg-[#0b0f13] px-4 py-3 text-sm text-white outline-none focus:border-[#d8b477]/50"
               />
             </label>
