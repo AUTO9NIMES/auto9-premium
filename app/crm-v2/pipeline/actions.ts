@@ -51,29 +51,25 @@ export async function cancelV2Lead(formData: FormData) {
   const { businessId } = await resolveCurrentBusinessContext();
 
   try {
-    const leadRows = await supabaseRest<
-      Array<{ id: string; customer_id: string; lifecycle_status: string }>
-    >(
+    const rows = await supabaseRest<{
+      id: string;
+      customer_id: string;
+      lifecycle_status: string;
+    }>(
       "leads",
       "GET",
       null,
       `business_id=eq.${businessId}&id=eq.${leadId}&select=id,customer_id,lifecycle_status&limit=1`,
     );
 
-    const lead = (
-      leadRows as Array<{
-        id: string;
-        customer_id: string;
-        lifecycle_status: string;
-      }> | null
-    )?.[0];
+    const lead = Array.isArray(rows) ? rows[0] : rows;
 
     if (!lead) {
       redirect("/crm-v2/pipeline?lead_error=invalid");
     }
 
     if (lead.lifecycle_status !== "CLOSED_LOST") {
-      await supabaseRest(
+      await supabaseRest<Record<string, unknown>>(
         "leads",
         "PATCH",
         {
@@ -83,7 +79,7 @@ export async function cancelV2Lead(formData: FormData) {
         `business_id=eq.${businessId}&id=eq.${leadId}`,
       );
 
-      await supabaseRest(
+      await supabaseRest<Record<string, unknown>>(
         "activity_log",
         "POST",
         {
@@ -102,7 +98,9 @@ export async function cancelV2Lead(formData: FormData) {
       );
     }
   } catch (error) {
-    if (error && typeof error === "object" && "digest" in error) throw error;
+    if (error && typeof error === "object" && "digest" in error) {
+      throw error;
+    }
     redirect("/crm-v2/pipeline?lead_error=unavailable");
   }
 
