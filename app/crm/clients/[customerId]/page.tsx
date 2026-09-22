@@ -377,7 +377,8 @@ export default async function Customer360Page({ params, searchParams }: {
   const displayName = formatCustomerName(result);
   const feedback = await searchParams;
   const profileStatus = Array.isArray(feedback.profile) ? feedback.profile[0] : feedback.profile;
-  const profileError = Array.isArray(feedback.profile_error) ? feedback.profile_error[0] : feedback.profile_error;\n  const photoError = Array.isArray(feedback.photo_error) ? feedback.photo_error[0] : feedback.photo_error;
+  const profileError = Array.isArray(feedback.profile_error) ? feedback.profile_error[0] : feedback.profile_error;
+  const photoError = Array.isArray(feedback.photo_error) ? feedback.photo_error[0] : feedback.photo_error;
   const vehicleStatus = Array.isArray(feedback.vehicle) ? feedback.vehicle[0] : feedback.vehicle;
   const vehicleError = Array.isArray(feedback.vehicle_error) ? feedback.vehicle_error[0] : feedback.vehicle_error;
   const photoStatus = Array.isArray(feedback.photo) ? feedback.photo[0] : feedback.photo;
@@ -590,7 +591,8 @@ export default async function Customer360Page({ params, searchParams }: {
 
         {vehicleStatus === "created" && <p role="status" className="border border-emerald-300/30 bg-emerald-300/5 px-4 py-3 text-sm text-emerald-200">Véhicule créé.</p>}
         {vehicleStatus === "unchanged" && <p role="status" className="border border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-white/55">Véhicule déjà créé.</p>}
-        {photoStatus === "updated" && <p role="status" className="border border-emerald-300/30 bg-emerald-300/5 px-4 py-3 text-sm text-emerald-200">Photo du véhicule mise à jour.</p>}\n        {photoError && <p role="alert" className="border border-red-300/30 bg-red-300/5 px-4 py-3 text-sm text-red-200">Mise à jour de la photo momentanément indisponible.</p>}
+        {photoStatus === "updated" && <p role="status" className="border border-emerald-300/30 bg-emerald-300/5 px-4 py-3 text-sm text-emerald-200">Photo du véhicule mise à jour.</p>}
+        {photoError && <p role="alert" className="border border-red-300/30 bg-red-300/5 px-4 py-3 text-sm text-red-200">Mise à jour de la photo momentanément indisponible.</p>}
         {vehicleError && <p role="alert" className="border border-red-300/30 bg-red-300/5 px-4 py-3 text-sm text-red-200">{vehicleError === "invalid" ? "Vérifiez les informations du véhicule." : vehicleError === "access" ? "Action non autorisée." : "Création du véhicule momentanément indisponible."}</p>}
 
         {result.vehicles.length > 0 ? (
