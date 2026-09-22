@@ -19,7 +19,7 @@ vi.mock("../../app/lib/auth/dal", () => ({ requireCrmAccess: mocks.requireCrmAcc
 vi.mock("../../app/lib/business", () => ({ resolveCurrentBusinessContext: mocks.resolveCurrentBusinessContext }));
 vi.mock("../../app/lib/supabase", () => ({ supabaseRest: mocks.supabaseRest }));
 
-import { createSubscription } from "../../app/crm-v2/subscriptions/actions";
+import { createSubscription } from "../../app/crm/subscriptions/actions";
 
 const root = process.cwd();
 const migrationPath = "supabase/migrations/042_crm_tenant_storage_hardening.sql";
@@ -120,7 +120,7 @@ describe("createSubscription tenant guard", () => {
   });
 
   it("authorizes and looks up the current tenant's customer before POSTing", async () => {
-    await expect(createSubscription(form())).rejects.toThrow("redirect:/crm-v2/subscriptions?created=1");
+    await expect(createSubscription(form())).rejects.toThrow("redirect:/crm/subscriptions?created=1");
     expect(mocks.requireCrmAccess).toHaveBeenCalledOnce();
     expect(mocks.resolveCurrentBusinessContext).toHaveBeenCalledOnce();
     expect(mocks.supabaseRest).toHaveBeenCalledTimes(2);
@@ -131,7 +131,7 @@ describe("createSubscription tenant guard", () => {
       price: 49.9, frequency_months: 2, next_due_on: "2026-10-01", active: true, notes: "Suivi",
     }, "select=*");
     expect(mocks.requireCrmAccess.mock.invocationCallOrder[0]).toBeLessThan(mocks.supabaseRest.mock.invocationCallOrder[0]);
-    expect(mocks.revalidatePath).toHaveBeenCalledWith("/crm-v2/subscriptions");
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/crm/subscriptions");
   });
 
   it("ignores a forged business_id and never reads tenant identity from FormData", async () => {
@@ -157,7 +157,7 @@ describe("createSubscription tenant guard", () => {
   it.each(["absent", "foreign-tenant"])("rejects an %s customer without swallowing the invalid redirect", async () => {
     // Both are deliberately indistinguishable in a tenant-filtered lookup.
     mocks.supabaseRest.mockReset().mockResolvedValue([]);
-    await expect(createSubscription(form())).rejects.toThrow("redirect:/crm-v2/subscriptions?new=1&error=invalid");
+    await expect(createSubscription(form())).rejects.toThrow("redirect:/crm/subscriptions?new=1&error=invalid");
     expect(mocks.supabaseRest).toHaveBeenCalledTimes(1);
     expect(mocks.redirect).toHaveBeenCalledTimes(1);
     expect(mocks.revalidatePath).not.toHaveBeenCalled();
