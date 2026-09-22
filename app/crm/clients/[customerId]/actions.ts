@@ -25,6 +25,10 @@ function redirectWithVehicleError(customerId: string, error: "invalid" | "access
   redirect(`/crm/clients/${customerId}?vehicle_error=${error}`);
 }
 
+function redirectWithPhotoError(customerId: string, error: "invalid" | "access" | "unavailable"): never {
+  redirect(`/crm/clients/${customerId}?photo_error=${error}`);
+}
+
 export async function updateCustomerProfileAction(formData: FormData) {
   const customerId = formData.get("customerId");
 
@@ -241,9 +245,9 @@ export async function uploadCustomerVehiclePhotoAction(formData: FormData) {
   } catch (error) {
     if (error instanceof CrmAccessError) {
       if (error.code === "UNAUTHENTICATED") redirect("/crm/login");
-      if (error.code === "FORBIDDEN") redirectWithVehicleError(normalizedCustomerId, "access");
+      if (error.code === "FORBIDDEN") redirectWithPhotoError(normalizedCustomerId, "access");
     }
-    redirectWithVehicleError(normalizedCustomerId, "unavailable");
+    redirectWithPhotoError(normalizedCustomerId, "unavailable");
   }
 
   const { businessId } = await resolveCurrentBusinessContext();
@@ -258,7 +262,7 @@ export async function uploadCustomerVehiclePhotoAction(formData: FormData) {
     const vehicle = Array.isArray(rows) ? rows[0] : rows;
 
     if (!vehicle || vehicle.customer_id !== normalizedCustomerId) {
-      redirectWithVehicleError(normalizedCustomerId, "invalid");
+      redirectWithPhotoError(normalizedCustomerId, "invalid");
     }
 
     const photoPath = await uploadVehiclePhoto({
@@ -278,7 +282,7 @@ export async function uploadCustomerVehiclePhotoAction(formData: FormData) {
     );
   } catch (error) {
     if (error && typeof error === "object" && "digest" in error) throw error;
-    redirectWithVehicleError(normalizedCustomerId, "unavailable");
+    redirectWithPhotoError(normalizedCustomerId, "unavailable");
   }
 
   revalidatePath(`/crm/clients/${normalizedCustomerId}`);
