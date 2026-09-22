@@ -8,6 +8,7 @@ import {
 } from "../../../lib/auth/dal";
 import { updateCustomerProfile, type UpdateCustomerProfileResult } from "../../../lib/crm";
 import { supabaseRest } from "../../../lib/supabase";
+import { resolveCurrentBusinessContext } from "../../../lib/business";
 import { uploadVehiclePhoto } from "../../../lib/crm-storage";
 import { createCustomerVehicle, findCustomerVehicleReplay, type CustomerVehicleResult } from "../../../lib/crm";
 
@@ -248,13 +249,13 @@ export async function uploadCustomerVehiclePhotoAction(formData: FormData) {
   const { businessId } = await resolveCurrentBusinessContext();
 
   try {
-    const rows = await supabaseRest<Array<{ id: string; customer_id: string }>>(
+    const rows = await supabaseRest<{ id: string; customer_id: string }>(
       "vehicles",
       "GET",
       null,
       `business_id=eq.${businessId}&id=eq.${normalizedVehicleId}&select=id,customer_id&limit=1`,
     );
-    const vehicle = rows?.[0];
+    const vehicle = Array.isArray(rows) ? rows[0] : rows;
 
     if (!vehicle || vehicle.customer_id !== normalizedCustomerId) {
       redirectWithVehicleError(normalizedCustomerId, "invalid");
