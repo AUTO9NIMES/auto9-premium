@@ -7,7 +7,6 @@ import {
   requireCrmAccess,
 } from "../../../lib/auth/dal";
 import { updateCustomerProfile, type UpdateCustomerProfileResult } from "../../../lib/crm";
-import { resolveCurrentBusinessContext } from "../../../lib/business";
 import { supabaseRest } from "../../../lib/supabase";
 import { uploadVehiclePhoto } from "../../../lib/crm-storage";
 import { createCustomerVehicle, findCustomerVehicleReplay, type CustomerVehicleResult } from "../../../lib/crm";
@@ -96,22 +95,12 @@ export async function updateCustomerProfileAction(formData: FormData) {
       email: normalizedEmail,
       phone: normalizedPhoneRaw || null,
       city: normalizedCity,
+      birthDate: normalizedBirthDate,
     });
   } catch {
     redirectWithError(normalizedCustomerId, "unavailable");
   }
 
-  const { businessId } = await resolveCurrentBusinessContext();
-  try {
-    await supabaseRest(
-      "customers",
-      "PATCH",
-      { birth_date: normalizedBirthDate, updated_at: new Date().toISOString() },
-      `business_id=eq.${businessId}&id=eq.${normalizedCustomerId}`,
-    );
-  } catch {
-    redirectWithError(normalizedCustomerId, "unavailable");
-  }
 
   revalidatePath(`/crm/clients/${normalizedCustomerId}`);
   revalidatePath("/crm/clients");
