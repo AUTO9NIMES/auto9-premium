@@ -14,6 +14,7 @@ const navigation = [
   { href: "/crm", label: "Dashboard" },
   { href: "/crm/clients", label: "Clients" },
   { href: "/crm/subscriptions", label: "Abonnements" },
+  { href: "/crm/revenue", label: "Chiffre d’affaires" },
   { href: "/crm/pipeline", label: "Pipeline" },
   { href: "/crm/jobs", label: "Prestations" },
   { href: "/crm/calendar", label: "Calendrier" },
