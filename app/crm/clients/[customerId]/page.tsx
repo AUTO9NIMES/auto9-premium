@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { CrmAccessError, requireCrmAccess } from "../../../lib/auth/dal";
@@ -7,7 +8,7 @@ import {
   toMailtoHref,
   toTelHref,
 } from "../../../lib/contact";
-import { createCustomerVehicleAction, updateCustomerProfileAction } from "./actions";
+import { createCustomerVehicleAction, updateCustomerProfileAction, uploadCustomerVehiclePhotoAction } from "./actions";
 import {
   getCustomer360,
   type ActivityLog,
@@ -20,6 +21,7 @@ import {
   type Quote,
   type Vehicle,
 } from "../../../lib/crm";
+import { createVehiclePhotoSignedUrl } from "../../../lib/crm-storage";
 
 export const dynamic = "force-dynamic";
 
@@ -73,6 +75,13 @@ async function ensureCrmAccess() {
     }
     throw new Error("Service CRM temporairement indisponible.");
   }
+}
+
+function formatBirthday(value?: string | null): string | null {
+  if (!value) return null;
+  const date = new Date(value + "T12:00:00Z");
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(date);
 }
 
 function formatDate(value?: string | null): string | null {
@@ -193,14 +202,18 @@ function EmptySection({ children }: { children: string }) {
   return <p className="border border-dashed border-white/15 px-5 py-8 text-sm text-white/35">{children}</p>;
 }
 
-function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
+function VehicleCard({ vehicle, photoUrl }: { vehicle: Vehicle; photoUrl?: string | null }) {
   return (
-    <article className="group relative overflow-hidden border border-white/10 bg-[#101419] p-5 transition-colors hover:border-white/20 md:p-6">
+    <article className="group relative overflow-hidden border border-white/10 bg-[#101419] transition-colors hover:border-white/20">
+      <div className="relative aspect-[16/8] bg-[#0d1014]">{photoUrl ? <Image src={photoUrl} alt={formatVehicle(vehicle)} fill unoptimized className="object-cover" /> : <div className="flex h-full items-center justify-center text-xs text-white/20">Aucune photo</div>}</div>
+      <div className="p-5 md:p-6">
       <div aria-hidden="true" className="absolute inset-y-0 left-0 w-px bg-[#d8b477]/40" />
       <p className="text-sm font-medium text-white">{formatVehicle(vehicle)}</p>
       {formatVehicleMeta(vehicle) && <p className="mt-2 text-xs text-white/45">{formatVehicleMeta(vehicle)}</p>}
       {vehicle.vehicle_type && <p className="mt-4 text-[10px] uppercase tracking-[0.16em] text-[#d8b477]">{vehicle.vehicle_type}</p>}
       {vehicle.mileage_km !== null && vehicle.mileage_km !== undefined && <p className="mt-2 text-xs text-white/35">{vehicle.mileage_km.toLocaleString("fr-FR")} km</p>}
+      {vehicle.id && <form action={uploadCustomerVehiclePhotoAction} encType="multipart/form-data" className="mt-4 flex flex-col gap-2 sm:flex-row"><input type="hidden" name="customerId" value={vehicle.customer_id} /><input type="hidden" name="vehicleId" value={vehicle.id} /><input name="photo" type="file" accept="image/jpeg,image/png,image/webp" required className="min-w-0 flex-1 border border-white/10 bg-[#0d1014] px-3 py-2 text-[11px] text-white/45 file:mr-3 file:border-0 file:bg-white/10 file:px-3 file:py-1.5 file:text-[10px] file:text-white" /><button type="submit" className="border border-[#d8b477]/30 px-3 py-2 text-[11px] text-[#d8b477]">{photoUrl ? "Changer la photo" : "Ajouter la photo"}</button></form>}
+    </div>
     </article>
   );
 }
@@ -365,9 +378,14 @@ export default async function Customer360Page({ params, searchParams }: {
   const feedback = await searchParams;
   const profileStatus = Array.isArray(feedback.profile) ? feedback.profile[0] : feedback.profile;
   const profileError = Array.isArray(feedback.profile_error) ? feedback.profile_error[0] : feedback.profile_error;
+  const photoError = Array.isArray(feedback.photo_error) ? feedback.photo_error[0] : feedback.photo_error;
   const vehicleStatus = Array.isArray(feedback.vehicle) ? feedback.vehicle[0] : feedback.vehicle;
   const vehicleError = Array.isArray(feedback.vehicle_error) ? feedback.vehicle_error[0] : feedback.vehicle_error;
+  const photoStatus = Array.isArray(feedback.photo) ? feedback.photo[0] : feedback.photo;
   const vehicleIdempotencyKey = randomUUID();
+  const vehiclePhotos = new Map<string, string>();
+  await Promise.all(result.vehicles.map(async (vehicle) => { if (!vehicle.id || !vehicle.photo_path) return; const signed = await createVehiclePhotoSignedUrl(vehicle.photo_path, 60 * 60); if (signed) vehiclePhotos.set(vehicle.id, signed); }));
+
   const contactDetails = [customer.email, customer.phone, customer.city].filter(
     (value): value is string => Boolean(value?.trim()),
   );
@@ -573,15 +591,14 @@ export default async function Customer360Page({ params, searchParams }: {
 
         {vehicleStatus === "created" && <p role="status" className="border border-emerald-300/30 bg-emerald-300/5 px-4 py-3 text-sm text-emerald-200">Véhicule créé.</p>}
         {vehicleStatus === "unchanged" && <p role="status" className="border border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-white/55">Véhicule déjà créé.</p>}
+        {photoStatus === "updated" && <p role="status" className="border border-emerald-300/30 bg-emerald-300/5 px-4 py-3 text-sm text-emerald-200">Photo du véhicule mise à jour.</p>}
+        {photoError && <p role="alert" className="border border-red-300/30 bg-red-300/5 px-4 py-3 text-sm text-red-200">Mise à jour de la photo momentanément indisponible.</p>}
         {vehicleError && <p role="alert" className="border border-red-300/30 bg-red-300/5 px-4 py-3 text-sm text-red-200">{vehicleError === "invalid" ? "Vérifiez les informations du véhicule." : vehicleError === "access" ? "Action non autorisée." : "Création du véhicule momentanément indisponible."}</p>}
 
         {result.vehicles.length > 0 ? (
           <div className="grid gap-4 md:grid-cols-2">
             {result.vehicles.map((vehicle) => (
-              <VehicleCard
-                key={vehicle.id || `${vehicle.brand}-${vehicle.model}-${vehicle.created_at}`}
-                vehicle={vehicle}
-              />
+              <VehicleCard key={vehicle.id || `${vehicle.brand}-${vehicle.model}-${vehicle.created_at}`} vehicle={vehicle} photoUrl={vehicle.id ? vehiclePhotos.get(vehicle.id) : null} />
             ))}
           </div>
         ) : (
@@ -629,6 +646,7 @@ export default async function Customer360Page({ params, searchParams }: {
           <div><label htmlFor="last_name" className="block text-xs text-white/55">Nom</label><input id="last_name" name="last_name" defaultValue={customer.last_name || ""} maxLength={100} autoComplete="family-name" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[#d8b477]" /></div>
           <div><label htmlFor="email" className="block text-xs text-white/55">Email</label><input id="email" name="email" type="email" defaultValue={customer.email || ""} maxLength={254} autoComplete="email" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[#d8b477]" /></div>
           <div><label htmlFor="phone" className="block text-xs text-white/55">Téléphone</label><input id="phone" name="phone" type="tel" defaultValue={customer.phone || ""} maxLength={40} autoComplete="tel" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[#d8b477]" /></div>
+          <div><label htmlFor="birth_date" className="block text-xs text-white/55">Date d’anniversaire</label><input id="birth_date" name="birth_date" type="date" defaultValue={customer.birth_date || ""} className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[#d8b477]" /></div>
           <div><label htmlFor="city" className="block text-xs text-white/55">Ville</label><input id="city" name="city" defaultValue={customer.city || ""} maxLength={120} autoComplete="address-level2" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[#d8b477]" /></div>
           <div className="md:col-span-2"><button type="submit" className="border border-[#d8b477] px-5 py-2.5 text-xs font-medium uppercase tracking-[0.14em] text-[#d8b477] transition-colors hover:bg-[#d8b477] hover:text-[#080a0d]">Enregistrer les modifications</button></div>
         </form>

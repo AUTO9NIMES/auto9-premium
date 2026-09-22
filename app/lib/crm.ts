@@ -686,6 +686,7 @@ export async function updateCustomerProfile(input: {
   email?: string | null;
   phone?: string | null;
   city?: string | null;
+  birthDate?: string | null;
 }): Promise<UpdateCustomerProfileResult> {
   if (!hasSupabaseWriteConfig()) {
     throw new Error("Supabase persistence is not configured.");
@@ -710,6 +711,7 @@ export async function updateCustomerProfile(input: {
       p_phone: input.phone ?? null,
       p_city: input.city ?? null,
       p_source: "crm_customer_profile_ui",
+      p_birth_date: input.birthDate ?? null,
     },
   );
 

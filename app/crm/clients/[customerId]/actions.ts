@@ -7,6 +7,9 @@ import {
   requireCrmAccess,
 } from "../../../lib/auth/dal";
 import { updateCustomerProfile, type UpdateCustomerProfileResult } from "../../../lib/crm";
+import { supabaseRest } from "../../../lib/supabase";
+import { resolveCurrentBusinessContext } from "../../../lib/business";
+import { uploadVehiclePhoto } from "../../../lib/crm-storage";
 import { createCustomerVehicle, findCustomerVehicleReplay, type CustomerVehicleResult } from "../../../lib/crm";
 
 const UUID_REGEX =
@@ -20,6 +23,10 @@ function redirectWithError(customerId: string, error: "invalid" | "access" | "un
 
 function redirectWithVehicleError(customerId: string, error: "invalid" | "access" | "unavailable"): never {
   redirect(`/crm/clients/${customerId}?vehicle_error=${error}`);
+}
+
+function redirectWithPhotoError(customerId: string, error: "invalid" | "access" | "unavailable"): never {
+  redirect(`/crm/clients/${customerId}?photo_error=${error}`);
 }
 
 export async function updateCustomerProfileAction(formData: FormData) {
@@ -47,6 +54,7 @@ export async function updateCustomerProfileAction(formData: FormData) {
   const email = formData.get("email");
   const phone = formData.get("phone");
   const city = formData.get("city");
+  const birthDate = formData.get("birth_date");
 
   if (
     typeof fullName !== "string" ||
@@ -54,7 +62,8 @@ export async function updateCustomerProfileAction(formData: FormData) {
     typeof lastName !== "string" ||
     typeof email !== "string" ||
     typeof phone !== "string" ||
-    typeof city !== "string"
+    typeof city !== "string" ||
+    typeof birthDate !== "string"
   ) {
     redirectWithError(normalizedCustomerId, "invalid");
   }
@@ -66,6 +75,7 @@ export async function updateCustomerProfileAction(formData: FormData) {
   const normalizedPhoneRaw = phone.trim();
   const normalizedPhone = normalizedPhoneRaw.replace(/\D/g, "") || null;
   const normalizedCity = city.trim() || null;
+  const normalizedBirthDate = birthDate.trim() || null;
 
   if (
     !normalizedFullName || normalizedFullName.length > 200 ||
@@ -74,7 +84,8 @@ export async function updateCustomerProfileAction(formData: FormData) {
     (normalizedEmail !== null && (normalizedEmail.length > 254 || !EMAIL_REGEX.test(normalizedEmail))) ||
     normalizedPhoneRaw.length > 40 ||
     (normalizedPhoneRaw.length > 0 && (!normalizedPhone || normalizedPhone.length < 7 || normalizedPhone.length > 15)) ||
-    (normalizedCity !== null && normalizedCity.length > 120)
+    (normalizedCity !== null && normalizedCity.length > 120) ||
+    (normalizedBirthDate !== null && !/^\d{4}-\d{2}-\d{2}$/.test(normalizedBirthDate))
   ) {
     redirectWithError(normalizedCustomerId, "invalid");
   }
@@ -89,10 +100,12 @@ export async function updateCustomerProfileAction(formData: FormData) {
       email: normalizedEmail,
       phone: normalizedPhoneRaw || null,
       city: normalizedCity,
+      birthDate: normalizedBirthDate,
     });
   } catch {
     redirectWithError(normalizedCustomerId, "unavailable");
   }
+
 
   revalidatePath(`/crm/clients/${normalizedCustomerId}`);
   revalidatePath("/crm/clients");
@@ -205,4 +218,75 @@ export async function createCustomerVehicleAction(formData: FormData) {
   revalidatePath("/crm/clients");
   revalidatePath("/crm");
   redirect(`/crm/clients/${normalizedCustomerId}?vehicle=${result.noOp ? "unchanged" : "created"}`);
+}
+
+
+export async function uploadCustomerVehiclePhotoAction(formData: FormData) {
+  const customerId = formData.get("customerId");
+  const vehicleId = formData.get("vehicleId");
+  const file = formData.get("photo");
+
+  if (
+    typeof customerId !== "string" ||
+    !UUID_REGEX.test(customerId.trim()) ||
+    typeof vehicleId !== "string" ||
+    !UUID_REGEX.test(vehicleId.trim()) ||
+    !(file instanceof File) ||
+    !file.size
+  ) {
+    redirect("/crm/clients");
+  }
+
+  const normalizedCustomerId = customerId.trim();
+  const normalizedVehicleId = vehicleId.trim();
+
+  try {
+    await requireCrmAccess();
+  } catch (error) {
+    if (error instanceof CrmAccessError) {
+      if (error.code === "UNAUTHENTICATED") redirect("/crm/login");
+      if (error.code === "FORBIDDEN") redirectWithPhotoError(normalizedCustomerId, "access");
+    }
+    redirectWithPhotoError(normalizedCustomerId, "unavailable");
+  }
+
+  const { businessId } = await resolveCurrentBusinessContext();
+
+  try {
+    const rows = await supabaseRest<{ id: string; customer_id: string }>(
+      "vehicles",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&id=eq.${normalizedVehicleId}&select=id,customer_id&limit=1`,
+    );
+    const vehicle = Array.isArray(rows) ? rows[0] : rows;
+
+    if (!vehicle || vehicle.customer_id !== normalizedCustomerId) {
+      redirectWithPhotoError(normalizedCustomerId, "invalid");
+    }
+
+    const photoPath = await uploadVehiclePhoto({
+      businessId,
+      vehicleId: normalizedVehicleId,
+      file,
+    });
+
+    await supabaseRest(
+      "vehicles",
+      "PATCH",
+      {
+        photo_path: photoPath,
+        updated_at: new Date().toISOString(),
+      },
+      `business_id=eq.${businessId}&id=eq.${normalizedVehicleId}&customer_id=eq.${normalizedCustomerId}`,
+    );
+  } catch (error) {
+    if (error && typeof error === "object" && "digest" in error) throw error;
+    redirectWithPhotoError(normalizedCustomerId, "unavailable");
+  }
+
+  revalidatePath(`/crm/clients/${normalizedCustomerId}`);
+  revalidatePath("/crm/clients");
+  revalidatePath("/crm");
+  redirect(`/crm/clients/${normalizedCustomerId}?photo=updated`);
 }
