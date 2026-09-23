@@ -51,63 +51,36 @@ export async function cancelV2Lead(formData: FormData) {
   const { businessId } = await resolveCurrentBusinessContext();
 
   try {
-    const rows = await supabaseRest<{
-      id: string;
-      customer_id: string;
-      lifecycle_status: string;
-    }>(
+    await supabaseRest(
       "leads",
-      "GET",
-      null,
-      `business_id=eq.${businessId}&id=eq.${leadId}&select=id,customer_id,lifecycle_status&limit=1`,
+      "PATCH",
+      {
+        lifecycle_status: "CLOSED_LOST",
+      },
+      `business_id=eq.${businessId}&id=eq.${leadId}`,
     );
 
-    const lead = Array.isArray(rows) ? rows[0] : rows;
-
-    if (!lead) {
-      redirect("/crm-v2/pipeline?lead_error=invalid");
-    }
-
-    if (lead.lifecycle_status !== "CLOSED_LOST") {
-      await supabaseRest<Record<string, unknown>>(
-        "leads",
-        "PATCH",
-        {
-          lifecycle_status: "CLOSED_LOST",
-          updated_at: new Date().toISOString(),
+    await supabaseRest(
+      "activity_log",
+      "POST",
+      {
+        business_id: businessId,
+        lead_id: leadId,
+        event_type: "lead.cancelled",
+        event_data: {
+          source: "crm_v2",
+          comment: comment || null,
         },
-        `business_id=eq.${businessId}&id=eq.${leadId}`,
-      );
-
-      await supabaseRest<Record<string, unknown>>(
-        "activity_log",
-        "POST",
-        {
-          business_id: businessId,
-          customer_id: lead.customer_id,
-          lead_id: leadId,
-          event_type: "lead.cancelled",
-          event_data: {
-            source: "crm_v2",
-            previous_status: lead.lifecycle_status,
-            new_status: "CLOSED_LOST",
-            comment: comment || null,
-          },
-        },
-        "select=id",
-      );
-    }
-  } catch (error) {
-    if (error && typeof error === "object" && "digest" in error) {
-      throw error;
-    }
+      },
+      "select=id",
+    );
+  } catch {
     redirect("/crm-v2/pipeline?lead_error=unavailable");
   }
 
   revalidatePath("/crm-v2");
   revalidatePath("/crm-v2/pipeline");
   revalidatePath("/crm-v2/clients");
-  revalidatePath("/crm/pipeline");
   redirect("/crm-v2/pipeline?lead_cancelled=1");
 }
 
