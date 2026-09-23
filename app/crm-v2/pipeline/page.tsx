@@ -11,8 +11,10 @@ import {
   deleteV2Lead,
   recordV2Payment,
   toggleV2LeadStep,
+  updateV2LeadDetails,
 } from "./actions";
 import LeadDangerActions from "./LeadDangerActions";
+import LeadEditPanel from "./LeadEditPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -287,7 +289,20 @@ function LeadProgress({
         </div>
 
         {item.lead.id && (
-          <div className="md:ml-auto md:pt-1">
+          <div className="flex flex-col items-start gap-2 md:ml-auto md:items-end md:pt-1">
+            {!closed && (
+              <LeadEditPanel
+                leadId={item.lead.id}
+                initialFullName={name(item)}
+                initialPhone={item.customer.phone || ""}
+                initialEmail={item.customer.email || ""}
+                initialCity={item.customer.city || ""}
+                initialService={serviceName(item)}
+                initialPrice={String(item.latestQuote?.total_price ?? item.latestJob?.total_amount ?? "")}
+                initialNote={item.lead.notes || ""}
+                action={updateV2LeadDetails}
+              />
+            )}
             <LeadDangerActions
               leadId={item.lead.id}
               closed={closed}
@@ -431,6 +446,9 @@ export default async function CrmV2Pipeline({
   const stepUpdated =
     (Array.isArray(params.step_updated) ? params.step_updated[0] : params.step_updated) === "1";
   const stepError = Array.isArray(params.step_error) ? params.step_error[0] : params.step_error;
+  const editUpdated =
+    (Array.isArray(params.edit_updated) ? params.edit_updated[0] : params.edit_updated) === "1";
+  const editError = Array.isArray(params.edit_error) ? params.edit_error[0] : params.edit_error;
 
   const result = await getLeadsList({ page: 1, limit: 50, search });
   const { businessId } = await resolveCurrentBusinessContext();
@@ -474,6 +492,16 @@ export default async function CrmV2Pipeline({
       {paymentError && (
         <div className="rounded-xl border border-red-300/20 bg-red-300/[0.05] px-4 py-3 text-sm text-red-100">
           Le paiement n&apos;a pas pu être enregistré.
+        </div>
+      )}
+      {editUpdated && (
+        <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/[0.05] px-4 py-3 text-sm text-emerald-100">
+          Demande et informations client mises à jour.
+        </div>
+      )}
+      {editError && (
+        <div className="rounded-xl border border-red-300/20 bg-red-300/[0.05] px-4 py-3 text-sm text-red-100">
+          Les modifications n&apos;ont pas pu être enregistrées.
         </div>
       )}
       {stepUpdated && (
