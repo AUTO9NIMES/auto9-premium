@@ -12,6 +12,11 @@ import {
 } from "../../../lib/crm";
 import { createVehiclePhotoSignedUrl } from "../../../lib/crm-storage";
 import {
+  getCustomer360RenderedAt,
+  selectCustomerPlanningAppointment,
+} from "./planning";
+import { buildWhatsAppLink } from "../../../lib/contact";
+import {
   createV2Vehicle,
   updateV2CustomerProfile,
   uploadV2VehiclePhoto,
@@ -97,6 +102,7 @@ function birthday(value?: string | null) {
   }).format(date);
 }
 
+
 export default async function CustomerV2Page({
   params,
   searchParams,
@@ -106,6 +112,7 @@ export default async function CustomerV2Page({
 }) {
   await requireCrmAccess();
 
+  const renderedAt = await getCustomer360RenderedAt();
   const { customerId } = await params;
   const id = customerId?.trim();
   const sp = await searchParams;
@@ -152,6 +159,16 @@ export default async function CustomerV2Page({
       job.status,
     ),
   ).length;
+
+  const {
+    nextAppointment,
+    latestCompletedAppointment,
+    planningAppointment,
+  } = selectCustomerPlanningAppointment(result.appointments, renderedAt);
+  const whatsapp = buildWhatsAppLink(
+    c.phone,
+    `Bonjour ${customerName(result)}, AUTO 9 ici.`,
+  );
 
   const vehiclePhotos = new Map<string, string>();
   await Promise.all(
@@ -238,6 +255,16 @@ export default async function CustomerV2Page({
                 className="rounded-xl border border-white/10 px-4 py-2.5 text-xs text-white/70"
               >
                 Email
+              </a>
+            )}
+            {whatsapp && (
+              <a
+                href={whatsapp}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-xl border border-emerald-300/20 bg-emerald-300/[0.05] px-4 py-2.5 text-xs text-emerald-100"
+              >
+                WhatsApp
               </a>
             )}
           </div>
@@ -412,32 +439,117 @@ export default async function CustomerV2Page({
         </section>
       )}
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {[
-          ["Véhicules", result.vehicles.length, "Parc client"],
-          [
-            "Demandes",
-            result.leads.length,
-            `${activeLeads} active${activeLeads > 1 ? "s" : ""}`,
-          ],
-          ["Devis", result.quotes.length, "Historique commercial"],
-          [
-            "Prestations",
-            result.jobs.length,
-            `${activeJobs} active${activeJobs > 1 ? "s" : ""}`,
-          ],
-        ].map(([label, value, detail]) => (
-          <div
-            key={String(label)}
-            className="rounded-2xl border border-white/8 bg-white/[0.025] p-5"
-          >
-            <p className="text-[10px] uppercase tracking-[0.18em] text-white/30">
-              {label}
-            </p>
-            <p className="mt-3 text-3xl font-bold text-white">{value}</p>
-            <p className="mt-2 text-xs text-white/35">{detail}</p>
+      <section className="space-y-3">
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-cyan-200/45">
+            Cockpit
+          </p>
+          <h2 className="mt-2 text-xl font-semibold">Vue opérationnelle</h2>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {[
+            ["Véhicules", result.vehicles.length, "Parc client"],
+            [
+              "Demandes",
+              result.leads.length,
+              `${activeLeads} active${activeLeads > 1 ? "s" : ""}`,
+            ],
+            ["Devis", result.quotes.length, "Historique commercial"],
+            [
+              "Prestations",
+              result.jobs.length,
+              `${activeJobs} active${activeJobs > 1 ? "s" : ""}`,
+            ],
+          ].map(([label, value, detail]) => (
+            <div
+              key={String(label)}
+              className="rounded-2xl border border-white/8 bg-white/[0.025] p-5"
+            >
+              <p className="text-[10px] uppercase tracking-[0.18em] text-white/30">
+                {label}
+              </p>
+              <p className="mt-3 text-3xl font-bold text-white">{value}</p>
+              <p className="mt-2 text-xs text-white/35">{detail}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_minmax(260px,0.6fr)]">
+          <div className="rounded-2xl border border-cyan-300/10 bg-gradient-to-br from-cyan-300/[0.045] to-transparent p-5 md:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.18em] text-cyan-200/50">
+                  Planning
+                </p>
+                <h3 className="mt-2 text-lg font-semibold">
+                  {nextAppointment
+                    ? "Prochain rendez-vous"
+                    : latestCompletedAppointment
+                      ? "Dernier rendez-vous"
+                      : "Aucun rendez-vous opérationnel"}
+                </h3>
+              </div>
+
+              {planningAppointment && (
+                <span className="rounded-full border border-cyan-300/15 bg-cyan-300/[0.05] px-3 py-1 text-[10px] uppercase tracking-[0.14em] text-cyan-100">
+                  {appointmentLabels[planningAppointment.status]}
+                </span>
+              )}
+            </div>
+
+            {planningAppointment ? (
+              <>
+                <p className="mt-6 text-2xl font-semibold tracking-tight text-white">
+                  {dt(planningAppointment.scheduled_at) || "Date non renseignée"}
+                </p>
+                <p className="mt-2 text-xs text-white/35">
+                  {planningAppointment.notes || "Rendez-vous AUTO 9"}
+                </p>
+              </>
+            ) : (
+              <p className="mt-6 text-sm leading-6 text-white/35">
+                Aucun créneau confirmé à venir ni rendez-vous terminé n&apos;est rattaché à ce client.
+              </p>
+            )}
+
+            <Link
+              href="/crm-v2/calendar"
+              className="mt-5 inline-block text-xs text-cyan-200/65 hover:text-cyan-100"
+            >
+              Ouvrir le calendrier →
+            </Link>
           </div>
-        ))}
+
+          <div className="rounded-2xl border border-white/8 bg-white/[0.025] p-5 md:p-6">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-cyan-200/50">
+              Relation
+            </p>
+            <h3 className="mt-2 text-lg font-semibold">Signal commercial</h3>
+
+            <div className="mt-5 space-y-3 text-sm">
+              <div className="flex items-center justify-between gap-4 border-b border-white/8 pb-3">
+                <span className="text-white/35">Demandes actives</span>
+                <span className="font-semibold">{activeLeads}</span>
+              </div>
+              <div className="flex items-center justify-between gap-4 border-b border-white/8 pb-3">
+                <span className="text-white/35">Devis enregistrés</span>
+                <span className="font-semibold">{result.quotes.length}</span>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-white/35">Prestations actives</span>
+                <span className="font-semibold">{activeJobs}</span>
+              </div>
+            </div>
+
+            <Link
+              href="/crm-v2/pipeline"
+              className="mt-5 inline-block text-xs text-cyan-200/65 hover:text-cyan-100"
+            >
+              Ouvrir le pipeline →
+            </Link>
+          </div>
+        </div>
       </section>
 
       <section className="space-y-3">
@@ -631,11 +743,19 @@ export default async function CustomerV2Page({
       </section>
 
       <section className="space-y-3">
-        <div>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-cyan-200/45">
-            Planning
-          </p>
-          <h2 className="mt-2 text-xl font-semibold">Rendez-vous</h2>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-cyan-200/45">
+              Planning
+            </p>
+            <h2 className="mt-2 text-xl font-semibold">Rendez-vous</h2>
+          </div>
+          <Link
+            href="/crm-v2/calendar"
+            className="text-xs text-cyan-200/60 hover:text-cyan-100"
+          >
+            Ouvrir le calendrier →
+          </Link>
         </div>
         <div className="divide-y divide-white/8 overflow-hidden rounded-3xl border border-white/8 bg-[#0b121b]">
           {result.appointments.length ? (
@@ -661,6 +781,45 @@ export default async function CustomerV2Page({
             ))
           ) : (
             <div className="p-6 text-sm text-white/30">Aucun rendez-vous.</div>
+          )}
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-cyan-200/45">
+            Historique
+          </p>
+          <h2 className="mt-2 text-xl font-semibold">Timeline client</h2>
+        </div>
+
+        <div className="overflow-hidden rounded-3xl border border-white/8 bg-[#0b121b]">
+          {result.activities.length ? (
+            <div className="divide-y divide-white/8">
+              {result.activities.map((activity) => (
+                <article
+                  key={activity.id || `${activity.event_type}-${activity.created_at}`}
+                  className="relative px-5 py-4 pl-10"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="absolute left-5 top-5 h-2 w-2 rounded-full bg-cyan-300/70"
+                  />
+                  <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                    <p className="text-sm font-semibold text-white/80">
+                      {activity.event_type}
+                    </p>
+                    <p className="text-xs text-white/35">
+                      {dt(activity.created_at) || "Date non renseignée"}
+                    </p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="p-6 text-sm text-white/30">
+              Aucun événement enregistré pour ce client.
+            </div>
           )}
         </div>
       </section>
