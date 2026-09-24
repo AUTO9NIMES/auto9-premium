@@ -17,6 +17,7 @@ import {
 } from "./planning";
 import { formatCustomerActivity } from "./timeline";
 import { summarizeCustomerPayments } from "./finance";
+import { summarizeCustomerRetention } from "./retention";
 import { selectCustomerNextAction } from "./next-action";
 import { buildWhatsAppLink } from "../../../lib/contact";
 import {
@@ -86,6 +87,22 @@ const paymentEur = new Intl.NumberFormat("fr-FR", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
+
+function civilDate(value?: string | null) {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return "Date inconnue";
+  }
+
+  const date = new Date(value + "T12:00:00Z");
+  if (Number.isNaN(date.getTime())) return "Date inconnue";
+
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(date);
+}
 
 function dt(value?: string | null) {
   if (!value) return null;
@@ -177,6 +194,21 @@ export default async function CustomerV2Page({
     ),
   ).length;
   const finance = summarizeCustomerPayments(result.payments);
+  const parisTodayParts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Paris",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date(renderedAt));
+  const parisToday = Object.fromEntries(
+    parisTodayParts.map(({ type, value }) => [type, value]),
+  );
+  const today = `${parisToday.year}-${parisToday.month}-${parisToday.day}`;
+  const retention = summarizeCustomerRetention(
+    result.subscriptions,
+    result.subscriptionBookingRequests,
+    today,
+  );
   const nextAction = selectCustomerNextAction({
     leads: result.leads,
     quotes: result.quotes,
@@ -710,6 +742,123 @@ export default async function CustomerV2Page({
             </Link>
           </div>
         </div>
+      <section className="rounded-3xl border border-cyan-300/10 bg-gradient-to-br from-cyan-300/[0.035] to-transparent p-5 md:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.18em] text-cyan-200/50">
+              Fidélisation / Abonnements
+            </p>
+            <h3 className="mt-2 text-lg font-semibold">Relation récurrente</h3>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-white/40">
+              Échéances contractuelles et demandes de réservation du client.
+              Les tarifs affichés ne représentent pas des encaissements.
+            </p>
+          </div>
+
+          <Link
+            href="/crm-v2/subscriptions"
+            className="text-xs text-cyan-200/65 hover:text-cyan-100"
+          >
+            Gérer les abonnements →
+          </Link>
+        </div>
+
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {[
+            ["Actifs", retention.activeSubscriptions],
+            ["En pause", retention.pausedSubscriptions],
+            ["À replanifier", retention.activeDueCount],
+            ["Demandes en attente", retention.pendingBookingRequestCount],
+          ].map(([label, value]) => (
+            <div
+              key={label}
+              className="rounded-xl border border-white/8 bg-black/10 p-4"
+            >
+              <p className="text-[10px] uppercase tracking-[0.16em] text-white/30">
+                {label}
+              </p>
+              <p className="mt-2 text-2xl font-bold text-white">{value}</p>
+            </div>
+          ))}
+        </div>
+
+        {retention.insights.length > 0 ? (
+          <div className="mt-5 grid gap-3 xl:grid-cols-2">
+            {retention.insights.map(({ subscription, latestBookingRequest }) => (
+              <article
+                key={subscription.id}
+                className="rounded-2xl border border-white/8 bg-black/10 p-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-white">
+                      {subscription.service_name}
+                    </p>
+                    <p className="mt-1 text-xs text-white/35">
+                      Tous les {subscription.frequency_months} mois
+                    </p>
+                  </div>
+
+                  <span className="rounded-full border border-white/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] text-white/50">
+                    {subscription.active ? "Actif" : "En pause"}
+                  </span>
+                </div>
+
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.16em] text-white/30">
+                      Tarif convenu
+                    </p>
+                    <p className="mt-1 text-sm text-white/70">
+                      {subscription.price == null
+                        ? "Non renseigné"
+                        : paymentEur.format(subscription.price)}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.16em] text-white/30">
+                      Prochain passage
+                    </p>
+                    <p className="mt-1 text-sm text-white/70">
+                      {civilDate(subscription.next_due_on)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-4 border-t border-white/8 pt-4">
+                  <p className="text-[10px] uppercase tracking-[0.16em] text-white/30">
+                    Dernière demande de réservation
+                  </p>
+
+                  {latestBookingRequest ? (
+                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-white/55">
+                      <span>{civilDate(latestBookingRequest.requested_date)}</span>
+                      <span>{latestBookingRequest.requested_time.slice(0, 5)}</span>
+                      <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.12em]">
+                        {latestBookingRequest.status === "REQUESTED"
+                          ? "Demandée"
+                          : latestBookingRequest.status === "CONFIRMED"
+                            ? "Confirmée"
+                            : "Annulée"}
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-xs text-white/35">
+                      Aucune demande enregistrée.
+                    </p>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-5 rounded-2xl border border-dashed border-white/10 p-6 text-sm text-white/35">
+            Aucun abonnement enregistré pour ce client.
+          </div>
+        )}
+      </section>
+
       </section>
 
       <section className="space-y-3">
