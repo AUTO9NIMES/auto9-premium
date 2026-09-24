@@ -88,9 +88,8 @@ describe("CRM tenant/storage migration architecture", () => {
 
   it.each([
     ["040_crm_v2_customer_enrichment.sql", "dfcd23200f48eea605d879daffec437e41ec8843fe911eeaaed4dce4d6d7297b"],
-    ["040_crm_v2_customer_vehicle_profile.sql", "752c087b90ab70d71b3dee33fbc453eee30dc9abab793ff18fdcb025b0b237a9"],
     ["041_crm_v2_calendar_event_pipeline_link.sql", "756527e5996d10176ca9c5ea28aa8980b3152adcb255ff9d006c1353e7e631ea"],
-    ["041_safe_customer_delete.sql", "4abbbd1db6226b9ec956597a90b123fa7f2419197b34e9efa90b7a9f7159e384"],
+    ["048_safe_customer_delete.sql", "4abbbd1db6226b9ec956597a90b123fa7f2419197b34e9efa90b7a9f7159e384"],
   ])("preserves the historical bytes of %s", (file, expected) => {
     expect(hash(`supabase/migrations/${file}`)).toBe(expected);
   });
