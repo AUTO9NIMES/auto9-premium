@@ -1,24 +1,26 @@
 "use client";
 
 import { useState } from "react";
+import type { LeadLifecycleStatus } from "../../lib/crm";
 
 export default function LeadDangerActions({
   leadId,
-  closed,
+  lifecycleStatus,
   cancelAction,
   deleteAction,
 }: {
   leadId: string;
-  closed: boolean;
+  lifecycleStatus: LeadLifecycleStatus;
   cancelAction: (formData: FormData) => void | Promise<void>;
   deleteAction: (formData: FormData) => void | Promise<void>;
 }) {
+  const canCancel = ["NEW", "QUALIFIED", "CONTACTED", "QUOTE_SENT"].includes(lifecycleStatus);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {!closed && !showCancel && (
+      {canCancel && !showCancel && (
         <button
           type="button"
           onClick={() => setShowCancel(true)}
@@ -28,7 +30,7 @@ export default function LeadDangerActions({
         </button>
       )}
 
-      {!closed && showCancel && (
+      {canCancel && showCancel && (
         <div className="w-full rounded-2xl border border-amber-300/15 bg-amber-300/[0.035] p-3 md:min-w-[360px]">
           <p className="text-xs font-semibold text-amber-100">
             Annuler la demande
@@ -42,7 +44,7 @@ export default function LeadDangerActions({
               name="comment"
               rows={3}
               maxLength={1000}
-              placeholder="Ex. Client a vendu le véhicule / ne souhaite plus donner suite / RDV annulé..."
+              placeholder="Ex. Client a vendu le véhicule / ne souhaite plus donner suite..."
               className="w-full resize-none rounded-xl border border-white/10 bg-[#081019] px-3 py-2 text-xs text-white outline-none placeholder:text-white/20 focus:border-amber-300/30"
             />
             <div className="flex flex-wrap gap-2">

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { requireCrmAccess } from "../../lib/auth/dal";
 import {
   getLeadsList,
   type LeadLifecycleStatus,
@@ -12,6 +13,7 @@ import {
   recordV2Payment,
   toggleV2LeadStep,
   updateV2LeadDetails,
+  updateV2DraftPrice,
 } from "./actions";
 import LeadDangerActions from "./LeadDangerActions";
 import LeadEditPanel from "./LeadEditPanel";
@@ -121,7 +123,8 @@ function cancellationInfo(
   const row = activity.find(
     (entry) =>
       entry.lead_id === leadId &&
-      entry.event_type === "lead.cancelled",
+      (entry.event_type === "lead.cancelled" ||
+        (entry.event_type === "lead.status_changed" && entry.event_data?.new_status === "CLOSED_LOST")),
   );
 
   if (!row) return null;
@@ -301,11 +304,19 @@ function LeadProgress({
                 initialPrice={String(item.latestQuote?.total_price ?? item.latestJob?.total_amount ?? "")}
                 initialNote={item.lead.notes || ""}
                 action={updateV2LeadDetails}
+                quoteId={item.latestQuote?.id ?? null}
+                expectedPrice={item.latestQuote?.total_price ?? null}
+                canEditPrice={Boolean(
+                  item.latestQuote?.id && item.latestQuote.status === "DRAFT" &&
+                  ["NEW", "QUALIFIED", "CONTACTED"].includes(item.lead.lifecycle_status) &&
+                  !item.latestJob
+                )}
+                priceAction={updateV2DraftPrice}
               />
             )}
             <LeadDangerActions
               leadId={item.lead.id}
-              closed={closed}
+              lifecycleStatus={item.lead.lifecycle_status}
               cancelAction={cancelV2Lead}
               deleteAction={deleteV2Lead}
             />
@@ -429,6 +440,8 @@ export default async function CrmV2Pipeline({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await requireCrmAccess();
+
   const params = await searchParams;
   const rawSearch = Array.isArray(params.search) ? params.search[0] : params.search;
   const search = rawSearch?.trim() || undefined;
@@ -449,6 +462,8 @@ export default async function CrmV2Pipeline({
   const editUpdated =
     (Array.isArray(params.edit_updated) ? params.edit_updated[0] : params.edit_updated) === "1";
   const editError = Array.isArray(params.edit_error) ? params.edit_error[0] : params.edit_error;
+  const priceUpdated = (Array.isArray(params.price_updated) ? params.price_updated[0] : params.price_updated) === "1";
+  const priceError = Array.isArray(params.price_error) ? params.price_error[0] : params.price_error;
 
   const result = await getLeadsList({ page: 1, limit: 50, search });
   const { businessId } = await resolveCurrentBusinessContext();
@@ -496,12 +511,30 @@ export default async function CrmV2Pipeline({
       )}
       {editUpdated && (
         <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/[0.05] px-4 py-3 text-sm text-emerald-100">
-          Demande et informations client mises à jour.
+          Coordonnées du client mises à jour.
         </div>
       )}
       {editError && (
         <div className="rounded-xl border border-red-300/20 bg-red-300/[0.05] px-4 py-3 text-sm text-red-100">
           Les modifications n&apos;ont pas pu être enregistrées.
+        </div>
+      )}
+      {priceUpdated && (
+        <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/[0.05] px-4 py-3 text-sm text-emerald-100">
+          Montant du devis brouillon enregistré.
+        </div>
+      )}
+      {priceError && (
+        <div className="rounded-xl border border-red-300/20 bg-red-300/[0.05] px-4 py-3 text-sm text-red-100">
+          {priceError === "conflict"
+            ? "Le montant a changé depuis l’ouverture du dossier. Recharge la page avant de réessayer."
+            : priceError === "invalid_lifecycle"
+              ? "Ce devis est verrouillé : son état ou une prestation liée ne permet plus de modifier le montant."
+              : priceError === "not_found"
+                ? "Ce devis est introuvable. Recharge la page."
+                : priceError === "invalid_amount"
+                  ? "Saisis un montant positif, avec deux décimales au maximum (plafond : 10 000 000 €)."
+                  : "Le montant n’a pas pu être enregistré. Réessaie plus tard."}
         </div>
       )}
       {stepUpdated && (
@@ -526,7 +559,7 @@ export default async function CrmV2Pipeline({
       )}
       {leadError === "linked" && (
         <div className="rounded-xl border border-red-300/20 bg-red-300/[0.05] px-4 py-3 text-sm text-red-100">
-          Impossible de supprimer cette demande : une prestation est déjà liée. Annule-la plutôt pour conserver l&apos;historique.
+          Impossible de supprimer cette demande : une prestation est déjà liée. Consulte le dossier pour gérer cette prestation et conserver son historique.
         </div>
       )}
       {leadError && leadError !== "linked" && (

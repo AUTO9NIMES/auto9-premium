@@ -3,7 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireCrmAccess } from "../../lib/auth/dal";
-import { recordJobPayment, updateCustomerProfile, type Payment } from "../../lib/crm";
+import {
+  recordJobPayment, transitionLeadStatus, updateCustomerProfile,
+  updateDraftQuoteAmount, type Payment, type UpdateDraftQuoteAmountResult,
+} from "../../lib/crm";
 import { resolveCurrentBusinessContext } from "../../lib/business";
 import { supabaseRest } from "../../lib/supabase";
 
@@ -48,32 +51,12 @@ export async function cancelV2Lead(formData: FormData) {
     redirect("/crm-v2/pipeline?lead_error=invalid");
   }
 
-  const { businessId } = await resolveCurrentBusinessContext();
-
+  let customerId: string;
   try {
-    await supabaseRest(
-      "leads",
-      "PATCH",
-      {
-        lifecycle_status: "CLOSED_LOST",
-      },
-      `business_id=eq.${businessId}&id=eq.${leadId}`,
-    );
-
-    await supabaseRest(
-      "activity_log",
-      "POST",
-      {
-        business_id: businessId,
-        lead_id: leadId,
-        event_type: "lead.cancelled",
-        event_data: {
-          source: "crm_v2",
-          comment: comment || null,
-        },
-      },
-      "select=id",
-    );
+    const result = await transitionLeadStatus({
+      leadId, targetStatus: "CLOSED_LOST", source: "crm_v2", comment: comment || null,
+    });
+    customerId = result.lead.customer_id;
   } catch {
     redirect("/crm-v2/pipeline?lead_error=unavailable");
   }
@@ -81,6 +64,11 @@ export async function cancelV2Lead(formData: FormData) {
   revalidatePath("/crm-v2");
   revalidatePath("/crm-v2/pipeline");
   revalidatePath("/crm-v2/clients");
+  revalidatePath("/crm");
+  revalidatePath("/crm/pipeline");
+  revalidatePath(`/crm/pipeline/${leadId}`);
+  revalidatePath(`/crm/clients/${customerId}`);
+  revalidatePath(`/crm-v2/clients/${customerId}`);
   redirect("/crm-v2/pipeline?lead_cancelled=1");
 }
 
@@ -195,6 +183,7 @@ export async function toggleV2LeadStep(formData: FormData) {
 }
 
 
+// Profile-only save: service, notes and financial records are not editable here.
 export async function updateV2LeadDetails(formData: FormData) {
   await requireCrmAccess();
 
@@ -203,162 +192,89 @@ export async function updateV2LeadDetails(formData: FormData) {
   const phone = String(formData.get("phone") || "").trim();
   const email = String(formData.get("email") || "").trim();
   const city = String(formData.get("city") || "").trim();
-  const serviceName = String(formData.get("serviceName") || "").trim();
-  const note = String(formData.get("note") || "").trim().slice(0, 2000);
-  const priceRaw = String(formData.get("price") || "").trim();
-  const price = priceRaw ? Number(priceRaw.replace(",", ".")) : null;
-
-  if (
-    !UUID_REGEX.test(leadId) ||
-    !fullName ||
-    !serviceName ||
-    (price !== null && (!Number.isFinite(price) || price < 0))
-  ) {
+  if (!UUID_REGEX.test(leadId) || !fullName) {
     redirect("/crm-v2/pipeline?edit_error=invalid");
   }
 
   const { businessId } = await resolveCurrentBusinessContext();
-
+  let customerId: string;
   try {
-    const leadRows = await supabaseRest<Array<{
-      id: string;
-      customer_id: string;
-      notes: string | null;
-    }>>(
-      "leads",
-      "GET",
-      null,
-      `business_id=eq.${businessId}&id=eq.${leadId}&select=id,customer_id,notes&limit=1`,
+    const rows = await supabaseRest<Array<{ customer_id: string }>>(
+      "leads", "GET", null,
+      `business_id=eq.${businessId}&id=eq.${leadId}&select=customer_id&limit=1`,
     );
-    const lead = (leadRows as Array<{
-      id: string;
-      customer_id: string;
-      notes: string | null;
-    }> | null)?.[0];
-
-    if (!lead) {
-      redirect("/crm-v2/pipeline?edit_error=invalid");
-    }
-
+    const lead = (rows as Array<{ customer_id: string }> | null)?.[0];
+    if (!lead) redirect("/crm-v2/pipeline?edit_error=not_found");
+    customerId = lead.customer_id;
     const parts = fullName.split(/\s+/).filter(Boolean);
     await updateCustomerProfile({
-      customerId: lead.customer_id,
-      fullName,
+      customerId, fullName,
       firstName: parts[0] || null,
       lastName: parts.slice(1).join(" ") || null,
-      email: email || null,
-      phone: phone || null,
-      city: city || null,
+      email: email || null, phone: phone || null, city: city || null,
     });
-
-    await supabaseRest(
-      "leads",
-      "PATCH",
-      {
-        notes: note || null,
-        updated_at: new Date().toISOString(),
-      },
-      `business_id=eq.${businessId}&id=eq.${leadId}`,
-    );
-
-    const serviceRows = await supabaseRest<Array<{ id: string }>>(
-      "lead_services",
-      "GET",
-      null,
-      `business_id=eq.${businessId}&lead_id=eq.${leadId}&order=created_at.desc&select=id&limit=1`,
-    );
-    const serviceId = (serviceRows as Array<{ id: string }> | null)?.[0]?.id;
-
-    if (serviceId) {
-      await supabaseRest(
-        "lead_services",
-        "PATCH",
-        {
-          service_name: serviceName,
-          base_price: price,
-          customer_comment: note || null,
-          updated_at: new Date().toISOString(),
-        },
-        `business_id=eq.${businessId}&id=eq.${serviceId}`,
-      );
-    }
-
-    const quoteRows = await supabaseRest<Array<{
-      id: string;
-      payload_json: Record<string, unknown> | null;
-    }>>(
-      "quotes",
-      "GET",
-      null,
-      `business_id=eq.${businessId}&lead_id=eq.${leadId}&order=quote_version.desc&select=id,payload_json&limit=1`,
-    );
-    const quote = (quoteRows as Array<{
-      id: string;
-      payload_json: Record<string, unknown> | null;
-    }> | null)?.[0];
-
-    if (quote) {
-      await supabaseRest(
-        "quotes",
-        "PATCH",
-        {
-          total_price: price,
-          payload_json: {
-            ...(quote.payload_json || {}),
-            serviceName,
-          },
-          updated_at: new Date().toISOString(),
-        },
-        `business_id=eq.${businessId}&id=eq.${quote.id}`,
-      );
-    }
-
-    const jobRows = await supabaseRest<Array<{ id: string; status: string }>>(
-      "jobs",
-      "GET",
-      null,
-      `business_id=eq.${businessId}&lead_id=eq.${leadId}&order=created_at.desc&select=id,status&limit=1`,
-    );
-    const job = (jobRows as Array<{ id: string; status: string }> | null)?.[0];
-
-    if (job && job.status !== "PAID") {
-      await supabaseRest(
-        "jobs",
-        "PATCH",
-        {
-          title: serviceName,
-          total_amount: price,
-          notes: note || null,
-          updated_at: new Date().toISOString(),
-        },
-        `business_id=eq.${businessId}&id=eq.${job.id}`,
-      );
-    }
-
-    await supabaseRest(
-      "activity_log",
-      "POST",
-      {
-        business_id: businessId,
-        customer_id: lead.customer_id,
-        lead_id: leadId,
-        event_type: "lead.details_updated",
-        event_data: {
-          source: "crm_v2",
-          service_name: serviceName,
-          price,
-          note: note || null,
-        },
-      },
-      "select=id",
-    );
   } catch (error) {
     if (error && typeof error === "object" && "digest" in error) throw error;
     redirect("/crm-v2/pipeline?edit_error=unavailable");
   }
 
+  // A shared customer profile appears in every dossier and job for that customer.
   revalidatePath("/crm-v2");
   revalidatePath("/crm-v2/pipeline");
   revalidatePath("/crm-v2/clients");
+  revalidatePath(`/crm-v2/clients/${customerId}`);
+  revalidatePath("/crm");
+  revalidatePath("/crm/clients");
+  revalidatePath(`/crm/clients/${customerId}`);
+  revalidatePath("/crm/pipeline");
+  revalidatePath("/crm/pipeline/[leadId]", "page");
+  revalidatePath("/crm/jobs");
+  revalidatePath("/crm/jobs/[jobId]", "page");
   redirect("/crm-v2/pipeline?edit_updated=1");
+}
+
+export async function updateV2DraftPrice(formData: FormData) {
+  await requireCrmAccess();
+
+  const quoteId = String(formData.get("quoteId") || "").trim();
+  const rawPrice = String(formData.get("price") || "").trim().replace(",", ".");
+  const rawExpected = formData.get("expectedPrice");
+  const expected = typeof rawExpected === "string" ? rawExpected.trim() : "";
+  const totalPrice = Number(rawPrice);
+  // Explicit null represents a displayed legacy quote with no amount. Missing
+  // expectedPrice must not silently become null and bypass the form contract.
+  const expectedTotalPrice = expected === "null" ? null : Number(expected);
+  const amountPattern = /^\d+(?:\.\d{1,2})?$/;
+  if (
+    !UUID_REGEX.test(quoteId) || !amountPattern.test(rawPrice) ||
+    !Number.isFinite(totalPrice) || totalPrice <= 0 || totalPrice > 10000000 ||
+    (expected !== "null" && (
+      !expected || !Number.isFinite(expectedTotalPrice) ||
+      expectedTotalPrice === null || expectedTotalPrice < 0 || expectedTotalPrice > 10000000
+    ))
+  ) {
+    redirect("/crm-v2/pipeline?price_error=invalid_amount");
+  }
+
+  let result: UpdateDraftQuoteAmountResult;
+  try {
+    result = await updateDraftQuoteAmount({ quoteId, expectedTotalPrice, totalPrice });
+  } catch {
+    redirect("/crm-v2/pipeline?price_error=unavailable");
+  }
+  if (result.status !== "updated" && result.status !== "no_op") {
+    redirect(`/crm-v2/pipeline?price_error=${result.status}`);
+  }
+
+  revalidatePath("/crm-v2");
+  revalidatePath("/crm-v2/pipeline");
+  revalidatePath("/crm-v2/clients");
+  revalidatePath("/crm");
+  revalidatePath("/crm/pipeline");
+  if (result.leadId) revalidatePath(`/crm/pipeline/${result.leadId}`);
+  // The RPC returns the lead, not the customer ID. Invalidate the two Customer
+  // 360 page patterns without adding a fallible read after a committed mutation.
+  revalidatePath("/crm/clients/[customerId]", "page");
+  revalidatePath("/crm-v2/clients/[customerId]", "page");
+  redirect("/crm-v2/pipeline?price_updated=1");
 }
