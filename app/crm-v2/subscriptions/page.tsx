@@ -2,9 +2,24 @@ import Link from "next/link";
 import { getCustomersList, type Customer } from "../../lib/crm";
 import { resolveCurrentBusinessContext } from "../../lib/business";
 import { supabaseRest } from "../../lib/supabase";
-import { advanceSubscription, createSubscription, toggleSubscription } from "./actions";
+import {
+  advanceSubscription,
+  confirmSubscriptionBookingRequestAction,
+  createSubscription,
+  toggleSubscription,
+} from "./actions";
 
 export const dynamic = "force-dynamic";
+
+type SubscriptionBookingRequest = {
+  id: string;
+  subscription_id: string;
+  customer_id: string;
+  requested_date: string;
+  requested_time: string;
+  status: "REQUESTED" | "CONFIRMED" | "CANCELLED";
+  created_at: string;
+};
 
 type Subscription = {
   id: string;
@@ -49,27 +64,43 @@ export default async function SubscriptionsPage({
   const showNew = (Array.isArray(params.new) ? params.new[0] : params.new) === "1";
   const created = (Array.isArray(params.created) ? params.created[0] : params.created) === "1";
   const updated = (Array.isArray(params.updated) ? params.updated[0] : params.updated) === "1";
+  const confirmed = (Array.isArray(params.confirmed) ? params.confirmed[0] : params.confirmed) === "1";
   const error = Array.isArray(params.error) ? params.error[0] : params.error;
 
   const { businessId } = await resolveCurrentBusinessContext();
   const customersResult = await getCustomersList({ page: 1, limit: 100 });
 
   let subscriptions: Subscription[] = [];
+  let bookingRequests: SubscriptionBookingRequest[] = [];
   let storageUnavailable = false;
 
   try {
-    const rows = await supabaseRest<Subscription[]>(
-      "crm_subscriptions",
-      "GET",
-      null,
-      `business_id=eq.${businessId}&order=active.desc,next_due_on.asc&select=*`
-    );
-    subscriptions = (rows as Subscription[] | null) ?? [];
+    const [subscriptionRows, bookingRequestRows] = await Promise.all([
+      supabaseRest<Subscription[]>(
+        "crm_subscriptions",
+        "GET",
+        null,
+        `business_id=eq.${businessId}&order=active.desc,next_due_on.asc&select=*`,
+      ),
+      supabaseRest<SubscriptionBookingRequest[]>(
+        "crm_subscription_booking_requests",
+        "GET",
+        null,
+        `business_id=eq.${businessId}&status=eq.REQUESTED&order=requested_date.asc,requested_time.asc,created_at.asc,id.asc&select=id,subscription_id,customer_id,requested_date,requested_time,status,created_at`,
+      ),
+    ]);
+
+    subscriptions = (subscriptionRows as Subscription[] | null) ?? [];
+    bookingRequests =
+      (bookingRequestRows as SubscriptionBookingRequest[] | null) ?? [];
   } catch {
     storageUnavailable = true;
   }
 
   const customerById = new Map(customersResult.items.map((item) => [item.customer.id, item.customer]));
+  const subscriptionById = new Map(
+    subscriptions.map((subscription) => [subscription.id, subscription]),
+  );
   const dueCount = subscriptions.filter((s) => s.active && dueThisMonth(s.next_due_on)).length;
 
   return (
@@ -106,6 +137,7 @@ export default async function SubscriptionsPage({
 
       {created && <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/[0.05] px-4 py-3 text-sm text-emerald-100">Abonnement créé.</div>}
       {updated && <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/[0.05] px-4 py-3 text-sm text-emerald-100">Abonnement mis à jour.</div>}
+      {confirmed && <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/[0.05] px-4 py-3 text-sm text-emerald-100">Demande acceptée et transmise au planning opérationnel.</div>}
       {(error || storageUnavailable) && (
         <div className="rounded-xl border border-amber-300/20 bg-amber-300/[0.05] px-4 py-3 text-sm text-amber-100">
           {storageUnavailable ? "La table Abonnements doit encore être initialisée dans la base de données." : "L'action n'a pas pu être effectuée."}
@@ -132,7 +164,7 @@ export default async function SubscriptionsPage({
             <label className="text-xs text-white/45">
               Tarif négocié (€)
               <input name="price" inputMode="decimal" placeholder="Ex. 169" className="mt-2 w-full rounded-xl border border-white/10 bg-[#081019] px-4 py-3 text-sm outline-none placeholder:text-white/25" />
-              <span className="mt-1 block text-[10px] text-white/25">Montant libre selon l'accord conclu avec le client.</span>
+              <span className="mt-1 block text-[10px] text-white/25">Montant libre selon l&apos;accord conclu avec le client.</span>
             </label>
             <select name="frequencyMonths" defaultValue="1" className="rounded-xl border border-white/10 bg-[#081019] px-4 py-3 text-sm text-white">
               <option value="1">Tous les mois</option>
@@ -145,8 +177,65 @@ export default async function SubscriptionsPage({
               <input name="nextDueOn" type="date" required className="mt-2 w-full rounded-xl border border-white/10 bg-[#081019] px-4 py-3 text-sm text-white" />
             </label>
             <textarea name="notes" placeholder="Notes (facultatif)" className="rounded-xl border border-white/10 bg-[#081019] px-4 py-3 text-sm outline-none placeholder:text-white/25" />
-            <button className="rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-3 text-sm font-semibold text-cyan-100 md:col-span-2">Créer l'abonnement</button>
+            <button className="rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-3 text-sm font-semibold text-cyan-100 md:col-span-2">Créer l&apos;abonnement</button>
           </form>
+        </section>
+      )}
+
+      {bookingRequests.length > 0 && (
+        <section className="rounded-3xl border border-amber-300/15 bg-amber-300/[0.025] p-5 md:p-6">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.22em] text-amber-200/55">
+              Demandes clients
+            </p>
+            <h2 className="mt-2 text-xl font-semibold">
+              À accepter
+            </h2>
+            <p className="mt-2 text-xs leading-5 text-white/35">
+              Chaque acceptation crée atomiquement le lead, la prestation planifiée et son rendez-vous opérationnel.
+            </p>
+          </div>
+
+          <div className="mt-5 space-y-3">
+            {bookingRequests.map((request) => {
+              const subscription = subscriptionById.get(request.subscription_id);
+              const customer = customerById.get(request.customer_id);
+
+              return (
+                <article
+                  key={request.id}
+                  className="flex flex-col justify-between gap-4 rounded-2xl border border-white/8 bg-black/10 p-4 md:flex-row md:items-center"
+                >
+                  <div>
+                    <p className="text-sm font-semibold text-white">
+                      {customer?.full_name || "Client"}
+                    </p>
+                    <p className="mt-1 text-xs text-white/50">
+                      {subscription?.service_name || "Abonnement"} ·{" "}
+                      {new Intl.DateTimeFormat("fr-FR").format(
+                        new Date(request.requested_date + "T12:00:00Z"),
+                      )}{" "}
+                      à {request.requested_time.slice(0, 5)}
+                    </p>
+                    <p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-amber-100/55">
+                      Demande en attente
+                    </p>
+                  </div>
+
+                  <form action={confirmSubscriptionBookingRequestAction}>
+                    <input
+                      type="hidden"
+                      name="bookingRequestId"
+                      value={request.id}
+                    />
+                    <button className="rounded-xl border border-emerald-300/25 bg-emerald-300/[0.07] px-4 py-2.5 text-xs font-semibold text-emerald-100">
+                      Accepter et planifier
+                    </button>
+                  </form>
+                </article>
+              );
+            })}
+          </div>
         </section>
       )}
 
@@ -177,7 +266,7 @@ export default async function SubscriptionsPage({
                   </Link>
                   {emailReady ? (
                     <a href={emailHref(customer, subscription)} className="rounded-xl border border-cyan-300/25 bg-cyan-300/[0.07] px-3 py-2.5 text-xs font-semibold text-cyan-100">
-                      Préparer l'email
+                      Préparer l&apos;email
                     </a>
                   ) : (
                     <span className="rounded-xl border border-white/8 px-3 py-2.5 text-xs text-white/25">{customer?.email ? "Lien privé indisponible" : "Email manquant"}</span>
