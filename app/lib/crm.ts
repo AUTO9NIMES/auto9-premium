@@ -712,6 +712,8 @@ export async function updateCustomerProfile(input: {
       p_city: input.city ?? null,
       p_source: "crm_customer_profile_ui",
       p_birth_date: input.birthDate ?? null,
+      // Omission preserves the locked row's value; explicit null clears it.
+      p_birth_date_provided: input.birthDate !== undefined,
     },
   );
 
@@ -3248,6 +3250,7 @@ export async function transitionLeadStatus(input: {
   leadId: string;
   targetStatus: LeadLifecycleStatus;
   source?: string;
+  comment?: string | null;
 }): Promise<TransitionLeadStatusResult> {
   if (!hasSupabaseWriteConfig()) {
     throw new Error("Supabase persistence is not configured.");
@@ -3269,6 +3272,7 @@ export async function transitionLeadStatus(input: {
       p_lead_id: leadId,
       p_target_status: input.targetStatus,
       p_source: input.source?.trim() || "internal",
+      ...(input.comment !== undefined ? { p_comment: input.comment } : {}),
     },
   );
 
