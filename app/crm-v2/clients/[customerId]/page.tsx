@@ -15,6 +15,7 @@ import {
   getCustomer360RenderedAt,
   selectCustomerPlanningAppointment,
 } from "./planning";
+import { formatCustomerActivity } from "./timeline";
 import { buildWhatsAppLink } from "../../../lib/contact";
 import {
   createV2Vehicle,
@@ -796,25 +797,36 @@ export default async function CustomerV2Page({
         <div className="overflow-hidden rounded-3xl border border-white/8 bg-[#0b121b]">
           {result.activities.length ? (
             <div className="divide-y divide-white/8">
-              {result.activities.map((activity) => (
-                <article
-                  key={activity.id || `${activity.event_type}-${activity.created_at}`}
-                  className="relative px-5 py-4 pl-10"
-                >
-                  <span
-                    aria-hidden="true"
-                    className="absolute left-5 top-5 h-2 w-2 rounded-full bg-cyan-300/70"
-                  />
-                  <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                    <p className="text-sm font-semibold text-white/80">
-                      {activity.event_type}
-                    </p>
-                    <p className="text-xs text-white/35">
-                      {dt(activity.created_at) || "Date non renseignée"}
-                    </p>
-                  </div>
-                </article>
-              ))}
+              {result.activities.map((activity) => {
+                const presentation = formatCustomerActivity(activity);
+
+                return (
+                  <article
+                    key={activity.id || `${activity.event_type}-${activity.created_at}`}
+                    className="relative px-5 py-4 pl-10"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="absolute left-5 top-5 h-2 w-2 rounded-full bg-cyan-300/70"
+                    />
+                    <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-white/80">
+                          {presentation.title}
+                        </p>
+                        {presentation.detail && (
+                          <p className="mt-1 text-xs leading-5 text-white/50">
+                            {presentation.detail}
+                          </p>
+                        )}
+                      </div>
+                      <p className="shrink-0 text-xs text-white/35">
+                        {dt(activity.created_at) || "Date non renseignée"}
+                      </p>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           ) : (
             <div className="p-6 text-sm text-white/30">
