@@ -182,6 +182,20 @@ describe("CRM V2 Customer 360 source contract", () => {
     expect(page).toContain("{activity.event_type}");
   });
 
+  it("deep-links customer leads and jobs to their existing canonical detail routes", () => {
+    expect(page).toContain('href={`/crm/pipeline/${lead.id}`}');
+    expect(page).toContain('href={`/crm/jobs/${job.id}`}');
+    expect(page).toContain("Ouvrir le dossier →");
+    expect(page).toContain("Ouvrir la prestation →");
+
+    expect(page).not.toContain('href={`/crm-v2/pipeline/${lead.id}`}');
+    expect(page).not.toContain('href={`/crm-v2/jobs/${job.id}`}');
+    expect(page).not.toContain('href={`/crm-v2/quotes/${quote.id}`}');
+    expect(page).not.toContain(
+      'href={`/crm-v2/appointments/${appointment.id}`',
+    );
+  });
+
   it("keeps profile and vehicle management actions reachable", () => {
     expect(page).toContain("action={updateV2CustomerProfile}");
     expect(page).toContain("action={createV2Vehicle}");
