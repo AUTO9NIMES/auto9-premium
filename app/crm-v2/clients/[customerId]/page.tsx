@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -21,7 +22,13 @@ import { summarizeCustomerRetention } from "./retention";
 import { selectCustomerNextAction } from "./next-action";
 import { buildWhatsAppLink } from "../../../lib/contact";
 import {
+  completeV2CustomerJob,
+  confirmV2CustomerAppointment,
   createV2Vehicle,
+  recordV2CustomerJobPayment,
+  requestV2CustomerJobReview,
+  scheduleV2CustomerJob,
+  startV2CustomerJob,
   updateV2CustomerProfile,
   uploadV2VehiclePhoto,
 } from "./actions";
@@ -175,6 +182,10 @@ export default async function CustomerV2Page({
     (Array.isArray(sp.photo_updated) ? sp.photo_updated[0] : sp.photo_updated) ===
     "1";
   const error = Array.isArray(sp.error) ? sp.error[0] : sp.error;
+  const operation = Array.isArray(sp.operation) ? sp.operation[0] : sp.operation;
+  const operationError = Array.isArray(sp.operation_error)
+    ? sp.operation_error[0]
+    : sp.operation_error;
   const vehicleError = Array.isArray(sp.vehicle_error)
     ? sp.vehicle_error[0]
     : sp.vehicle_error;
@@ -262,6 +273,21 @@ export default async function CustomerV2Page({
   } as const;
 
   const nextActionPresentation = nextActionCopy[nextAction.kind];
+  const nextActionJob = nextAction.jobId
+    ? result.jobs.find((job) => job.id === nextAction.jobId) ?? null
+    : null;
+  const nextActionAppointment =
+    nextAction.appointmentId && nextActionJob
+      ? result.appointments.find(
+          (appointment) =>
+            appointment.id === nextAction.appointmentId &&
+            appointment.job_id === nextActionJob.id,
+        ) ?? null
+      : null;
+  const paymentIdempotencyKey =
+    nextAction.kind === "RECORD_PAYMENT" ? randomUUID() : null;
+  const reviewIdempotencyKey =
+    nextAction.kind === "REQUEST_REVIEW" ? randomUUID() : null;
 
   const {
     nextAppointment,
@@ -306,7 +332,12 @@ export default async function CustomerV2Page({
           Photo du véhicule mise à jour.
         </div>
       )}
-      {(error || vehicleError || photoError) && (
+      {operation && (
+        <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/[0.05] px-4 py-3 text-sm text-emerald-100">
+          Action opérationnelle enregistrée.
+        </div>
+      )}
+      {(error || vehicleError || photoError || operationError) && (
         <div className="rounded-xl border border-red-300/20 bg-red-300/[0.05] px-4 py-3 text-sm text-red-100">
           La modification n&apos;a pas pu être enregistrée.
         </div>
@@ -592,7 +623,110 @@ export default async function CustomerV2Page({
               </p>
             </div>
 
-            {nextAction.href ? (
+            {nextAction.kind === "SCHEDULE_JOB" && nextActionJob ? (
+              <form action={scheduleV2CustomerJob} className="flex flex-wrap items-end gap-2">
+                <input type="hidden" name="customerId" value={id} />
+                <input type="hidden" name="jobId" value={nextActionJob.id} />
+                <label className="text-[10px] uppercase tracking-[0.12em] text-white/35">
+                  Créneau
+                  <input
+                    type="datetime-local"
+                    name="scheduledAt"
+                    required
+                    className="mt-1 block rounded-xl border border-white/10 bg-[#081019] px-3 py-2 text-xs text-white"
+                  />
+                </label>
+                <button className="rounded-xl border border-amber-300/20 bg-amber-300/[0.06] px-4 py-2.5 text-xs font-semibold text-amber-100">
+                  Planifier
+                </button>
+              </form>
+            ) : nextAction.kind === "CONFIRM_APPOINTMENT" &&
+              nextActionJob &&
+              nextActionAppointment ? (
+              <form action={confirmV2CustomerAppointment}>
+                <input type="hidden" name="customerId" value={id} />
+                <input type="hidden" name="jobId" value={nextActionJob.id} />
+                <input
+                  type="hidden"
+                  name="appointmentId"
+                  value={nextActionAppointment.id}
+                />
+                <button className="rounded-xl border border-amber-300/20 bg-amber-300/[0.06] px-4 py-2.5 text-xs font-semibold text-amber-100">
+                  Confirmer le rendez-vous
+                </button>
+              </form>
+            ) : nextAction.kind === "START_JOB" && nextActionJob ? (
+              <form action={startV2CustomerJob}>
+                <input type="hidden" name="customerId" value={id} />
+                <input type="hidden" name="jobId" value={nextActionJob.id} />
+                <button className="rounded-xl border border-amber-300/20 bg-amber-300/[0.06] px-4 py-2.5 text-xs font-semibold text-amber-100">
+                  Démarrer la prestation
+                </button>
+              </form>
+            ) : nextAction.kind === "COMPLETE_JOB" &&
+              nextActionJob &&
+              nextActionAppointment ? (
+              <form action={completeV2CustomerJob}>
+                <input type="hidden" name="customerId" value={id} />
+                <input type="hidden" name="jobId" value={nextActionJob.id} />
+                <input
+                  type="hidden"
+                  name="appointmentId"
+                  value={nextActionAppointment.id}
+                />
+                <button className="rounded-xl border border-amber-300/20 bg-amber-300/[0.06] px-4 py-2.5 text-xs font-semibold text-amber-100">
+                  Terminer la prestation
+                </button>
+              </form>
+            ) : nextAction.kind === "RECORD_PAYMENT" &&
+              nextActionJob &&
+              paymentIdempotencyKey ? (
+              <form
+                action={recordV2CustomerJobPayment}
+                className="flex flex-wrap items-end gap-2"
+              >
+                <input type="hidden" name="customerId" value={id} />
+                <input type="hidden" name="jobId" value={nextActionJob.id} />
+                <input
+                  type="hidden"
+                  name="idempotencyKey"
+                  value={paymentIdempotencyKey}
+                />
+                <label className="text-[10px] uppercase tracking-[0.12em] text-white/35">
+                  Paiement
+                  <select
+                    name="method"
+                    required
+                    defaultValue=""
+                    className="mt-1 block rounded-xl border border-white/10 bg-[#081019] px-3 py-2 text-xs text-white"
+                  >
+                    <option value="" disabled>Mode</option>
+                    <option value="CASH">Espèces</option>
+                    <option value="CARD">Carte</option>
+                    <option value="BANK_TRANSFER">Virement</option>
+                    <option value="OTHER">Autre</option>
+                  </select>
+                </label>
+                <button className="rounded-xl border border-amber-300/20 bg-amber-300/[0.06] px-4 py-2.5 text-xs font-semibold text-amber-100">
+                  Encaisser
+                </button>
+              </form>
+            ) : nextAction.kind === "REQUEST_REVIEW" &&
+              nextActionJob &&
+              reviewIdempotencyKey ? (
+              <form action={requestV2CustomerJobReview}>
+                <input type="hidden" name="customerId" value={id} />
+                <input type="hidden" name="jobId" value={nextActionJob.id} />
+                <input
+                  type="hidden"
+                  name="idempotencyKey"
+                  value={reviewIdempotencyKey}
+                />
+                <button className="rounded-xl border border-amber-300/20 bg-amber-300/[0.06] px-4 py-2.5 text-xs font-semibold text-amber-100">
+                  Demander un avis
+                </button>
+              </form>
+            ) : nextAction.href ? (
               <Link
                 href={nextAction.href}
                 className="rounded-xl border border-amber-300/20 bg-amber-300/[0.06] px-4 py-2.5 text-xs font-semibold text-amber-100 hover:border-amber-200/35 hover:bg-amber-300/[0.1]"

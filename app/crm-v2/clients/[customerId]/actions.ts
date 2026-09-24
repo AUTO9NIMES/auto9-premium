@@ -6,13 +6,279 @@ import { requireCrmAccess } from "../../../lib/auth/dal";
 import { resolveCurrentBusinessContext } from "../../../lib/business";
 import {
   createCustomerVehicle,
+  getCustomer360,
+  recordJobPayment,
+  requestJobReview,
+  scheduleJob,
+  startJob,
+  transitionAppointmentStatus,
   updateCustomerProfile,
+  type Payment,
 } from "../../../lib/crm";
 import { supabaseRest } from "../../../lib/supabase";
 import { uploadVehiclePhoto } from "../../../lib/crm-storage";
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const LOCAL_DATETIME_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
+const paymentMethods = new Set<Payment["method"]>([
+  "CASH",
+  "CARD",
+  "BANK_TRANSFER",
+  "OTHER",
+]);
+
+function customerPath(customerId: string) {
+  return `/crm-v2/clients/${customerId}`;
+}
+
+function redirectOperationalError(
+  customerId: string,
+  error: "invalid" | "unavailable",
+): never {
+  redirect(`${customerPath(customerId)}?operation_error=${error}`);
+}
+
+async function requireOwnedOperationalContext(input: {
+  customerId: string;
+  jobId: string;
+  appointmentId?: string;
+}) {
+  const result = await getCustomer360(input.customerId);
+  if (!result) return null;
+
+  const job = result.jobs.find(
+    (candidate) =>
+      candidate.id === input.jobId &&
+      candidate.customer_id === input.customerId,
+  );
+
+  if (!job) return null;
+
+  const appointment = input.appointmentId
+    ? result.appointments.find(
+        (candidate) =>
+          candidate.id === input.appointmentId &&
+          candidate.job_id === input.jobId &&
+          candidate.customer_id === input.customerId,
+      ) ?? null
+    : null;
+
+  if (input.appointmentId && !appointment) return null;
+
+  return { result, job, appointment };
+}
+
+function revalidateOperationalSurfaces(customerId: string, jobId: string) {
+  revalidatePath(customerPath(customerId));
+  revalidatePath("/crm-v2/clients");
+  revalidatePath("/crm-v2");
+  revalidatePath("/crm-v2/calendar");
+  revalidatePath("/crm-v2/pipeline");
+  revalidatePath("/crm-v2/revenue");
+  revalidatePath(`/crm/jobs/${jobId}`);
+  revalidatePath("/crm/jobs");
+  revalidatePath("/crm/calendar");
+  revalidatePath("/crm/pipeline");
+  revalidatePath("/crm");
+}
+
+export async function scheduleV2CustomerJob(formData: FormData) {
+  await requireCrmAccess();
+
+  const customerId = String(formData.get("customerId") || "").trim();
+  const jobId = String(formData.get("jobId") || "").trim();
+  const scheduledAt = String(formData.get("scheduledAt") || "").trim();
+
+  if (
+    !UUID_REGEX.test(customerId) ||
+    !UUID_REGEX.test(jobId) ||
+    !LOCAL_DATETIME_REGEX.test(scheduledAt)
+  ) {
+    redirectOperationalError(customerId, "invalid");
+  }
+
+  try {
+    const context = await requireOwnedOperationalContext({ customerId, jobId });
+    if (!context) redirectOperationalError(customerId, "invalid");
+
+    await scheduleJob({
+      jobId,
+      scheduledAtLocal: scheduledAt,
+    });
+  } catch (error) {
+    if (error && typeof error === "object" && "digest" in error) throw error;
+    redirectOperationalError(customerId, "unavailable");
+  }
+
+  revalidateOperationalSurfaces(customerId, jobId);
+  redirect(`${customerPath(customerId)}?operation=scheduled`);
+}
+
+export async function confirmV2CustomerAppointment(formData: FormData) {
+  await requireCrmAccess();
+
+  const customerId = String(formData.get("customerId") || "").trim();
+  const jobId = String(formData.get("jobId") || "").trim();
+  const appointmentId = String(formData.get("appointmentId") || "").trim();
+
+  if (
+    !UUID_REGEX.test(customerId) ||
+    !UUID_REGEX.test(jobId) ||
+    !UUID_REGEX.test(appointmentId)
+  ) {
+    redirectOperationalError(customerId, "invalid");
+  }
+
+  try {
+    const context = await requireOwnedOperationalContext({
+      customerId,
+      jobId,
+      appointmentId,
+    });
+    if (!context) redirectOperationalError(customerId, "invalid");
+
+    await transitionAppointmentStatus({
+      appointmentId,
+      targetStatus: "CONFIRMED",
+      source: "crm_v2_customer_360",
+    });
+  } catch (error) {
+    if (error && typeof error === "object" && "digest" in error) throw error;
+    redirectOperationalError(customerId, "unavailable");
+  }
+
+  revalidateOperationalSurfaces(customerId, jobId);
+  redirect(`${customerPath(customerId)}?operation=confirmed`);
+}
+
+export async function startV2CustomerJob(formData: FormData) {
+  await requireCrmAccess();
+
+  const customerId = String(formData.get("customerId") || "").trim();
+  const jobId = String(formData.get("jobId") || "").trim();
+
+  if (!UUID_REGEX.test(customerId) || !UUID_REGEX.test(jobId)) {
+    redirectOperationalError(customerId, "invalid");
+  }
+
+  try {
+    const context = await requireOwnedOperationalContext({ customerId, jobId });
+    if (!context) redirectOperationalError(customerId, "invalid");
+
+    await startJob(jobId);
+  } catch (error) {
+    if (error && typeof error === "object" && "digest" in error) throw error;
+    redirectOperationalError(customerId, "unavailable");
+  }
+
+  revalidateOperationalSurfaces(customerId, jobId);
+  redirect(`${customerPath(customerId)}?operation=started`);
+}
+
+export async function completeV2CustomerJob(formData: FormData) {
+  await requireCrmAccess();
+
+  const customerId = String(formData.get("customerId") || "").trim();
+  const jobId = String(formData.get("jobId") || "").trim();
+  const appointmentId = String(formData.get("appointmentId") || "").trim();
+
+  if (
+    !UUID_REGEX.test(customerId) ||
+    !UUID_REGEX.test(jobId) ||
+    !UUID_REGEX.test(appointmentId)
+  ) {
+    redirectOperationalError(customerId, "invalid");
+  }
+
+  try {
+    const context = await requireOwnedOperationalContext({
+      customerId,
+      jobId,
+      appointmentId,
+    });
+    if (!context) redirectOperationalError(customerId, "invalid");
+
+    await transitionAppointmentStatus({
+      appointmentId,
+      targetStatus: "COMPLETED",
+      source: "crm_v2_customer_360",
+    });
+  } catch (error) {
+    if (error && typeof error === "object" && "digest" in error) throw error;
+    redirectOperationalError(customerId, "unavailable");
+  }
+
+  revalidateOperationalSurfaces(customerId, jobId);
+  redirect(`${customerPath(customerId)}?operation=completed`);
+}
+
+export async function recordV2CustomerJobPayment(formData: FormData) {
+  await requireCrmAccess();
+
+  const customerId = String(formData.get("customerId") || "").trim();
+  const jobId = String(formData.get("jobId") || "").trim();
+  const idempotencyKey = String(formData.get("idempotencyKey") || "").trim();
+  const method = String(formData.get("method") || "").trim();
+
+  if (
+    !UUID_REGEX.test(customerId) ||
+    !UUID_REGEX.test(jobId) ||
+    !UUID_REGEX.test(idempotencyKey) ||
+    !paymentMethods.has(method as Payment["method"])
+  ) {
+    redirectOperationalError(customerId, "invalid");
+  }
+
+  try {
+    const context = await requireOwnedOperationalContext({ customerId, jobId });
+    if (!context) redirectOperationalError(customerId, "invalid");
+
+    await recordJobPayment({
+      idempotencyKey,
+      jobId,
+      method: method as Payment["method"],
+    });
+  } catch (error) {
+    if (error && typeof error === "object" && "digest" in error) throw error;
+    redirectOperationalError(customerId, "unavailable");
+  }
+
+  revalidateOperationalSurfaces(customerId, jobId);
+  redirect(`${customerPath(customerId)}?operation=payment`);
+}
+
+export async function requestV2CustomerJobReview(formData: FormData) {
+  await requireCrmAccess();
+
+  const customerId = String(formData.get("customerId") || "").trim();
+  const jobId = String(formData.get("jobId") || "").trim();
+  const idempotencyKey = String(formData.get("idempotencyKey") || "").trim();
+
+  if (
+    !UUID_REGEX.test(customerId) ||
+    !UUID_REGEX.test(jobId) ||
+    !UUID_REGEX.test(idempotencyKey)
+  ) {
+    redirectOperationalError(customerId, "invalid");
+  }
+
+  try {
+    const context = await requireOwnedOperationalContext({ customerId, jobId });
+    if (!context) redirectOperationalError(customerId, "invalid");
+
+    await requestJobReview({
+      idempotencyKey,
+      jobId,
+    });
+  } catch (error) {
+    if (error && typeof error === "object" && "digest" in error) throw error;
+    redirectOperationalError(customerId, "unavailable");
+  }
+
+  revalidateOperationalSurfaces(customerId, jobId);
+  redirect(`${customerPath(customerId)}?operation=review`);
+}
 
 export async function updateV2CustomerProfile(formData: FormData) {
   await requireCrmAccess();
