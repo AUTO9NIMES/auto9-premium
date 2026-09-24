@@ -16,6 +16,7 @@ import {
   selectCustomerPlanningAppointment,
 } from "./planning";
 import { formatCustomerActivity } from "./timeline";
+import { summarizeCustomerPayments } from "./finance";
 import { buildWhatsAppLink } from "../../../lib/contact";
 import {
   createV2Vehicle,
@@ -64,6 +65,13 @@ const appointmentLabels: Record<Appointment["status"], string> = {
   COMPLETED: "Terminé",
   CANCELLED: "Annulé",
 };
+
+const paymentMethodLabels = {
+  CASH: "Espèces",
+  CARD: "Carte",
+  BANK_TRANSFER: "Virement bancaire",
+  OTHER: "Autre",
+} as const;
 
 const eur = new Intl.NumberFormat("fr-FR", {
   style: "currency",
@@ -160,6 +168,7 @@ export default async function CustomerV2Page({
       job.status,
     ),
   ).length;
+  const finance = summarizeCustomerPayments(result.payments);
 
   const {
     nextAppointment,
@@ -474,6 +483,66 @@ export default async function CustomerV2Page({
               <p className="mt-2 text-xs text-white/35">{detail}</p>
             </div>
           ))}
+        </div>
+
+        <div className="rounded-2xl border border-emerald-300/10 bg-gradient-to-br from-emerald-300/[0.045] to-transparent p-5 md:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.18em] text-emerald-200/50">
+                Finance
+              </p>
+              <h3 className="mt-2 text-lg font-semibold">Encaissements réels</h3>
+            </div>
+            <Link
+              href="/crm-v2/revenue"
+              className="text-xs text-emerald-200/65 hover:text-emerald-100"
+            >
+              Ouvrir la finance →
+            </Link>
+          </div>
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-xl border border-white/8 bg-black/10 p-4">
+              <p className="text-[10px] uppercase tracking-[0.16em] text-white/30">
+                Total encaissé
+              </p>
+              <p className="mt-2 text-2xl font-bold text-white">
+                {eur.format(finance.totalCollected)}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-white/8 bg-black/10 p-4">
+              <p className="text-[10px] uppercase tracking-[0.16em] text-white/30">
+                Encaissements
+              </p>
+              <p className="mt-2 text-2xl font-bold text-white">
+                {finance.paymentCount}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-white/8 bg-black/10 p-4">
+              <p className="text-[10px] uppercase tracking-[0.16em] text-white/30">
+                Dernier encaissement
+              </p>
+              {finance.latestPayment ? (
+                <>
+                  <p className="mt-2 text-sm font-semibold text-white">
+                    {eur.format(Number(finance.latestPayment.amount))}
+                  </p>
+                  <p className="mt-1 text-xs text-white/35">
+                    {paymentMethodLabels[finance.latestPayment.method]} ·{" "}
+                    {dt(finance.latestPayment.received_at) || "Date non renseignée"}
+                  </p>
+                </>
+              ) : (
+                <p className="mt-2 text-sm text-white/35">Aucun encaissement.</p>
+              )}
+            </div>
+          </div>
+
+          <p className="mt-4 text-[11px] leading-5 text-white/30">
+            Montants calculés uniquement à partir des paiements enregistrés.
+          </p>
         </div>
 
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_minmax(260px,0.6fr)]">

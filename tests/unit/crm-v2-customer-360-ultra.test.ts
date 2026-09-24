@@ -202,9 +202,12 @@ describe("CRM V2 Customer 360 source contract", () => {
     expect(page).toContain("action={uploadV2VehiclePhoto}");
   });
 
-  it("does not introduce aggregate revenue semantics", () => {
+  it("does not derive collected revenue from quotes or job totals", () => {
+    expect(page).not.toMatch(/\b(?:CA client|chiffre d'affaires|LTV|paid total)\b/i);
     expect(page).not.toMatch(
-      /\b(?:CA client|chiffre d'affaires|revenue|LTV|total encaiss[eé]|paid total)\b/i,
+      /result\.(?:jobs|quotes)\.reduce\([\s\S]*?(?:total_amount|total_price)/,
     );
+    expect(page).toContain("summarizeCustomerPayments(result.payments)");
+    expect(page).toContain("Montants calculés uniquement à partir des paiements enregistrés.");
   });
 });
