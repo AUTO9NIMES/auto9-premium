@@ -1,25 +1,25 @@
-import type { Payment } from "../../../lib/crm";
+import type { Customer360Payment } from "../../../lib/crm";
 
 export type CustomerFinanceSummary = {
   totalCollected: number;
   paymentCount: number;
-  latestPayment: Payment | null;
+  latestPayment: Customer360Payment | null;
 };
 
-function paymentTime(payment: Payment): number {
+function paymentTime(payment: Customer360Payment): number {
   const value = Date.parse(payment.received_at);
   return Number.isFinite(value) ? value : Number.NEGATIVE_INFINITY;
 }
 
 export function summarizeCustomerPayments(
-  payments: readonly Payment[],
+  payments: readonly Customer360Payment[],
 ): CustomerFinanceSummary {
   const totalCollected = payments.reduce((sum, payment) => {
     const amount = Number(payment.amount);
     return Number.isFinite(amount) ? sum + amount : sum;
   }, 0);
 
-  const latestPayment = payments.reduce<Payment | null>((latest, payment) => {
+  const latestPayment = payments.reduce<Customer360Payment | null>((latest, payment) => {
     if (!latest) return payment;
 
     const currentTime = paymentTime(payment);

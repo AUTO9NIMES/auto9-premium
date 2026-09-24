@@ -64,7 +64,32 @@ describe("CRM V2 Customer 360 finance source contract", () => {
   );
 
   it("extends the canonical Customer 360 result with payments", () => {
-    expect(crm).toContain("payments: Payment[];");
+    expect(crm).toContain("payments: Customer360Payment[];");
+    expect(crm).toContain("leadServiceEvidence: Customer360LeadServiceEvidence[];");
+    expect(crm).toContain("reviewRequests: Customer360ReviewRequestEvidence[];");
+    expect(crm).toContain(
+      "select=id,job_id,amount,method,received_at,created_at",
+    );
+    const customer360Start = crm.indexOf("export async function getCustomer360(");
+    const customer360End = crm.indexOf(
+      "const LEAD_DETAILS_MAX_ITEMS",
+      customer360Start,
+    );
+    expect(customer360Start).toBeGreaterThanOrEqual(0);
+    expect(customer360End).toBeGreaterThan(customer360Start);
+
+    const customer360 = crm.slice(customer360Start, customer360End);
+
+    expect(customer360).not.toContain("idempotency_key");
+    expect(customer360).toContain(
+      "select=id,job_id,amount,method,received_at,created_at",
+    );
+    expect(customer360).toContain(
+      'business_id=eq.${businessId}&lead_id=in.(${leadIds.join(",")})&select=lead_id',
+    );
+    expect(customer360).toContain(
+      "select=id,job_id,requested_at,created_at",
+    );
     expect(crm).toContain('"payments",');
     expect(crm).toContain('job_id=in.(${jobIds.join(",")})');
     expect(crm).toContain("business_id=eq.${businessId}");

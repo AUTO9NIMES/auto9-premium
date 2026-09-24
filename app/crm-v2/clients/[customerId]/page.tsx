@@ -17,6 +17,7 @@ import {
 } from "./planning";
 import { formatCustomerActivity } from "./timeline";
 import { summarizeCustomerPayments } from "./finance";
+import { selectCustomerNextAction } from "./next-action";
 import { buildWhatsAppLink } from "../../../lib/contact";
 import {
   createV2Vehicle,
@@ -77,6 +78,13 @@ const eur = new Intl.NumberFormat("fr-FR", {
   style: "currency",
   currency: "EUR",
   maximumFractionDigits: 0,
+});
+
+const paymentEur = new Intl.NumberFormat("fr-FR", {
+  style: "currency",
+  currency: "EUR",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
 });
 
 function dt(value?: string | null) {
@@ -169,6 +177,59 @@ export default async function CustomerV2Page({
     ),
   ).length;
   const finance = summarizeCustomerPayments(result.payments);
+  const nextAction = selectCustomerNextAction({
+    leads: result.leads,
+    quotes: result.quotes,
+    jobs: result.jobs,
+    appointments: result.appointments,
+    reviewRequests: result.reviewRequests,
+    leadServiceEvidence: result.leadServiceEvidence,
+  });
+
+  const nextActionCopy = {
+    RECORD_PAYMENT: {
+      title: "Enregistrer le règlement",
+      detail: "Le travail est terminé et un règlement peut être enregistré.",
+    },
+    REQUEST_REVIEW: {
+      title: "Demander un avis",
+      detail: "Le règlement est enregistré et la demande d’avis reste à traiter.",
+    },
+    COMPLETE_JOB: {
+      title: "Terminer la prestation",
+      detail: "La prestation est en cours et peut être clôturée depuis le dossier opérationnel.",
+    },
+    START_JOB: {
+      title: "Démarrer la prestation",
+      detail: "La prestation confirmée est prête à être démarrée.",
+    },
+    CONFIRM_APPOINTMENT: {
+      title: "Confirmer le rendez-vous",
+      detail: "Le planning du dossier et du rendez-vous est cohérent et prêt à être confirmé.",
+    },
+    SCHEDULE_JOB: {
+      title: "Planifier la prestation",
+      detail: "Le devis accepté est prêt à être planifié.",
+    },
+    SHARE_QUOTE: {
+      title: "Traiter le devis",
+      detail: "Le devis peut être traité depuis le dossier commercial.",
+    },
+    CREATE_OR_EDIT_QUOTE: {
+      title: "Préparer le devis",
+      detail: "Ouvrez le dossier commercial pour créer ou finaliser le brouillon.",
+    },
+    FOLLOW_UP_LEAD: {
+      title: "Traiter la demande",
+      detail: "Ouvrez le dossier commercial pour poursuivre le traitement de cette demande.",
+    },
+    NONE: {
+      title: "Aucune action prioritaire",
+      detail: "Aucune prochaine action canonique n’est actuellement détectée.",
+    },
+  } as const;
+
+  const nextActionPresentation = nextActionCopy[nextAction.kind];
 
   const {
     nextAppointment,
@@ -485,6 +546,35 @@ export default async function CustomerV2Page({
           ))}
         </div>
 
+        <div className="rounded-2xl border border-amber-300/15 bg-gradient-to-br from-amber-300/[0.055] to-transparent p-5 md:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-5">
+            <div className="max-w-2xl">
+              <p className="text-[10px] uppercase tracking-[0.18em] text-amber-200/55">
+                Prochaine action
+              </p>
+              <h3 className="mt-2 text-lg font-semibold">
+                {nextActionPresentation.title}
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-white/40">
+                {nextActionPresentation.detail}
+              </p>
+            </div>
+
+            {nextAction.href ? (
+              <Link
+                href={nextAction.href}
+                className="rounded-xl border border-amber-300/20 bg-amber-300/[0.06] px-4 py-2.5 text-xs font-semibold text-amber-100 hover:border-amber-200/35 hover:bg-amber-300/[0.1]"
+              >
+                Ouvrir l&apos;action →
+              </Link>
+            ) : (
+              <span className="rounded-full border border-white/8 bg-white/[0.025] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-white/30">
+                À jour
+              </span>
+            )}
+          </div>
+        </div>
+
         <div className="rounded-2xl border border-emerald-300/10 bg-gradient-to-br from-emerald-300/[0.045] to-transparent p-5 md:p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
@@ -507,7 +597,7 @@ export default async function CustomerV2Page({
                 Total encaissé
               </p>
               <p className="mt-2 text-2xl font-bold text-white">
-                {eur.format(finance.totalCollected)}
+                {paymentEur.format(finance.totalCollected)}
               </p>
             </div>
 
@@ -527,7 +617,7 @@ export default async function CustomerV2Page({
               {finance.latestPayment ? (
                 <>
                   <p className="mt-2 text-sm font-semibold text-white">
-                    {eur.format(Number(finance.latestPayment.amount))}
+                    {paymentEur.format(Number(finance.latestPayment.amount))}
                   </p>
                   <p className="mt-1 text-xs text-white/35">
                     {paymentMethodLabels[finance.latestPayment.method]} ·{" "}
