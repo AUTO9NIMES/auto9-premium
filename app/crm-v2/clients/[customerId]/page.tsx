@@ -657,10 +657,10 @@ export default async function CustomerV2Page({
                   </p>
                 </div>
                 <Link
-                  href="/crm-v2/pipeline"
+                  href={`/crm/pipeline/${lead.id}`}
                   className="text-xs text-cyan-200/60 hover:text-cyan-100"
                 >
-                  Voir dans le pipeline →
+                  Ouvrir le dossier →
                 </Link>
               </article>
             ))
@@ -730,11 +730,19 @@ export default async function CustomerV2Page({
                       "Date non renseignée"}
                   </p>
                 </div>
-                <p className="text-sm font-semibold text-cyan-100">
-                  {typeof job.total_amount === "number"
-                    ? eur.format(job.total_amount)
-                    : "—"}
-                </p>
+                <div className="flex flex-col gap-2 md:items-end">
+                  <p className="text-sm font-semibold text-cyan-100">
+                    {typeof job.total_amount === "number"
+                      ? eur.format(job.total_amount)
+                      : "—"}
+                  </p>
+                  <Link
+                    href={`/crm/jobs/${job.id}`}
+                    className="text-xs text-cyan-200/60 hover:text-cyan-100"
+                  >
+                    Ouvrir la prestation →
+                  </Link>
+                </div>
               </article>
             ))
           ) : (
