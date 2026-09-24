@@ -365,6 +365,7 @@ export type Customer360Result = {
   leads: Lead[];
   quotes: Quote[];
   jobs: Job[];
+  payments: Payment[];
   appointments: Appointment[];
   activities: ActivityLog[];
 };
@@ -1409,18 +1410,33 @@ export async function getCustomer360(
       .filter((leadId): leadId is string => Boolean(leadId)),
   )];
 
-  let quotes: Quote[] = [];
+  const jobIds = [...new Set(
+    normalizedJobs
+      .map((job) => job.id)
+      .filter((jobId): jobId is string => Boolean(jobId)),
+  )];
 
-  if (leadIds.length > 0) {
-    const quoteRows = (await supabaseRest<Quote[]>(
-      "quotes",
-      "GET",
-      null,
-      `business_id=eq.${businessId}&lead_id=in.(${leadIds.join(",")})&order=created_at.desc&select=*`,
-    )) as Quote[] | null;
+  const [quoteRows, paymentRows] = await Promise.all([
+    leadIds.length > 0
+      ? supabaseRest<Quote[]>(
+          "quotes",
+          "GET",
+          null,
+          `business_id=eq.${businessId}&lead_id=in.(${leadIds.join(",")})&order=created_at.desc&select=*`,
+        )
+      : Promise.resolve([] as Quote[]),
+    jobIds.length > 0
+      ? supabaseRest<Payment[]>(
+          "payments",
+          "GET",
+          null,
+          `business_id=eq.${businessId}&job_id=in.(${jobIds.join(",")})&order=received_at.desc,id.desc&select=id,business_id,job_id,amount,method,idempotency_key,received_at,created_at`,
+        )
+      : Promise.resolve([] as Payment[]),
+  ]);
 
-    quotes = quoteRows ?? [];
-  }
+  const quotes = (quoteRows as Quote[] | null) ?? [];
+  const payments = (paymentRows as Payment[] | null) ?? [];
 
   return {
     customer,
@@ -1428,6 +1444,7 @@ export async function getCustomer360(
     leads: normalizedLeads,
     quotes,
     jobs: normalizedJobs,
+    payments,
     appointments: normalizedAppointments,
     activities: normalizedActivities,
   };
