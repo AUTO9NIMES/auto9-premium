@@ -689,6 +689,7 @@ describe("Customer 360 next best action", () => {
       href: null,
       leadId: null,
       jobId: null,
+      appointmentId: null,
     });
   });
 });

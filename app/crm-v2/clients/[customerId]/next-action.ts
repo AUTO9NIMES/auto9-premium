@@ -24,6 +24,7 @@ export type CustomerNextAction = {
   href: string | null;
   leadId: string | null;
   jobId: string | null;
+  appointmentId: string | null;
 };
 
 export type CustomerNextActionInput = {
@@ -46,6 +47,7 @@ const NONE: CustomerNextAction = {
   href: null,
   leadId: null,
   jobId: null,
+  appointmentId: null,
 };
 
 const PRE_OPERATIONAL_LEAD_STATUSES = new Set([
@@ -91,15 +93,17 @@ function jobCandidate(
   priority: number,
   job: Job,
   jobId: string,
+  appointmentId: string | null = null,
 ): Candidate {
   return {
     kind,
     priority,
     createdAt: job.created_at ?? null,
-    stableId: jobId,
+    stableId: appointmentId ? `${jobId}:${appointmentId}` : jobId,
     href: `/crm/jobs/${jobId}`,
     leadId: job.lead_id,
     jobId,
+    appointmentId,
   };
 }
 
@@ -117,6 +121,7 @@ function leadCandidate(
     href: `/crm/pipeline/${leadId}`,
     leadId,
     jobId: null,
+    appointmentId: null,
   };
 }
 
@@ -187,16 +192,25 @@ export function selectCustomerNextAction(
       candidates.push(jobCandidate("REQUEST_REVIEW", 11, job, jobId));
     }
 
-    if (
-      job.status === "IN_PROGRESS" &&
-      relatedAppointments.some(
-        (appointment) =>
-          typeof appointment.id === "string" &&
-          appointment.id.trim().length > 0 &&
-          appointment.status === "CONFIRMED",
-      )
-    ) {
-      candidates.push(jobCandidate("COMPLETE_JOB", 1, job, jobId));
+    const completableAppointment =
+      job.status === "IN_PROGRESS"
+        ? relatedAppointments.find(
+            (appointment) =>
+              nonEmptyId(appointment.id) &&
+              appointment.status === "CONFIRMED",
+          ) ?? null
+        : null;
+
+    if (completableAppointment && nonEmptyId(completableAppointment.id)) {
+      candidates.push(
+        jobCandidate(
+          "COMPLETE_JOB",
+          1,
+          job,
+          jobId,
+          completableAppointment.id,
+        ),
+      );
     }
 
     if (job.status === "CONFIRMED") {
@@ -204,20 +218,30 @@ export function selectCustomerNextAction(
     }
 
     if (job.status === "SCHEDULED") {
-      const confirmable = relatedAppointments.some((appointment) =>
-        typeof appointment.id === "string" &&
-        appointment.id.trim().length > 0 &&
-        appointment.status === "REQUESTED" &&
-        typeof job.scheduled_at === "string" &&
-        job.scheduled_at.length > 0 &&
-        typeof appointment.scheduled_at === "string" &&
-        appointment.scheduled_at.length > 0 &&
-        appointment.scheduled_at === job.scheduled_at
-      );
+      const confirmableAppointment =
+        relatedAppointments.find(
+          (appointment) =>
+            nonEmptyId(appointment.id) &&
+            appointment.status === "REQUESTED" &&
+            typeof job.scheduled_at === "string" &&
+            job.scheduled_at.length > 0 &&
+            typeof appointment.scheduled_at === "string" &&
+            appointment.scheduled_at.length > 0 &&
+            appointment.scheduled_at === job.scheduled_at,
+        ) ?? null;
 
-      if (confirmable) {
+      if (
+        confirmableAppointment &&
+        nonEmptyId(confirmableAppointment.id)
+      ) {
         candidates.push(
-          jobCandidate("CONFIRM_APPOINTMENT", 3, job, jobId),
+          jobCandidate(
+            "CONFIRM_APPOINTMENT",
+            3,
+            job,
+            jobId,
+            confirmableAppointment.id,
+          ),
         );
       }
     }
@@ -304,5 +328,6 @@ export function selectCustomerNextAction(
     href: selected.href,
     leadId: selected.leadId,
     jobId: selected.jobId,
+    appointmentId: selected.appointmentId,
   };
 }
