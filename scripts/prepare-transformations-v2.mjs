@@ -1,7 +1,8 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const publicDir = path.join(process.cwd(), "public", "media", "transformations-v2");
+const productionOrigins = ["https://www.auto9nimes.com", "https://auto9nimes.com"];
 
 const assets = [
   {
@@ -21,24 +22,72 @@ const assets = [
   },
 ];
 
-await mkdir(publicDir, { recursive: true });
+function valid(buffer, asset) {
+  return (
+    buffer.length >= asset.minBytes &&
+    buffer.subarray(4, 12).toString("latin1").includes("ftyp")
+  );
+}
 
-for (const asset of assets) {
-  const response = await fetch(asset.url, {
+async function download(url) {
+  const response = await fetch(url, {
     redirect: "follow",
     headers: { "user-agent": "AUTO9-Build/transformations-v2" },
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to download ${asset.filename}: HTTP ${response.status}`);
+    throw new Error(`HTTP ${response.status}`);
   }
 
-  const buffer = Buffer.from(await response.arrayBuffer());
+  return Buffer.from(await response.arrayBuffer());
+}
 
-  if (buffer.length < asset.minBytes || !buffer.subarray(4, 12).toString("latin1").includes("ftyp")) {
-    throw new Error(`Invalid downloaded media for ${asset.filename}`);
+async function localGood(target, asset) {
+  try {
+    const info = await stat(target);
+    if (info.size < asset.minBytes) return false;
+    return valid(await readFile(target), asset);
+  } catch {
+    return false;
+  }
+}
+
+async function prepare(asset) {
+  const target = path.join(publicDir, asset.filename);
+  const candidates = [
+    asset.url,
+    ...productionOrigins.map(
+      (origin) => `${origin}/media/transformations-v2/${asset.filename}`,
+    ),
+  ];
+
+  for (const url of candidates) {
+    try {
+      const buffer = await download(url);
+
+      if (!valid(buffer, asset)) {
+        throw new Error("invalid asset");
+      }
+
+      await writeFile(target, buffer);
+      console.log(
+        `[AUTO 9] transformation ${asset.filename}: ready (${(buffer.length / 1024 / 1024).toFixed(2)} MB)`,
+      );
+      return;
+    } catch (error) {
+      console.warn(
+        `[AUTO 9] transformation ${asset.filename}: source failed: ${String(error)}`,
+      );
+    }
   }
 
-  await writeFile(path.join(publicDir, asset.filename), buffer);
-  console.log(`[AUTO 9] transformation ${asset.filename}: ${(buffer.length / 1024 / 1024).toFixed(2)} MB`);
+  if (await localGood(target, asset)) return;
+
+  throw new Error(`Unable to prepare transformation ${asset.filename}`);
+}
+
+await mkdir(publicDir, { recursive: true });
+
+for (const asset of assets) {
+  await prepare(asset);
 }
