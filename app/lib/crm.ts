@@ -359,13 +359,31 @@ export type LeadDetailsResult = {
   activities: RecentActivity[];
 };
 
+export type Customer360Payment = Pick<
+  Payment,
+  "id" | "job_id" | "amount" | "method" | "received_at" | "created_at"
+>;
+
+export type Customer360LeadServiceEvidence = {
+  lead_id: string;
+};
+
+export type Customer360ReviewRequestEvidence = {
+  id: string;
+  job_id: string;
+  requested_at: string;
+  created_at: string;
+};
+
 export type Customer360Result = {
   customer: Customer;
   vehicles: Vehicle[];
   leads: Lead[];
   quotes: Quote[];
   jobs: Job[];
-  payments: Payment[];
+  payments: Customer360Payment[];
+  leadServiceEvidence: Customer360LeadServiceEvidence[];
+  reviewRequests: Customer360ReviewRequestEvidence[];
   appointments: Appointment[];
   activities: ActivityLog[];
 };
@@ -1416,7 +1434,12 @@ export async function getCustomer360(
       .filter((jobId): jobId is string => Boolean(jobId)),
   )];
 
-  const [quoteRows, paymentRows] = await Promise.all([
+  const [
+    quoteRows,
+    paymentRows,
+    leadServiceRows,
+    reviewRequestRows,
+  ] = await Promise.all([
     leadIds.length > 0
       ? supabaseRest<Quote[]>(
           "quotes",
@@ -1426,17 +1449,38 @@ export async function getCustomer360(
         )
       : Promise.resolve([] as Quote[]),
     jobIds.length > 0
-      ? supabaseRest<Payment[]>(
+      ? supabaseRest<Customer360Payment[]>(
           "payments",
           "GET",
           null,
-          `business_id=eq.${businessId}&job_id=in.(${jobIds.join(",")})&order=received_at.desc,id.desc&select=id,business_id,job_id,amount,method,idempotency_key,received_at,created_at`,
+          `business_id=eq.${businessId}&job_id=in.(${jobIds.join(",")})&order=received_at.desc,id.desc&select=id,job_id,amount,method,received_at,created_at`,
         )
-      : Promise.resolve([] as Payment[]),
+      : Promise.resolve([] as Customer360Payment[]),
+    leadIds.length > 0
+      ? supabaseRest<Customer360LeadServiceEvidence[]>(
+          "lead_services",
+          "GET",
+          null,
+          `business_id=eq.${businessId}&lead_id=in.(${leadIds.join(",")})&select=lead_id`,
+        )
+      : Promise.resolve([] as Customer360LeadServiceEvidence[]),
+    jobIds.length > 0
+      ? supabaseRest<Customer360ReviewRequestEvidence[]>(
+          "review_requests",
+          "GET",
+          null,
+          `business_id=eq.${businessId}&job_id=in.(${jobIds.join(",")})&order=requested_at.desc,id.desc&select=id,job_id,requested_at,created_at`,
+        )
+      : Promise.resolve([] as Customer360ReviewRequestEvidence[]),
   ]);
 
   const quotes = (quoteRows as Quote[] | null) ?? [];
-  const payments = (paymentRows as Payment[] | null) ?? [];
+  const payments =
+    (paymentRows as Customer360Payment[] | null) ?? [];
+  const leadServiceEvidence =
+    (leadServiceRows as Customer360LeadServiceEvidence[] | null) ?? [];
+  const reviewRequests =
+    (reviewRequestRows as Customer360ReviewRequestEvidence[] | null) ?? [];
 
   return {
     customer,
@@ -1445,6 +1489,8 @@ export async function getCustomer360(
     quotes,
     jobs: normalizedJobs,
     payments,
+    leadServiceEvidence,
+    reviewRequests,
     appointments: normalizedAppointments,
     activities: normalizedActivities,
   };
