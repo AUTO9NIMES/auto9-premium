@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireCrmAccess } from "../../lib/auth/dal";
 import { resolveCurrentBusinessContext } from "../../lib/business";
+import { confirmSubscriptionBookingRequest } from "../../lib/crm";
 import { supabaseRest } from "../../lib/supabase";
 
 const UUID_REGEX =
@@ -117,4 +118,29 @@ export async function toggleSubscription(formData: FormData) {
 
   revalidatePath("/crm-v2/subscriptions");
   redirect("/crm-v2/subscriptions?updated=1");
+}
+
+
+export async function confirmSubscriptionBookingRequestAction(
+  formData: FormData,
+) {
+  await requireCrmAccess();
+
+  const bookingRequestId = textValue(formData, "bookingRequestId").toLowerCase();
+
+  if (!UUID_REGEX.test(bookingRequestId)) {
+    redirect("/crm-v2/subscriptions?error=invalid");
+  }
+
+  try {
+    await confirmSubscriptionBookingRequest(bookingRequestId);
+  } catch {
+    redirect("/crm-v2/subscriptions?error=handoff");
+  }
+
+  revalidatePath("/crm-v2/subscriptions");
+  revalidatePath("/crm-v2/clients");
+  revalidatePath("/crm-v2/pipeline");
+  revalidatePath("/crm/jobs");
+  redirect("/crm-v2/subscriptions?confirmed=1");
 }

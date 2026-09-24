@@ -3112,6 +3112,59 @@ function validateAcceptedQuoteResult(
   };
 }
 
+export type ConfirmSubscriptionBookingRequestResult = {
+  bookingRequestId: string;
+  leadId: string;
+  jobId: string;
+  appointmentId: string;
+  noOp: boolean;
+};
+
+export async function confirmSubscriptionBookingRequest(
+  bookingRequestId: string,
+): Promise<ConfirmSubscriptionBookingRequestResult> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const normalizedBookingRequestId = bookingRequestId.trim();
+
+  if (!normalizedBookingRequestId) {
+    throw new Error("bookingRequestId is required.");
+  }
+
+  const businessId = await getCurrentBusinessId();
+  const result = await supabaseRest<unknown>(
+    "rpc/confirm_subscription_booking_request",
+    "POST",
+    {
+      p_business_id: businessId,
+      p_booking_request_id: normalizedBookingRequestId,
+    },
+  );
+
+  if (
+    !isRecord(result) ||
+    result.booking_request_id !== normalizedBookingRequestId ||
+    typeof result.lead_id !== "string" ||
+    typeof result.job_id !== "string" ||
+    typeof result.appointment_id !== "string" ||
+    typeof result.no_op !== "boolean"
+  ) {
+    throw new Error(
+      "Supabase returned an invalid subscription booking handoff result.",
+    );
+  }
+
+  return {
+    bookingRequestId: result.booking_request_id,
+    leadId: result.lead_id,
+    jobId: result.job_id,
+    appointmentId: result.appointment_id,
+    noOp: result.no_op,
+  };
+}
+
 export async function acceptQuoteAndCreateJob(input: {
   quoteId: string;
   source?: string;
