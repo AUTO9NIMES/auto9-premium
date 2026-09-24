@@ -375,6 +375,26 @@ export type Customer360ReviewRequestEvidence = {
   created_at: string;
 };
 
+export type Customer360SubscriptionEvidence = {
+  id: string;
+  customer_id: string;
+  service_name: string;
+  price: number | null;
+  frequency_months: number;
+  next_due_on: string;
+  active: boolean;
+  created_at: string;
+};
+
+export type Customer360SubscriptionBookingRequestEvidence = {
+  id: string;
+  subscription_id: string;
+  requested_date: string;
+  requested_time: string;
+  status: "REQUESTED" | "CONFIRMED" | "CANCELLED";
+  created_at: string;
+};
+
 export type Customer360Result = {
   customer: Customer;
   vehicles: Vehicle[];
@@ -384,6 +404,8 @@ export type Customer360Result = {
   payments: Customer360Payment[];
   leadServiceEvidence: Customer360LeadServiceEvidence[];
   reviewRequests: Customer360ReviewRequestEvidence[];
+  subscriptions: Customer360SubscriptionEvidence[];
+  subscriptionBookingRequests: Customer360SubscriptionBookingRequestEvidence[];
   appointments: Appointment[];
   activities: ActivityLog[];
 };
@@ -1383,6 +1405,7 @@ export async function getCustomer360(
     jobs,
     appointments,
     activities,
+    subscriptionRows,
   ] = await Promise.all([
     supabaseRest<Vehicle[]>(
       "vehicles",
@@ -1414,6 +1437,12 @@ export async function getCustomer360(
       null,
       `business_id=eq.${businessId}&customer_id=eq.${normalizedCustomerId}&order=created_at.desc&select=*`,
     ),
+    supabaseRest<Customer360SubscriptionEvidence[]>(
+      "crm_subscriptions",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&customer_id=eq.${normalizedCustomerId}&order=active.desc,next_due_on.asc,id.asc&select=id,customer_id,service_name,price,frequency_months,next_due_on,active,created_at`,
+    ),
   ]);
 
   const normalizedLeads = (leads as Lead[] | null) ?? [];
@@ -1421,6 +1450,14 @@ export async function getCustomer360(
   const normalizedJobs = (jobs as Job[] | null) ?? [];
   const normalizedAppointments = (appointments as Appointment[] | null) ?? [];
   const normalizedActivities = (activities as ActivityLog[] | null) ?? [];
+  const subscriptions =
+    (subscriptionRows as Customer360SubscriptionEvidence[] | null) ?? [];
+
+  const subscriptionIds = [...new Set(
+    subscriptions
+      .map((subscription) => subscription.id)
+      .filter((subscriptionId): subscriptionId is string => Boolean(subscriptionId)),
+  )];
 
   const leadIds = [...new Set(
     normalizedLeads
@@ -1439,6 +1476,7 @@ export async function getCustomer360(
     paymentRows,
     leadServiceRows,
     reviewRequestRows,
+    subscriptionBookingRequestRows,
   ] = await Promise.all([
     leadIds.length > 0
       ? supabaseRest<Quote[]>(
@@ -1472,6 +1510,14 @@ export async function getCustomer360(
           `business_id=eq.${businessId}&job_id=in.(${jobIds.join(",")})&order=requested_at.desc,id.desc&select=id,job_id,requested_at,created_at`,
         )
       : Promise.resolve([] as Customer360ReviewRequestEvidence[]),
+    subscriptionIds.length > 0
+      ? supabaseRest<Customer360SubscriptionBookingRequestEvidence[]>(
+          "crm_subscription_booking_requests",
+          "GET",
+          null,
+          `business_id=eq.${businessId}&customer_id=eq.${normalizedCustomerId}&subscription_id=in.(${subscriptionIds.join(",")})&order=requested_date.desc,requested_time.desc,created_at.desc,id.desc&select=id,subscription_id,requested_date,requested_time,status,created_at`,
+        )
+      : Promise.resolve([] as Customer360SubscriptionBookingRequestEvidence[]),
   ]);
 
   const quotes = (quoteRows as Quote[] | null) ?? [];
@@ -1481,6 +1527,8 @@ export async function getCustomer360(
     (leadServiceRows as Customer360LeadServiceEvidence[] | null) ?? [];
   const reviewRequests =
     (reviewRequestRows as Customer360ReviewRequestEvidence[] | null) ?? [];
+  const subscriptionBookingRequests =
+    (subscriptionBookingRequestRows as Customer360SubscriptionBookingRequestEvidence[] | null) ?? [];
 
   return {
     customer,
@@ -1491,6 +1539,8 @@ export async function getCustomer360(
     payments,
     leadServiceEvidence,
     reviewRequests,
+    subscriptions,
+    subscriptionBookingRequests,
     appointments: normalizedAppointments,
     activities: normalizedActivities,
   };
