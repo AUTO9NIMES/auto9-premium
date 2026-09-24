@@ -34,6 +34,9 @@ export async function updateV2CustomerProfile(formData: FormData) {
     redirect(`/crm-v2/clients/${customerId}?error=name`);
   }
 
+  const normalizedBirthDate =
+    birthDate && /^\d{4}-\d{2}-\d{2}$/.test(birthDate) ? birthDate : null;
+
   try {
     await updateCustomerProfile({
       customerId,
@@ -43,19 +46,8 @@ export async function updateV2CustomerProfile(formData: FormData) {
       email: email || null,
       phone: phone || null,
       city: city || null,
+      birthDate: normalizedBirthDate,
     });
-
-    const { businessId } = await resolveCurrentBusinessContext();
-    await supabaseRest(
-      "customers",
-      "PATCH",
-      {
-        birth_date:
-          birthDate && /^\d{4}-\d{2}-\d{2}$/.test(birthDate) ? birthDate : null,
-        updated_at: new Date().toISOString(),
-      },
-      `business_id=eq.${businessId}&id=eq.${customerId}`,
-    );
   } catch {
     redirect(`/crm-v2/clients/${customerId}?error=update`);
   }
