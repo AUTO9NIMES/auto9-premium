@@ -14,7 +14,7 @@ describe("CRM customer management architecture", () => {
   const actions = read("app/crm/clients/actions.ts");
   const page = read("app/crm/clients/page.tsx");
   const migration = read(
-    "supabase/migrations/041_safe_customer_delete.sql",
+    "supabase/migrations/048_safe_customer_delete.sql",
   );
 
   it("keeps customer creation tenant-scoped on the server", () => {
@@ -196,8 +196,8 @@ describe("CRM V2 customer management architecture", () => {
     expect(read).toBeGreaterThan(auth);
   });
 
-  it("pins the renamed 041 migration to the production-certified SQL bytes", () => {
-    const bytes = fs.readFileSync(path.join(root, "supabase/migrations/041_safe_customer_delete.sql"));
+  it("pins the canonical safe customer delete migration to the production-certified SQL bytes", () => {
+    const bytes = fs.readFileSync(path.join(root, "supabase/migrations/048_safe_customer_delete.sql"));
     expect(createHash("sha256").update(bytes).digest("hex")).toBe(
       "4abbbd1db6226b9ec956597a90b123fa7f2419197b34e9efa90b7a9f7159e384",
     );
