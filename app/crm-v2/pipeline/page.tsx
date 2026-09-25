@@ -14,7 +14,6 @@ import {
   recordV2ManualPayment,
   toggleV2LeadStep,
   updateV2LeadDetails,
-  updateV2DraftPrice,
 } from "./actions";
 import LeadDangerActions from "./LeadDangerActions";
 import LeadEditPanel from "./LeadEditPanel";
@@ -268,12 +267,14 @@ function LeadProgress({
   item,
   activity,
   serviceOverride,
+  servicePrice,
 }: {
   item: LeadListItem;
   activity: StepActivity[];
   serviceOverride?: string | null;
+  servicePrice?: number | null;
 }) {
-  const amount = money(item.latestQuote?.total_price || item.latestJob?.total_amount);
+  const amount = money(item.latestQuote?.total_price ?? item.latestJob?.total_amount ?? servicePrice ?? null);
   const closed = item.lead.lifecycle_status === "CLOSED_LOST";
   const canRecordPayment = Boolean(item.latestJob?.id && item.latestJob.status === "COMPLETED");
   const cancelled = cancellationInfo(activity, item.lead.id);
@@ -341,17 +342,9 @@ function LeadProgress({
                 initialCity={item.customer.city || ""}
                 initialService={serviceName(item, serviceOverride)}
                 initialDateTime={toParisDateTimeLocal(item.lead.created_at)}
-                initialPrice={String(item.latestQuote?.total_price ?? item.latestJob?.total_amount ?? "")}
+                initialPrice={String(item.latestQuote?.total_price ?? item.latestJob?.total_amount ?? servicePrice ?? "")}
                 initialNote={item.lead.notes || ""}
                 action={updateV2LeadDetails}
-                quoteId={item.latestQuote?.id ?? null}
-                expectedPrice={item.latestQuote?.total_price ?? null}
-                canEditPrice={Boolean(
-                  item.latestQuote?.id && item.latestQuote.status === "DRAFT" &&
-                  ["NEW", "QUALIFIED", "CONTACTED"].includes(item.lead.lifecycle_status) &&
-                  !item.latestJob
-                )}
-                priceAction={updateV2DraftPrice}
               />
             )}
             <LeadDangerActions
@@ -546,6 +539,7 @@ export default async function CrmV2Pipeline({
   type ServiceRow = {
     lead_id: string;
     service_name: string;
+    base_price: number | null;
     created_at: string | null;
   };
 
@@ -568,17 +562,20 @@ export default async function CrmV2Pipeline({
       "lead_services",
       "GET",
       null,
-      `business_id=eq.${businessId}&order=created_at.desc&limit=1000&select=lead_id,service_name,created_at`,
+      `business_id=eq.${businessId}&order=created_at.desc&limit=1000&select=lead_id,service_name,base_price,created_at`,
     );
     serviceRows = (rows as ServiceRow[] | null) ?? [];
   } catch {
     serviceRows = [];
   }
 
-  const serviceByLead = new Map<string, string>();
+  const serviceByLead = new Map<string, { name: string; price: number | null }>();
   for (const row of serviceRows) {
     if (!serviceByLead.has(row.lead_id) && row.service_name?.trim()) {
-      serviceByLead.set(row.lead_id, row.service_name.trim());
+      serviceByLead.set(row.lead_id, {
+        name: row.service_name.trim(),
+        price: row.base_price,
+      });
     }
   }
 
@@ -693,7 +690,8 @@ export default async function CrmV2Pipeline({
               key={item.lead.id || item.lead.created_at}
               item={item}
               activity={activity}
-              serviceOverride={item.lead.id ? serviceByLead.get(item.lead.id) : null}
+              serviceOverride={item.lead.id ? serviceByLead.get(item.lead.id)?.name : null}
+              servicePrice={item.lead.id ? serviceByLead.get(item.lead.id)?.price : null}
             />
           ))
         ) : (
