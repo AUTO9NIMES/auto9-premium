@@ -6,7 +6,9 @@ import { CrmAccessError, requireCrmAccess } from "../../../lib/auth/dal";
 import {
   createManualLead,
   createManualLeadWithCustomer,
+  findCustomerByEmailOrPhone,
   findManualLeadWithCustomerReplay,
+  upsertCustomer,
   type ManualLeadResult,
 } from "../../../lib/crm";
 
@@ -43,14 +45,15 @@ export async function createV2ManualLeadAction(formData: FormData) {
   }
 
   if (intakeMode === "new") {
+    let replay: ManualLeadResult | null = null;
     try {
-      const replay = await findManualLeadWithCustomerReplay(idempotencyKey.trim());
-      if (replay) {
-        revalidatePath("/crm-v2/pipeline");
-        redirect("/crm-v2/pipeline?created=1");
-      }
+      replay = await findManualLeadWithCustomerReplay(idempotencyKey.trim());
     } catch {
       fail("unavailable");
+    }
+    if (replay) {
+      revalidatePath("/crm-v2/pipeline");
+      redirect("/crm-v2/pipeline?created=1&lead=" + replay.leadId);
     }
   }
 
@@ -117,19 +120,64 @@ export async function createV2ManualLeadAction(formData: FormData) {
         fail("invalid");
       }
 
-      result = await createManualLeadWithCustomer({
-        idempotencyKey: idempotencyKey.trim(),
-        fullName: normalizedFullName,
-        firstName: normalizedFirstName,
-        lastName: normalizedLastName,
-        email: normalizedEmail,
-        phone: normalizedPhone,
-        city: normalizedCity,
-        serviceName: normalizedServiceName,
-        basePrice: normalizedPrice,
-        estimatedTime: estimatedTime.trim() || null,
-        customerComment: customerComment.trim() || null,
-      });
+      const existingRows = await findCustomerByEmailOrPhone(
+        normalizedEmail,
+        normalizedPhone,
+      );
+      const existingCustomer = Array.isArray(existingRows) ? existingRows[0] : null;
+
+      if (existingCustomer?.id) {
+        result = await createManualLead({
+          idempotencyKey: idempotencyKey.trim(),
+          customerId: existingCustomer.id,
+          vehicleId: null,
+          serviceName: normalizedServiceName,
+          basePrice: normalizedPrice,
+          estimatedTime: estimatedTime.trim() || null,
+          customerComment: customerComment.trim() || null,
+        });
+      } else {
+        try {
+          result = await createManualLeadWithCustomer({
+            idempotencyKey: idempotencyKey.trim(),
+            fullName: normalizedFullName,
+            firstName: normalizedFirstName,
+            lastName: normalizedLastName,
+            email: normalizedEmail,
+            phone: normalizedPhone,
+            city: normalizedCity,
+            serviceName: normalizedServiceName,
+            basePrice: normalizedPrice,
+            estimatedTime: estimatedTime.trim() || null,
+            customerComment: customerComment.trim() || null,
+          });
+        } catch {
+          const customer = await upsertCustomer({
+            business_id: "",
+            full_name: normalizedFullName,
+            first_name: normalizedFirstName,
+            last_name: normalizedLastName,
+            email: normalizedEmail,
+            phone: normalizedPhone,
+            city: normalizedCity,
+            source: "crm_manual",
+          });
+
+          if (!customer?.id) {
+            fail("unavailable");
+          }
+
+          result = await createManualLead({
+            idempotencyKey: idempotencyKey.trim(),
+            customerId: customer.id,
+            vehicleId: null,
+            serviceName: normalizedServiceName,
+            basePrice: normalizedPrice,
+            estimatedTime: estimatedTime.trim() || null,
+            customerComment: customerComment.trim() || null,
+          });
+        }
+      }
     } else {
       result = await createManualLead({
         idempotencyKey: idempotencyKey.trim(),
