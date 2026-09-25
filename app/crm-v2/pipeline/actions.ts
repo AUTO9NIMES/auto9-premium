@@ -188,6 +188,7 @@ const MANUAL_STEPS = [
   "BOOKED",
   "IN_PROGRESS",
   "COMPLETED",
+  "PAID",
   "REVIEW_REQUESTED",
 ] as const;
 
@@ -253,7 +254,7 @@ export async function toggleV2LeadStep(formData: FormData) {
 }
 
 
-// Profile-only save: service, notes and financial records are not editable here.
+// Save customer profile and the editable service label for this dossier.
 export async function updateV2LeadDetails(formData: FormData) {
   await requireCrmAccess();
 
@@ -262,7 +263,8 @@ export async function updateV2LeadDetails(formData: FormData) {
   const phone = String(formData.get("phone") || "").trim();
   const email = String(formData.get("email") || "").trim();
   const city = String(formData.get("city") || "").trim();
-  if (!UUID_REGEX.test(leadId) || !fullName) {
+  const serviceName = String(formData.get("serviceName") || "").trim();
+  if (!UUID_REGEX.test(leadId) || !fullName || !serviceName || serviceName.length > 200) {
     redirect("/crm-v2/pipeline?edit_error=invalid");
   }
 
@@ -283,6 +285,37 @@ export async function updateV2LeadDetails(formData: FormData) {
       lastName: parts.slice(1).join(" ") || null,
       email: email || null, phone: phone || null, city: city || null,
     });
+
+    const serviceRows = await supabaseRest<Array<{ id: string }>>(
+      "lead_services",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&lead_id=eq.${leadId}&order=created_at.desc&select=id&limit=1`,
+    );
+    const service = (serviceRows as Array<{ id: string }> | null)?.[0];
+
+    if (service?.id) {
+      await supabaseRest(
+        "lead_services",
+        "PATCH",
+        {
+          service_name: serviceName,
+          updated_at: new Date().toISOString(),
+        },
+        `business_id=eq.${businessId}&id=eq.${service.id}`,
+      );
+    } else {
+      await supabaseRest(
+        "lead_services",
+        "POST",
+        {
+          business_id: businessId,
+          lead_id: leadId,
+          service_name: serviceName,
+        },
+        "select=id",
+      );
+    }
   } catch (error) {
     if (error && typeof error === "object" && "digest" in error) throw error;
     redirect("/crm-v2/pipeline?edit_error=unavailable");
