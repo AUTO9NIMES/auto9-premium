@@ -4,7 +4,7 @@ import type {
   Customer360SubscriptionBookingRequestEvidence,
   Customer360SubscriptionEvidence,
 } from "../../app/lib/crm";
-import { summarizeCustomerRetention } from "../../app/crm-v2/clients/[customerId]/retention";
+import { summarizeCustomerRetention } from "../../app/crm/clients/[customerId]/retention";
 
 function subscription(
   overrides: Partial<Customer360SubscriptionEvidence> = {},

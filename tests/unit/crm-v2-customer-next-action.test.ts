@@ -9,7 +9,7 @@ import type {
 import {
   selectCustomerNextAction,
   type CustomerNextActionInput,
-} from "../../app/crm-v2/clients/[customerId]/next-action";
+} from "../../app/crm/clients/[customerId]/next-action";
 
 function lead(
   id: string,

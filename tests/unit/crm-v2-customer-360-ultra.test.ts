@@ -3,7 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import type { Appointment } from "../../app/lib/crm";
-import { selectCustomerPlanningAppointment } from "../../app/crm-v2/clients/[customerId]/planning";
+import { selectCustomerPlanningAppointment } from "../../app/crm/clients/[customerId]/planning";
 
 const NOW = Date.parse("2026-09-24T10:00:00.000Z");
 

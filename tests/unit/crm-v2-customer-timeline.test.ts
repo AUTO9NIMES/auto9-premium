@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatCustomerActivity } from "../../app/crm-v2/clients/[customerId]/timeline";
+import { formatCustomerActivity } from "../../app/crm/clients/[customerId]/timeline";
 
 describe("Customer 360 business timeline", () => {
   it("renders canonical lead status transitions", () => {
