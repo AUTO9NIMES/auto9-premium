@@ -2,6 +2,7 @@ import "./crm-v2.css";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CrmAccessError, requireCrmAccess } from "../lib/auth/dal";
+import ThemeToggle from "./ThemeToggle";
 
 export const dynamic = "force-dynamic";
 
@@ -53,6 +54,7 @@ export default async function CrmV2Layout({ children }: { children: React.ReactN
           </nav>
 
           <div className="mt-auto rounded-2xl border border-white/8 bg-white/[0.03] p-4">
+            <ThemeToggle />
             <p className="text-[10px] uppercase tracking-[0.2em] text-white/30">Version</p>
             <p className="mt-2 text-sm text-cyan-200">CRM V2 · NOX</p>
             <p className="mt-2 text-xs leading-5 text-white/35">Branche indépendante. Le CRM actuel reste intact.</p>
@@ -61,7 +63,8 @@ export default async function CrmV2Layout({ children }: { children: React.ReactN
 
         <main className="min-w-0 flex-1">
           <div className="border-b border-white/8 bg-[#091019]/80 px-4 py-3 backdrop-blur lg:hidden">
-            <div className="flex gap-2 overflow-x-auto">
+            <div className="flex items-center gap-2 overflow-x-auto">
+              <ThemeToggle compact />
               {nav.map(([label, href]) => (
                 <Link key={href} href={href} className="whitespace-nowrap rounded-full border border-white/10 px-3 py-2 text-xs text-white/70">{label}</Link>
               ))}
