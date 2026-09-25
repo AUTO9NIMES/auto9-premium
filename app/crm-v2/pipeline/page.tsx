@@ -14,6 +14,7 @@ import {
   recordV2ManualPayment,
   toggleV2LeadStep,
   updateV2LeadDetails,
+  updateV2DraftPrice,
 } from "./actions";
 import LeadDangerActions from "./LeadDangerActions";
 import LeadEditPanel from "./LeadEditPanel";
@@ -345,6 +346,14 @@ function LeadProgress({
                 initialPrice={String(item.latestQuote?.total_price ?? item.latestJob?.total_amount ?? servicePrice ?? "")}
                 initialNote={item.lead.notes || ""}
                 action={updateV2LeadDetails}
+                quoteId={item.latestQuote?.id ?? null}
+                expectedPrice={item.latestQuote?.total_price ?? null}
+                canEditPrice={Boolean(
+                  item.latestQuote?.id && item.latestQuote.status === "DRAFT" &&
+                  ["NEW", "QUALIFIED", "CONTACTED"].includes(item.lead.lifecycle_status) &&
+                  !item.latestJob
+                )}
+                priceAction={updateV2DraftPrice}
               />
             )}
             <LeadDangerActions

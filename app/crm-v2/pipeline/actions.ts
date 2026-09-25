@@ -358,11 +358,11 @@ export async function updateV2LeadDetails(formData: FormData) {
   const { businessId } = await resolveCurrentBusinessContext();
   let customerId: string;
   try {
-    const rows = await supabaseRest<Array<{ customer_id: string; created_at: string; notes: string | null }>>(
+    const rows = await supabaseRest<Array<{ customer_id: string; created_at: string }>>(
       "leads", "GET", null,
-      `business_id=eq.${businessId}&id=eq.${leadId}&select=customer_id,created_at,notes&limit=1`,
+      `business_id=eq.${businessId}&id=eq.${leadId}&select=customer_id,created_at&limit=1`,
     );
-    const lead = (rows as Array<{ customer_id: string; created_at: string; notes: string | null }> | null)?.[0];
+    const lead = (rows as Array<{ customer_id: string; created_at: string }> | null)?.[0];
     if (!lead) redirect("/crm-v2/pipeline?edit_error=not_found");
     customerId = lead.customer_id;
     const parts = fullName.split(/\s+/).filter(Boolean);
@@ -373,23 +373,13 @@ export async function updateV2LeadDetails(formData: FormData) {
       email: email || null, phone: phone || null, city: city || null,
     });
 
-    const serviceRows = await supabaseRest<Array<{
-      id: string;
-      service_name: string;
-      base_price: number | null;
-      customer_comment: string | null;
-    }>>(
+    const serviceRows = await supabaseRest<Array<{ id: string }>>(
       "lead_services",
       "GET",
       null,
-      `business_id=eq.${businessId}&lead_id=eq.${leadId}&order=created_at.desc&select=id,service_name,base_price,customer_comment&limit=1`,
+      `business_id=eq.${businessId}&lead_id=eq.${leadId}&order=created_at.desc&select=id&limit=1`,
     );
-    const service = (serviceRows as Array<{
-      id: string;
-      service_name: string;
-      base_price: number | null;
-      customer_comment: string | null;
-    }> | null)?.[0];
+    const service = (serviceRows as Array<{ id: string }> | null)?.[0];
 
     if (service?.id) {
       await supabaseRest(
@@ -427,50 +417,6 @@ export async function updateV2LeadDetails(formData: FormData) {
       },
       `business_id=eq.${businessId}&id=eq.${leadId}`,
     );
-
-    const quoteRows = await supabaseRest<Array<{ id: string; payload_json: Record<string, unknown> | null }>>(
-      "quotes",
-      "GET",
-      null,
-      `business_id=eq.${businessId}&lead_id=eq.${leadId}&order=quote_version.desc&select=id,payload_json&limit=1`,
-    );
-    const quote = (quoteRows as Array<{ id: string; payload_json: Record<string, unknown> | null }> | null)?.[0];
-    if (quote?.id) {
-      await supabaseRest(
-        "quotes",
-        "PATCH",
-        {
-          total_price: price,
-          payload_json: {
-            ...(quote.payload_json || {}),
-            serviceName,
-          },
-          updated_at: new Date().toISOString(),
-        },
-        `business_id=eq.${businessId}&id=eq.${quote.id}`,
-      );
-    }
-
-    const jobRows = await supabaseRest<Array<{ id: string; status: string }>>(
-      "jobs",
-      "GET",
-      null,
-      `business_id=eq.${businessId}&lead_id=eq.${leadId}&order=created_at.desc&select=id,status&limit=1`,
-    );
-    const job = (jobRows as Array<{ id: string; status: string }> | null)?.[0];
-    if (job?.id && job.status !== "PAID") {
-      await supabaseRest(
-        "jobs",
-        "PATCH",
-        {
-          title: serviceName,
-          total_amount: price,
-          notes: note || null,
-          updated_at: new Date().toISOString(),
-        },
-        `business_id=eq.${businessId}&id=eq.${job.id}`,
-      );
-    }
 
     await supabaseRest(
       "activity_log",
