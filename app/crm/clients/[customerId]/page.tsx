@@ -11,7 +11,6 @@ import {
 import { createCustomerVehicleAction, updateCustomerProfileAction, uploadCustomerVehiclePhotoAction } from "./actions";
 import {
   getCustomer360,
-  type ActivityLog,
   type Appointment,
   type Customer360Result,
   type Job,
@@ -22,6 +21,14 @@ import {
   type Vehicle,
 } from "../../../lib/crm";
 import { createVehiclePhotoSignedUrl } from "../../../lib/crm-storage";
+import { summarizeCustomerPayments } from "./finance";
+import {
+  getCustomer360RenderedAt,
+  selectCustomerPlanningAppointment,
+} from "./planning";
+import { summarizeCustomerRetention } from "./retention";
+import { formatCustomerActivity } from "./timeline";
+import { selectCustomerNextAction } from "./next-action";
 
 export const dynamic = "force-dynamic";
 
@@ -322,18 +329,6 @@ function AppointmentRow({ appointment }: { appointment: Appointment }) {
   );
 }
 
-function ActivityRow({ activity }: { activity: ActivityLog }) {
-  return (
-    <article className="relative border-l border-[#d8b477]/40 pb-7 pl-5 last:pb-0">
-      <span className="absolute -left-1.5 top-0 h-3 w-3 rounded-full border-2 border-[#080a0d] bg-[#d8b477]" />
-      <div className="flex flex-col justify-between gap-2 md:flex-row">
-        <p className="text-sm text-white">{activity.event_type}</p>
-        <p className="text-xs text-white/35">{formatDateTime(activity.created_at) || "Date non renseignée"}</p>
-      </div>
-    </article>
-  );
-}
-
 export default async function Customer360Page({ params, searchParams }: {
   params: Promise<{ customerId?: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -390,41 +385,70 @@ export default async function Customer360Page({ params, searchParams }: {
     (value): value is string => Boolean(value?.trim()),
   );
 
-  const scheduledAppointments = result.appointments
-    .filter((appointment) => Boolean(appointment.scheduled_at))
-    .sort((left, right) => {
-      const leftTime = new Date(left.scheduled_at as string).getTime();
-      const rightTime = new Date(right.scheduled_at as string).getTime();
-      return leftTime - rightTime;
-    });
+  const renderedAt = await getCustomer360RenderedAt();
+  const {
+    nextAppointment,
+    latestCompletedAppointment,
+    planningAppointment,
+  } = selectCustomerPlanningAppointment(result.appointments, renderedAt);
 
-  const now = Date.now();
+  const finance = summarizeCustomerPayments(result.payments);
+  const retention = summarizeCustomerRetention(
+    result.subscriptions,
+    result.subscriptionBookingRequests,
+    new Date(renderedAt).toISOString().slice(0, 10),
+  );
+  const nextAction = selectCustomerNextAction({
+    leads: result.leads,
+    quotes: result.quotes,
+    jobs: result.jobs,
+    appointments: result.appointments,
+    reviewRequests: result.reviewRequests,
+    leadServiceEvidence: result.leadServiceEvidence,
+  });
 
-  const nextAppointment =
-    scheduledAppointments.find((appointment) => {
-      const scheduledTime = new Date(appointment.scheduled_at as string).getTime();
-
-      return (
-        appointment.status === "CONFIRMED" &&
-        !Number.isNaN(scheduledTime) &&
-        scheduledTime >= now
-      );
-    }) ?? null;
-
-  const latestOperationalAppointment =
-    [...scheduledAppointments]
-      .reverse()
-      .find((appointment) => {
-        const scheduledTime = new Date(appointment.scheduled_at as string).getTime();
-
-        return (
-          appointment.status === "COMPLETED" &&
-          !Number.isNaN(scheduledTime) &&
-          scheduledTime < now
-        );
-      }) ?? null;
-
-  const planningAppointment = nextAppointment ?? latestOperationalAppointment;
+  const nextActionPresentation = {
+    RECORD_PAYMENT: {
+      title: "Encaisser la prestation",
+      detail: "Une prestation terminée attend son encaissement.",
+    },
+    REQUEST_REVIEW: {
+      title: "Demander un avis",
+      detail: "Le paiement est enregistré : la relation client peut maintenant être prolongée par une demande d’avis.",
+    },
+    COMPLETE_JOB: {
+      title: "Terminer la prestation",
+      detail: "La prestation en cours est prête à être clôturée.",
+    },
+    START_JOB: {
+      title: "Démarrer la prestation",
+      detail: "Le rendez-vous est confirmé : la prestation peut démarrer.",
+    },
+    CONFIRM_APPOINTMENT: {
+      title: "Confirmer le rendez-vous",
+      detail: "Le créneau opérationnel est planifié et attend sa confirmation.",
+    },
+    SCHEDULE_JOB: {
+      title: "Planifier la prestation",
+      detail: "Le devis est accepté : il reste à fixer le créneau opérationnel.",
+    },
+    SHARE_QUOTE: {
+      title: "Partager le devis",
+      detail: "Le devis est prêt à être transmis au client.",
+    },
+    CREATE_OR_EDIT_QUOTE: {
+      title: "Préparer le devis",
+      detail: "La demande est qualifiée : le devis devient la prochaine étape commerciale.",
+    },
+    FOLLOW_UP_LEAD: {
+      title: "Relancer le client",
+      detail: "Le dossier attend une relance commerciale.",
+    },
+    NONE: {
+      title: "Dossier à jour",
+      detail: "Aucune action prioritaire n’est actuellement détectée.",
+    },
+  }[nextAction.kind];
 
   const activeJobs = result.jobs.filter((job) =>
     ["QUOTE_ACCEPTED", "SCHEDULED", "CONFIRMED", "IN_PROGRESS"].includes(job.status),
@@ -532,9 +556,9 @@ export default async function Customer360Page({ params, searchParams }: {
                 <h3 className="mt-2 text-lg font-medium text-white">
                   {nextAppointment
                     ? "Prochain rendez-vous"
-                    : latestOperationalAppointment
+                    : latestCompletedAppointment
                       ? "Dernier rendez-vous"
-                      : "Aucun rendez-vous planifié"}
+                      : "Aucun rendez-vous opérationnel"}
                 </h3>
               </div>
 
@@ -582,6 +606,74 @@ export default async function Customer360Page({ params, searchParams }: {
                 <span className="text-sm font-medium text-white">{activeJobs}</span>
               </div>
             </div>
+          </div>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-3">
+          <div className="border border-white/10 bg-[#101419] p-5 md:p-6">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-[#d8b477]">
+              Prochaine action
+            </p>
+            <h3 className="mt-2 text-lg font-medium text-white">
+              {nextActionPresentation.title}
+            </h3>
+            <p className="mt-3 text-xs leading-5 text-white/35">
+              {nextActionPresentation.detail}
+            </p>
+            {nextAction.href && (
+              <Link
+                href={nextAction.href}
+                className="mt-5 inline-block text-xs text-[#d8b477] hover:text-white"
+              >
+                Ouvrir le dossier →
+              </Link>
+            )}
+          </div>
+
+          <div className="border border-white/10 bg-[#101419] p-5 md:p-6">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-[#d8b477]">
+              Finance
+            </p>
+            <h3 className="mt-2 text-lg font-medium text-white">Encaissements réels</h3>
+            <p className="mt-5 text-2xl font-semibold tracking-tight text-white">
+              {formatAmount(finance.totalCollected) || "0,00 €"}
+            </p>
+            <p className="mt-2 text-xs text-white/35">
+              {finance.paymentCount} encaissement{finance.paymentCount > 1 ? "s" : ""}
+            </p>
+            <Link
+              href="/crm/revenue"
+              className="mt-5 inline-block text-xs text-[#d8b477] hover:text-white"
+            >
+              Ouvrir la finance →
+            </Link>
+          </div>
+
+          <div className="border border-white/10 bg-[#101419] p-5 md:p-6">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-[#d8b477]">
+              Fidélisation
+            </p>
+            <h3 className="mt-2 text-lg font-medium text-white">Relation récurrente</h3>
+            <div className="mt-5 space-y-3 text-xs">
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-white/35">Abonnements actifs</span>
+                <span className="font-medium text-white">{retention.activeSubscriptions}</span>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-white/35">À replanifier</span>
+                <span className="font-medium text-white">{retention.activeDueCount}</span>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-white/35">Demandes en attente</span>
+                <span className="font-medium text-white">{retention.pendingBookingRequestCount}</span>
+              </div>
+            </div>
+            <Link
+              href="/crm/subscriptions"
+              className="mt-5 inline-block text-xs text-[#d8b477] hover:text-white"
+            >
+              Gérer les abonnements →
+            </Link>
           </div>
         </div>
       </section>
@@ -718,7 +810,37 @@ export default async function Customer360Page({ params, searchParams }: {
 
       <section aria-labelledby="customer-activity" className="space-y-4">
         <SectionHeading eyebrow="06 / Historique" title="Activité" count={result.activities.length} />
-        {result.activities.length > 0 ? <div className="border border-white/10 bg-[#101419] p-5 md:p-7">{result.activities.map((activity) => <ActivityRow key={activity.id || `${activity.event_type}-${activity.created_at}`} activity={activity} />)}</div> : <EmptySection>Aucune activité enregistrée pour ce client.</EmptySection>}
+        {result.activities.length > 0 ? (
+          <div className="border border-white/10 bg-[#101419] p-5 md:p-7">
+            {result.activities.map((activity) => {
+              const presentation = formatCustomerActivity(activity);
+
+              return (
+                <article
+                  key={activity.id || `${activity.event_type}-${activity.created_at}`}
+                  className="relative border-l border-[#d8b477]/40 pb-7 pl-5 last:pb-0"
+                >
+                  <span className="absolute -left-1.5 top-0 h-3 w-3 rounded-full border-2 border-[#080a0d] bg-[#d8b477]" />
+                  <div className="flex flex-col justify-between gap-2 md:flex-row">
+                    <div>
+                      <p className="text-sm text-white">{presentation.title}</p>
+                      {presentation.detail && (
+                        <p className="mt-1 text-xs leading-5 text-white/45">
+                          {presentation.detail}
+                        </p>
+                      )}
+                    </div>
+                    <p className="text-xs text-white/35">
+                      {formatDateTime(activity.created_at) || "Date non renseignée"}
+                    </p>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <EmptySection>Aucune activité enregistrée pour ce client.</EmptySection>
+        )}
       </section>
     </div>
   );
