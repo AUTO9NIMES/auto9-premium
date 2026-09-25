@@ -26,7 +26,8 @@ export async function createV2Customer(formData: FormData) {
   const city = value(formData, "city") || null;
 
   try {
-    const existing = await findCustomerByEmailOrPhone(email, phone);
+    const existingRows = await findCustomerByEmailOrPhone(email, phone);
+    const existing = Array.isArray(existingRows) ? existingRows[0] : null;
     if (existing?.id) {
       redirect("/crm-v2/clients/" + existing.id + "?existing=1");
     }
@@ -55,7 +56,8 @@ export async function createV2Customer(formData: FormData) {
     }
 
     try {
-      const existing = await findCustomerByEmailOrPhone(email, phone);
+      const existingRows = await findCustomerByEmailOrPhone(email, phone);
+      const existing = Array.isArray(existingRows) ? existingRows[0] : null;
       if (existing?.id) {
         redirect("/crm-v2/clients/" + existing.id + "?existing=1");
       }
