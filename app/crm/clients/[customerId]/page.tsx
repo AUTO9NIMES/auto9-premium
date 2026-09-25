@@ -8,7 +8,17 @@ import {
   toMailtoHref,
   toTelHref,
 } from "../../../lib/contact";
-import { createCustomerVehicleAction, updateCustomerProfileAction, uploadCustomerVehiclePhotoAction } from "./actions";
+import {
+  completeCustomerJob,
+  confirmCustomerAppointment,
+  createCustomerVehicleAction,
+  recordCustomerJobPayment,
+  requestCustomerJobReview,
+  scheduleCustomerJob,
+  startCustomerJob,
+  updateCustomerProfileAction,
+  uploadCustomerVehiclePhotoAction,
+} from "./actions";
 import {
   getCustomer360,
   type Appointment,
@@ -470,6 +480,29 @@ export default async function Customer360Page({ params, searchParams }: {
     ),
   ).length;
 
+  const nextActionJob = nextAction.jobId
+    ? result.jobs.find(
+        (job) =>
+          job.id === nextAction.jobId &&
+          job.customer_id === normalizedCustomerId,
+      ) ?? null
+    : null;
+
+  const nextActionAppointment =
+    nextAction.appointmentId && nextActionJob
+      ? result.appointments.find(
+          (appointment) =>
+            appointment.id === nextAction.appointmentId &&
+            appointment.job_id === nextActionJob.id &&
+            appointment.customer_id === normalizedCustomerId,
+        ) ?? null
+      : null;
+
+  const paymentIdempotencyKey =
+    nextAction.kind === "RECORD_PAYMENT" ? randomUUID() : null;
+  const reviewIdempotencyKey =
+    nextAction.kind === "REQUEST_REVIEW" ? randomUUID() : null;
+
   return (
     <div data-crm-route="clients" className="space-y-12">
       <Link href="/crm/clients" className="inline-block text-xs text-[#d8b477] hover:text-white">← Retour aux clients</Link>
@@ -630,14 +663,147 @@ export default async function Customer360Page({ params, searchParams }: {
             <p className="mt-3 text-xs leading-5 text-white/35">
               {nextActionPresentation.detail}
             </p>
-            {nextAction.href && (
-              <Link
-                href={nextAction.href}
-                className="mt-5 inline-block text-xs text-[#d8b477] hover:text-white"
-              >
-                Ouvrir le dossier →
-              </Link>
-            )}
+            <div className="mt-5">
+              {nextAction.kind === "SCHEDULE_JOB" && nextActionJob ? (
+                <form action={scheduleCustomerJob} className="space-y-3">
+                  <input type="hidden" name="customerId" value={normalizedCustomerId} />
+                  <input type="hidden" name="jobId" value={nextActionJob.id} />
+                  <label className="block text-[10px] uppercase tracking-[0.16em] text-white/35">
+                    Créneau
+                    <input
+                      type="datetime-local"
+                      name="scheduledAt"
+                      required
+                      step="60"
+                      className="mt-2 block w-full border border-white/10 bg-[#0d1014] px-3 py-2 text-xs text-white"
+                    />
+                  </label>
+                  <p className="text-[10px] text-white/30">
+                    Fuseau horaire : Europe/Paris
+                  </p>
+                  <button
+                    type="submit"
+                    className="border border-[#d8b477]/30 px-3 py-2 text-xs text-[#d8b477] hover:border-[#d8b477]/50 hover:text-white"
+                  >
+                    Planifier
+                  </button>
+                </form>
+              ) : nextAction.kind === "CONFIRM_APPOINTMENT" &&
+                nextActionJob &&
+                nextActionAppointment ? (
+                <form action={confirmCustomerAppointment}>
+                  <input type="hidden" name="customerId" value={normalizedCustomerId} />
+                  <input type="hidden" name="jobId" value={nextActionJob.id} />
+                  <input
+                    type="hidden"
+                    name="appointmentId"
+                    value={nextActionAppointment.id}
+                  />
+                  <button
+                    type="submit"
+                    className="border border-[#d8b477]/30 px-3 py-2 text-xs text-[#d8b477] hover:border-[#d8b477]/50 hover:text-white"
+                  >
+                    Confirmer le rendez-vous
+                  </button>
+                </form>
+              ) : nextAction.kind === "START_JOB" && nextActionJob ? (
+                <form action={startCustomerJob}>
+                  <input type="hidden" name="customerId" value={normalizedCustomerId} />
+                  <input type="hidden" name="jobId" value={nextActionJob.id} />
+                  <button
+                    type="submit"
+                    className="border border-[#d8b477]/30 px-3 py-2 text-xs text-[#d8b477] hover:border-[#d8b477]/50 hover:text-white"
+                  >
+                    Démarrer la prestation
+                  </button>
+                </form>
+              ) : nextAction.kind === "COMPLETE_JOB" &&
+                nextActionJob &&
+                nextActionAppointment ? (
+                <form action={completeCustomerJob}>
+                  <input type="hidden" name="customerId" value={normalizedCustomerId} />
+                  <input type="hidden" name="jobId" value={nextActionJob.id} />
+                  <input
+                    type="hidden"
+                    name="appointmentId"
+                    value={nextActionAppointment.id}
+                  />
+                  <button
+                    type="submit"
+                    className="border border-[#d8b477]/30 px-3 py-2 text-xs text-[#d8b477] hover:border-[#d8b477]/50 hover:text-white"
+                  >
+                    Terminer la prestation
+                  </button>
+                </form>
+              ) : nextAction.kind === "RECORD_PAYMENT" &&
+                nextActionJob &&
+                paymentIdempotencyKey ? (
+                <form
+                  action={recordCustomerJobPayment}
+                  className="flex flex-wrap items-end gap-2"
+                >
+                  <input type="hidden" name="customerId" value={normalizedCustomerId} />
+                  <input type="hidden" name="jobId" value={nextActionJob.id} />
+                  <input
+                    type="hidden"
+                    name="idempotencyKey"
+                    value={paymentIdempotencyKey}
+                  />
+                  <label className="text-[10px] uppercase tracking-[0.16em] text-white/35">
+                    Paiement
+                    <select
+                      name="method"
+                      required
+                      defaultValue=""
+                      className="mt-2 block border border-white/10 bg-[#0d1014] px-3 py-2 text-xs text-white"
+                    >
+                      <option value="" disabled>
+                        Mode
+                      </option>
+                      <option value="CASH">Espèces</option>
+                      <option value="CARD">Carte</option>
+                      <option value="BANK_TRANSFER">Virement</option>
+                      <option value="OTHER">Autre</option>
+                    </select>
+                  </label>
+                  <button
+                    type="submit"
+                    className="border border-[#d8b477]/30 px-3 py-2 text-xs text-[#d8b477] hover:border-[#d8b477]/50 hover:text-white"
+                  >
+                    Encaisser
+                  </button>
+                </form>
+              ) : nextAction.kind === "REQUEST_REVIEW" &&
+                nextActionJob &&
+                reviewIdempotencyKey ? (
+                <form action={requestCustomerJobReview}>
+                  <input type="hidden" name="customerId" value={normalizedCustomerId} />
+                  <input type="hidden" name="jobId" value={nextActionJob.id} />
+                  <input
+                    type="hidden"
+                    name="idempotencyKey"
+                    value={reviewIdempotencyKey}
+                  />
+                  <button
+                    type="submit"
+                    className="border border-[#d8b477]/30 px-3 py-2 text-xs text-[#d8b477] hover:border-[#d8b477]/50 hover:text-white"
+                  >
+                    Demander un avis
+                  </button>
+                </form>
+              ) : nextAction.href ? (
+                <Link
+                  href={nextAction.href}
+                  className="inline-block text-xs text-[#d8b477] hover:text-white"
+                >
+                  Ouvrir le dossier →
+                </Link>
+              ) : (
+                <span className="text-[10px] uppercase tracking-[0.16em] text-white/30">
+                  À jour
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="border border-white/10 bg-[#101419] p-5 md:p-6">
