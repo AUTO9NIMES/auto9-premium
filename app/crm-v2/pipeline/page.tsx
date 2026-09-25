@@ -485,8 +485,8 @@ export default async function CrmV2Pipeline({
     <div className="space-y-7">
       <header className="flex flex-col justify-between gap-5 xl:flex-row xl:items-end">
         <div>
-          <p className="text-[11px] uppercase tracking-[0.28em] text-cyan-200/55">Suivi client</p>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight md:text-5xl">Pipeline</h1>
+          <p className="text-[11px] uppercase tracking-[0.28em] text-cyan-200/55">Gestion des dossiers</p>
+          <h1 className="mt-3 text-3xl font-bold tracking-tight md:text-5xl">Dossiers clients</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/45">
             Clique sur une étape pour la cocher ou la rouvrir. La date est conservée automatiquement.
           </p>
