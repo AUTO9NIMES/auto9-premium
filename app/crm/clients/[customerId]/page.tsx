@@ -393,10 +393,20 @@ export default async function Customer360Page({ params, searchParams }: {
   } = selectCustomerPlanningAppointment(result.appointments, renderedAt);
 
   const finance = summarizeCustomerPayments(result.payments);
+  const parisTodayParts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Paris",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date(renderedAt));
+  const parisToday = Object.fromEntries(
+    parisTodayParts.map(({ type, value }) => [type, value]),
+  );
+  const today = `${parisToday.year}-${parisToday.month}-${parisToday.day}`;
   const retention = summarizeCustomerRetention(
     result.subscriptions,
     result.subscriptionBookingRequests,
-    new Date(renderedAt).toISOString().slice(0, 10),
+    today,
   );
   const nextAction = selectCustomerNextAction({
     leads: result.leads,

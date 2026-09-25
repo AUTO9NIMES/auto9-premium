@@ -85,6 +85,11 @@ describe("canonical Customer 360 intelligence wiring", () => {
     expect(page).toContain("summarizeCustomerPayments(result.payments)");
     expect(page).toContain("selectCustomerPlanningAppointment(result.appointments, renderedAt)");
     expect(page).toContain("summarizeCustomerRetention(");
+    expect(page).toContain('timeZone: "Europe/Paris"');
+    expect(page).toContain("parisTodayParts");
+    expect(page).toContain("const today = `${parisToday.year}-${parisToday.month}-${parisToday.day}`");
+    expect(page).toContain("result.subscriptionBookingRequests,\n    today,");
+    expect(page).not.toContain("new Date(renderedAt).toISOString().slice(0, 10)");
     expect(page).toContain("selectCustomerNextAction({");
     expect(page).toContain("reviewRequests: result.reviewRequests");
     expect(page).toContain("leadServiceEvidence: result.leadServiceEvidence");
