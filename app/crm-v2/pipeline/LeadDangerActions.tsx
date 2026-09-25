@@ -14,7 +14,7 @@ export default function LeadDangerActions({
   cancelAction: (formData: FormData) => void | Promise<void>;
   deleteAction: (formData: FormData) => void | Promise<void>;
 }) {
-  const canCancel = ["NEW", "QUALIFIED", "CONTACTED", "QUOTE_SENT"].includes(lifecycleStatus);
+  const canCancel = lifecycleStatus !== "CLOSED_LOST";
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
 
