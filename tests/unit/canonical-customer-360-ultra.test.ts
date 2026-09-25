@@ -72,3 +72,43 @@ describe("canonical Customer 360 vehicle photo contract", () => {
     expect(storage).toContain("createVehiclePhotoSignedUrl");
   });
 });
+
+describe("canonical Customer 360 intelligence wiring", () => {
+  const page = read("app/crm/clients/[customerId]/page.tsx");
+
+  it("wires the five promoted intelligence modules into the canonical customer page", () => {
+    expect(page).toContain('from "./finance"');
+    expect(page).toContain('from "./planning"');
+    expect(page).toContain('from "./retention"');
+    expect(page).toContain('from "./timeline"');
+    expect(page).toContain('from "./next-action"');
+    expect(page).toContain("summarizeCustomerPayments(result.payments)");
+    expect(page).toContain("selectCustomerPlanningAppointment(result.appointments, renderedAt)");
+    expect(page).toContain("summarizeCustomerRetention(");
+    expect(page).toContain("selectCustomerNextAction({");
+    expect(page).toContain("reviewRequests: result.reviewRequests");
+    expect(page).toContain("leadServiceEvidence: result.leadServiceEvidence");
+    expect(page).toContain("formatCustomerActivity(activity)");
+    expect(page).toContain("nextActionPresentation.title");
+    expect(page).toContain("nextActionPresentation.detail");
+    expect(page).toContain('"Encaisser la prestation"');
+    expect(page).toContain('"Confirmer le rendez-vous"');
+    expect(page).toContain('"Dossier à jour"');
+    expect(page).not.toContain('nextAction.kind.replaceAll("_", " ")');
+  });
+
+  it("keeps promoted intelligence navigation inside canonical CRM routes", () => {
+    expect(page).toContain('href="/crm/revenue"');
+    expect(page).toContain('href="/crm/subscriptions"');
+    expect(page).not.toContain('href="/crm-v2/');
+  });
+
+  it("does not promote V8 operational Server Actions in the wiring PR", () => {
+    expect(page).not.toContain("scheduleV2CustomerJob");
+    expect(page).not.toContain("confirmV2CustomerAppointment");
+    expect(page).not.toContain("startV2CustomerJob");
+    expect(page).not.toContain("completeV2CustomerJob");
+    expect(page).not.toContain("recordV2CustomerJobPayment");
+    expect(page).not.toContain("requestV2CustomerJobReview");
+  });
+});
