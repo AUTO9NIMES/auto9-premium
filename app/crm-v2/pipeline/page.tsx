@@ -11,6 +11,7 @@ import {
   cancelV2Lead,
   deleteV2Lead,
   recordV2Payment,
+  recordV2ManualPayment,
   toggleV2LeadStep,
   updateV2LeadDetails,
   updateV2DraftPrice,
@@ -142,6 +143,21 @@ function cancellationInfo(
   };
 }
 
+function manualPaymentMethod(activity: StepActivity[], leadId?: string) {
+  if (!leadId) return null;
+  const row = activity.find(
+    (entry) =>
+      entry.lead_id === leadId &&
+      entry.event_type === "crm_v2.step.completed" &&
+      entry.event_data?.step_key === "PAID" &&
+      typeof entry.event_data?.payment_method === "string",
+  );
+  const method = row?.event_data?.payment_method;
+  if (method === "CASH") return "Espèces";
+  if (method === "CARD_BANK") return "CB / Virement";
+  return null;
+}
+
 function fallbackDone(item: LeadListItem, key: StepKey) {
   if (key === "NEW") return true;
   if (key === "PAID") return item.latestJob?.status === "PAID";
@@ -244,6 +260,7 @@ function LeadProgress({
   const closed = item.lead.lifecycle_status === "CLOSED_LOST";
   const canRecordPayment = Boolean(item.latestJob?.id && item.latestJob.status === "COMPLETED");
   const cancelled = cancellationInfo(activity, item.lead.id);
+  const manualPaymentLabel = manualPaymentMethod(activity, item.lead.id);
   const states = steps.map((step) => stepState(item, step.key, activity));
   const firstPending = states.findIndex((state) => !state.done);
 
@@ -377,7 +394,9 @@ function LeadProgress({
                   )}
                   {step.key === "PAID" && (
                     <p className="mt-1 text-[9px] text-white/20">
-                      {item.latestJob?.id ? "Via encaissement" : "Validation manuelle"}
+                      {item.latestJob?.id
+                        ? "Via encaissement"
+                        : manualPaymentLabel || "Choisir le mode"}
                     </p>
                   )}
                 </div>
@@ -391,6 +410,30 @@ function LeadProgress({
                 : "border-white/6 bg-white/[0.02]"} ${clickable
                   ? "cursor-pointer hover:border-cyan-300/30 hover:bg-cyan-300/[0.035]"
                   : ""}`;
+
+            if (step.key === "PAID" && manualPayment && !state.done && item.lead.id) {
+              return (
+                <details key={step.key} className="group">
+                  <summary className={classes + " list-none"} title="Choisir le mode de paiement">
+                    {inner}
+                  </summary>
+                  <div className="mt-2 flex gap-2 rounded-2xl border border-cyan-300/12 bg-cyan-300/[0.035] p-3">
+                    {[
+                      ["CASH", "Espèces"],
+                      ["CARD_BANK", "CB / Virement"],
+                    ].map(([method, label]) => (
+                      <form key={method} action={recordV2ManualPayment} className="flex-1">
+                        <input type="hidden" name="leadId" value={item.lead.id} />
+                        <input type="hidden" name="method" value={method} />
+                        <button className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-xs font-semibold text-white/70 transition hover:border-cyan-300/30 hover:text-cyan-100">
+                          {label}
+                        </button>
+                      </form>
+                    ))}
+                  </div>
+                </details>
+              );
+            }
 
             if (clickable) {
               return (
@@ -458,8 +501,8 @@ export default async function CrmV2Pipeline({
   const params = await searchParams;
   const rawSearch = Array.isArray(params.search) ? params.search[0] : params.search;
   const search = rawSearch?.trim() || undefined;
-  const paymentRecorded =
-    (Array.isArray(params.payment) ? params.payment[0] : params.payment) === "recorded";
+  const paymentStatus = Array.isArray(params.payment) ? params.payment[0] : params.payment;
+  const paymentRecorded = paymentStatus === "recorded" || paymentStatus === "manual_recorded";
   const paymentError = Array.isArray(params.payment_error)
     ? params.payment_error[0]
     : params.payment_error;

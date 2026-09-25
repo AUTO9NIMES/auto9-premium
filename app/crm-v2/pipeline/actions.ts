@@ -39,6 +39,58 @@ export async function recordV2Payment(formData: FormData) {
 }
 
 
+export async function recordV2ManualPayment(formData: FormData) {
+  await requireCrmAccess();
+
+  const leadId = String(formData.get("leadId") || "").trim();
+  const method = String(formData.get("method") || "").trim();
+
+  if (!UUID_REGEX.test(leadId) || !["CASH", "CARD_BANK"].includes(method)) {
+    redirect("/crm-v2/pipeline?payment_error=invalid");
+  }
+
+  const { businessId } = await resolveCurrentBusinessContext();
+
+  try {
+    const rows = await supabaseRest<Array<{ id: string; customer_id: string }>>(
+      "leads",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&id=eq.${leadId}&select=id,customer_id&limit=1`,
+    );
+    const lead = (rows as Array<{ id: string; customer_id: string }> | null)?.[0];
+
+    if (!lead) {
+      redirect("/crm-v2/pipeline?payment_error=invalid");
+    }
+
+    await supabaseRest(
+      "activity_log",
+      "POST",
+      {
+        business_id: businessId,
+        customer_id: lead.customer_id,
+        lead_id: leadId,
+        event_type: "crm_v2.step.completed",
+        event_data: {
+          step_key: "PAID",
+          source: "crm_v2_pipeline",
+          payment_method: method,
+        },
+      },
+      "select=id",
+    );
+  } catch (error) {
+    if (error && typeof error === "object" && "digest" in error) throw error;
+    redirect("/crm-v2/pipeline?payment_error=unavailable");
+  }
+
+  revalidatePath("/crm-v2");
+  revalidatePath("/crm-v2/pipeline");
+  redirect("/crm-v2/pipeline?payment=manual_recorded");
+}
+
+
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export async function cancelV2Lead(formData: FormData) {
