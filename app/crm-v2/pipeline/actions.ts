@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireCrmAccess } from "../../lib/auth/dal";
 import {
-  recordJobPayment, transitionLeadStatus, updateCustomerProfile,
+  recordJobPayment, updateCustomerProfile,
   updateDraftQuoteAmount, type Payment, type UpdateDraftQuoteAmountResult,
 } from "../../lib/crm";
 import { resolveCurrentBusinessContext } from "../../lib/business";
@@ -51,13 +51,66 @@ export async function cancelV2Lead(formData: FormData) {
     redirect("/crm-v2/pipeline?lead_error=invalid");
   }
 
-  let customerId: string;
+  const { businessId } = await resolveCurrentBusinessContext();
+  let customerId = "";
+
   try {
-    const result = await transitionLeadStatus({
-      leadId, targetStatus: "CLOSED_LOST", source: "crm_v2", comment: comment || null,
-    });
-    customerId = result.lead.customer_id;
-  } catch {
+    const rows = await supabaseRest<Array<{
+      id: string;
+      customer_id: string;
+      lifecycle_status: string;
+    }>>(
+      "leads",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&id=eq.${leadId}&select=id,customer_id,lifecycle_status&limit=1`,
+    );
+
+    const lead = (rows as Array<{
+      id: string;
+      customer_id: string;
+      lifecycle_status: string;
+    }> | null)?.[0];
+
+    if (!lead) {
+      redirect("/crm-v2/pipeline?lead_error=invalid");
+    }
+
+    customerId = lead.customer_id;
+
+    if (lead.lifecycle_status !== "CLOSED_LOST") {
+      await supabaseRest(
+        "leads",
+        "PATCH",
+        {
+          lifecycle_status: "CLOSED_LOST",
+          updated_at: new Date().toISOString(),
+        },
+        `business_id=eq.${businessId}&id=eq.${leadId}`,
+      );
+
+      await supabaseRest(
+        "activity_log",
+        "POST",
+        {
+          business_id: businessId,
+          customer_id: customerId,
+          lead_id: leadId,
+          event_type: "lead.status_changed",
+          event_data: {
+            source: "crm_v2",
+            previous_status: lead.lifecycle_status,
+            new_status: "CLOSED_LOST",
+            comment: comment || null,
+          },
+        },
+        "select=id",
+      );
+    }
+  } catch (error) {
+    if (error && typeof error === "object" && "digest" in error) {
+      throw error;
+    }
     redirect("/crm-v2/pipeline?lead_error=unavailable");
   }
 
@@ -67,8 +120,10 @@ export async function cancelV2Lead(formData: FormData) {
   revalidatePath("/crm");
   revalidatePath("/crm/pipeline");
   revalidatePath(`/crm/pipeline/${leadId}`);
-  revalidatePath(`/crm/clients/${customerId}`);
-  revalidatePath(`/crm-v2/clients/${customerId}`);
+  if (customerId) {
+    revalidatePath(`/crm/clients/${customerId}`);
+    revalidatePath(`/crm-v2/clients/${customerId}`);
+  }
   redirect("/crm-v2/pipeline?lead_cancelled=1");
 }
 
