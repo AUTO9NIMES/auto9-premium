@@ -1,0 +1,26 @@
+.crm-v2-root a,
+.crm-v2-root button:not(:disabled),
+.crm-v2-root summary,
+.crm-v2-root select,
+.crm-v2-root input[type="checkbox"]:not(:disabled),
+.crm-v2-root input[type="radio"]:not(:disabled),
+.crm-v2-root input[type="submit"]:not(:disabled),
+.crm-v2-root input[type="button"]:not(:disabled),
+.crm-v2-root [role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
+.crm-v2-root button:disabled,
+.crm-v2-root [aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+.crm-v2-root input[type="text"],
+.crm-v2-root input[type="email"],
+.crm-v2-root input[type="tel"],
+.crm-v2-root input[type="number"],
+.crm-v2-root input[type="date"],
+.crm-v2-root input[type="time"],
+.crm-v2-root textarea {
+  cursor: text;
+}
