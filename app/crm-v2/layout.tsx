@@ -1,3 +1,4 @@
+import "./crm-v2.css";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CrmAccessError, requireCrmAccess } from "../lib/auth/dal";
@@ -30,7 +31,7 @@ export default async function CrmV2Layout({ children }: { children: React.ReactN
   await ensureCrmAccess();
 
   return (
-    <div className="min-h-screen bg-[#070b10] text-white">
+    <div className="crm-v2-root min-h-screen bg-[#070b10] text-white">
       <div className="mx-auto flex min-h-screen max-w-[1800px]">
         <aside className="sticky top-0 hidden h-screen w-64 shrink-0 border-r border-cyan-400/10 bg-[#091019]/95 p-6 lg:flex lg:flex-col">
           <Link href="/crm-v2" className="block">
