@@ -27,6 +27,7 @@ type ManualStepKey =
   | "BOOKED"
   | "IN_PROGRESS"
   | "COMPLETED"
+  | "PAID"
   | "REVIEW_REQUESTED";
 
 type StepActivity = {
@@ -53,6 +54,7 @@ const manualSteps = new Set<ManualStepKey>([
   "BOOKED",
   "IN_PROGRESS",
   "COMPLETED",
+  "PAID",
   "REVIEW_REQUESTED",
 ]);
 
@@ -84,7 +86,8 @@ function vehicle(item: LeadListItem) {
   );
 }
 
-function serviceName(item: LeadListItem) {
+function serviceName(item: LeadListItem, serviceOverride?: string | null) {
+  if (serviceOverride?.trim()) return serviceOverride.trim();
   const value = item.latestQuote?.payload_json?.serviceName;
   return typeof value === "string" && value.trim()
     ? value
@@ -231,9 +234,11 @@ function stepState(item: LeadListItem, key: StepKey, activity: StepActivity[]) {
 function LeadProgress({
   item,
   activity,
+  serviceOverride,
 }: {
   item: LeadListItem;
   activity: StepActivity[];
+  serviceOverride?: string | null;
 }) {
   const amount = money(item.latestQuote?.total_price || item.latestJob?.total_amount);
   const closed = item.lead.lifecycle_status === "CLOSED_LOST";
@@ -255,7 +260,7 @@ function LeadProgress({
             )}
           </div>
           <p className="mt-1 text-xs text-white/40">{vehicle(item)}</p>
-          <p className="mt-3 text-sm text-white/65">{serviceName(item)}</p>
+          <p className="mt-3 text-sm text-white/65">{serviceName(item, serviceOverride)}</p>
           {closed && cancelled && (
             <div className="mt-3 rounded-xl border border-amber-300/12 bg-amber-300/[0.035] px-3 py-2">
               <p className="text-[10px] uppercase tracking-[0.14em] text-amber-100/55">
@@ -300,7 +305,7 @@ function LeadProgress({
                 initialPhone={item.customer.phone || ""}
                 initialEmail={item.customer.email || ""}
                 initialCity={item.customer.city || ""}
-                initialService={serviceName(item)}
+                initialService={serviceName(item, serviceOverride)}
                 initialPrice={String(item.latestQuote?.total_price ?? item.latestJob?.total_amount ?? "")}
                 initialNote={item.lead.notes || ""}
                 action={updateV2LeadDetails}
@@ -330,7 +335,13 @@ function LeadProgress({
             const state = states[index];
             const now = !state.done && index === firstPending;
             const manual = manualSteps.has(step.key as ManualStepKey);
-            const clickable = Boolean(item.lead.id && manual && !closed);
+            const manualPayment = step.key === "PAID" && !item.latestJob?.id;
+            const clickable = Boolean(
+              item.lead.id &&
+              manual &&
+              !closed &&
+              (step.key !== "PAID" || manualPayment),
+            );
 
             const inner = (
               <>
@@ -365,7 +376,9 @@ function LeadProgress({
                     <p className="mt-1 text-[9px] text-white/20">Créée automatiquement</p>
                   )}
                   {step.key === "PAID" && (
-                    <p className="mt-1 text-[9px] text-white/20">Via encaissement</p>
+                    <p className="mt-1 text-[9px] text-white/20">
+                      {item.latestJob?.id ? "Via encaissement" : "Validation manuelle"}
+                    </p>
                   )}
                 </div>
               </>
@@ -469,7 +482,14 @@ export default async function CrmV2Pipeline({
   const result = await getLeadsList({ page: 1, limit: 50, search });
   const { businessId } = await resolveCurrentBusinessContext();
 
+  type ServiceRow = {
+    lead_id: string;
+    service_name: string;
+    created_at: string | null;
+  };
+
   let activity: StepActivity[] = [];
+  let serviceRows: ServiceRow[] = [];
   try {
     const rows = await supabaseRest<StepActivity[]>(
       "activity_log",
@@ -480,6 +500,25 @@ export default async function CrmV2Pipeline({
     activity = (rows as StepActivity[] | null) ?? [];
   } catch {
     activity = [];
+  }
+
+  try {
+    const rows = await supabaseRest<ServiceRow[]>(
+      "lead_services",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&order=created_at.desc&limit=1000&select=lead_id,service_name,created_at`,
+    );
+    serviceRows = (rows as ServiceRow[] | null) ?? [];
+  } catch {
+    serviceRows = [];
+  }
+
+  const serviceByLead = new Map<string, string>();
+  for (const row of serviceRows) {
+    if (!serviceByLead.has(row.lead_id) && row.service_name?.trim()) {
+      serviceByLead.set(row.lead_id, row.service_name.trim());
+    }
   }
 
   return (
@@ -593,6 +632,7 @@ export default async function CrmV2Pipeline({
               key={item.lead.id || item.lead.created_at}
               item={item}
               activity={activity}
+              serviceOverride={item.lead.id ? serviceByLead.get(item.lead.id) : null}
             />
           ))
         ) : (
