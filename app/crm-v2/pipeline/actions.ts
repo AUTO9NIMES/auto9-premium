@@ -64,6 +64,20 @@ export async function recordV2ManualPayment(formData: FormData) {
       redirect("/crm-v2/pipeline?payment_error=invalid");
     }
 
+    const serviceRows = await supabaseRest<Array<{ base_price: number | null }>>(
+      "lead_services",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&lead_id=eq.${leadId}&order=created_at.desc&select=base_price&limit=1`,
+    );
+    const paymentAmount = Number(
+      (serviceRows as Array<{ base_price: number | null }> | null)?.[0]?.base_price,
+    );
+
+    if (!Number.isFinite(paymentAmount) || paymentAmount <= 0) {
+      redirect("/crm-v2/pipeline?payment_error=amount_missing");
+    }
+
     await supabaseRest(
       "activity_log",
       "POST",
@@ -76,6 +90,7 @@ export async function recordV2ManualPayment(formData: FormData) {
           step_key: "PAID",
           source: "crm_v2_pipeline",
           payment_method: method,
+          payment_amount: paymentAmount,
         },
       },
       "select=id",
@@ -86,6 +101,7 @@ export async function recordV2ManualPayment(formData: FormData) {
   }
 
   revalidatePath("/crm-v2");
+  revalidatePath("/crm-v2/revenue");
   revalidatePath("/crm-v2/pipeline");
   redirect("/crm-v2/pipeline?payment=manual_recorded");
 }

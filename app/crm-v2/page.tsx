@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getCalendarMonth, getCrmDashboardMetrics, type CalendarAppointmentItem, type Payment } from "../lib/crm";
 import { resolveCurrentBusinessContext } from "../lib/business";
 import { supabaseRest } from "../lib/supabase";
+import { getManualRevenueEntries } from "../lib/manual-revenue";
 
 export const dynamic = "force-dynamic";
 
@@ -68,15 +69,24 @@ export default async function CrmV2Dashboard() {
   ]);
 
   const payments = (paymentsRaw as Payment[] | null) ?? [];
+  const manualPayments = await getManualRevenueEntries(businessId, payments);
   const currentMonth = monthKey();
   const paymentsThisMonth = payments.filter((payment) => parisMonthKey(payment.received_at) === currentMonth);
-  const monthlyRevenue = paymentsThisMonth.reduce((sum, payment) => sum + (payment.amount || 0), 0);
-  const cashRevenue = paymentsThisMonth
-    .filter((payment) => payment.method === "CASH")
-    .reduce((sum, payment) => sum + (payment.amount || 0), 0);
-  const bankRevenue = paymentsThisMonth
-    .filter((payment) => payment.method === "CARD" || payment.method === "BANK_TRANSFER")
-    .reduce((sum, payment) => sum + (payment.amount || 0), 0);
+  const manualThisMonth = manualPayments.filter((payment) => parisMonthKey(payment.receivedAt) === currentMonth);
+  const cashRevenue =
+    paymentsThisMonth
+      .filter((payment) => payment.method === "CASH")
+      .reduce((sum, payment) => sum + (payment.amount || 0), 0) +
+    manualThisMonth
+      .filter((payment) => payment.method === "CASH")
+      .reduce((sum, payment) => sum + payment.amount, 0);
+  const bankRevenue =
+    paymentsThisMonth
+      .filter((payment) => payment.method === "CARD" || payment.method === "BANK_TRANSFER")
+      .reduce((sum, payment) => sum + (payment.amount || 0), 0) +
+    manualThisMonth
+      .filter((payment) => payment.method === "CARD" || payment.method === "BANK_TRANSFER")
+      .reduce((sum, payment) => sum + payment.amount, 0);
   const nextEvents = calendar.items
     .filter((item) => new Date(item.appointment.scheduledAt).getTime() >= Date.now())
     .sort((a, b) => new Date(a.appointment.scheduledAt).getTime() - new Date(b.appointment.scheduledAt).getTime())

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { resolveCurrentBusinessContext } from "../../lib/business";
 import { supabaseRest } from "../../lib/supabase";
 import type { Payment } from "../../lib/crm";
+import { getManualRevenueEntries } from "../../lib/manual-revenue";
 
 export const dynamic = "force-dynamic";
 
@@ -78,11 +79,15 @@ export default async function RevenuePage({
   );
 
   const payments = (rows as Payment[] | null) ?? [];
+  const manualPayments = await getManualRevenueEntries(businessId, payments);
   const years = Array.from(
     new Set([
       currentYear,
       ...payments
         .map((payment) => parisParts(payment.received_at)?.year)
+        .filter((year): year is number => typeof year === "number"),
+      ...manualPayments
+        .map((payment) => parisParts(payment.receivedAt)?.year)
         .filter((year): year is number => typeof year === "number"),
     ]),
   ).sort((a, b) => b - a);
@@ -94,15 +99,36 @@ export default async function RevenuePage({
       return parts?.year === selectedYear && parts?.month === monthNumber;
     });
 
-    const total = monthPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
-    const cash = monthPayments
-      .filter((payment) => payment.method === "CASH")
-      .reduce((sum, payment) => sum + (payment.amount || 0), 0);
-    const bank = monthPayments
-      .filter((payment) => payment.method === "CARD" || payment.method === "BANK_TRANSFER")
-      .reduce((sum, payment) => sum + (payment.amount || 0), 0);
+    const monthManualPayments = manualPayments.filter((payment) => {
+      const parts = parisParts(payment.receivedAt);
+      return parts?.year === selectedYear && parts?.month === monthNumber;
+    });
 
-    return { label, total, cash, bank, count: monthPayments.length };
+    const total =
+      monthPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0) +
+      monthManualPayments.reduce((sum, payment) => sum + payment.amount, 0);
+    const cash =
+      monthPayments
+        .filter((payment) => payment.method === "CASH")
+        .reduce((sum, payment) => sum + (payment.amount || 0), 0) +
+      monthManualPayments
+        .filter((payment) => payment.method === "CASH")
+        .reduce((sum, payment) => sum + payment.amount, 0);
+    const bank =
+      monthPayments
+        .filter((payment) => payment.method === "CARD" || payment.method === "BANK_TRANSFER")
+        .reduce((sum, payment) => sum + (payment.amount || 0), 0) +
+      monthManualPayments
+        .filter((payment) => payment.method === "CARD" || payment.method === "BANK_TRANSFER")
+        .reduce((sum, payment) => sum + payment.amount, 0);
+
+    return {
+      label,
+      total,
+      cash,
+      bank,
+      count: monthPayments.length + monthManualPayments.length,
+    };
   });
 
   const annualTotal = monthData.reduce((sum, month) => sum + month.total, 0);
