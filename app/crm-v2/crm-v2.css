@@ -24,3 +24,23 @@
 .crm-v2-root textarea {
   cursor: text;
 }
+
+
+.crm-v2-root {
+  transition: filter 180ms ease, background-color 180ms ease;
+}
+
+.crm-v2-root.crm-v2-light {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+.crm-v2-root.crm-v2-light img,
+.crm-v2-root.crm-v2-light video,
+.crm-v2-root.crm-v2-light picture,
+.crm-v2-root.crm-v2-light canvas {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+.crm-v2-root.crm-v2-light ::selection {
+  background: rgba(34, 211, 238, 0.22);
+}
