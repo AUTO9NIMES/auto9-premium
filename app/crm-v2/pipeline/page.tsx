@@ -463,7 +463,7 @@ export default async function CrmV2Pipeline({
     (Array.isArray(params.edit_updated) ? params.edit_updated[0] : params.edit_updated) === "1";
   const editError = Array.isArray(params.edit_error) ? params.edit_error[0] : params.edit_error;
   const priceUpdated = (Array.isArray(params.price_updated) ? params.price_updated[0] : params.price_updated) === "1";
-  const priceError = Array.isArray(params.price_error) ? params.price_error[0] : params.price_error;
+  const priceError = Array.isArray(params.price_error) ? params.price_error[0] : params.price_error;\n  const created = (Array.isArray(params.created) ? params.created[0] : params.created) === "1";
 
   const result = await getLeadsList({ page: 1, limit: 50, search });
   const { businessId } = await resolveCurrentBusinessContext();
@@ -492,14 +492,14 @@ export default async function CrmV2Pipeline({
           </p>
         </div>
         <Link
-          href="/crm/pipeline/new"
+          href="/crm-v2/pipeline/new"
           className="w-fit rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-3 text-xs font-semibold text-cyan-100"
         >
           + Nouveau dossier
         </Link>
       </header>
 
-      {paymentRecorded && (
+      {created && (\n        <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/[0.05] px-4 py-3 text-sm text-emerald-100">\n          Nouveau dossier client créé.\n        </div>\n      )}\n      {paymentRecorded && (
         <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/[0.05] px-4 py-3 text-sm text-emerald-100">
           Paiement enregistré. Le CA du mois a été mis à jour.
         </div>
