@@ -9,6 +9,7 @@ export default function LeadEditPanel({
   initialEmail,
   initialCity,
   initialService,
+  initialDateTime,
   initialPrice,
   initialNote,
   action,
@@ -23,6 +24,7 @@ export default function LeadEditPanel({
   initialEmail: string;
   initialCity: string;
   initialService: string;
+  initialDateTime: string;
   initialPrice: string;
   initialNote: string;
   action: (formData: FormData) => void | Promise<void>;
@@ -51,7 +53,7 @@ export default function LeadEditPanel({
         <div>
           <p className="text-sm font-semibold text-white">Modifier la demande</p>
           <p className="mt-1 text-[10px] leading-4 text-white/35">
-            Modifie les coordonnées du client et le nom de la prestation.
+            Modifie les coordonnées, la prestation et la date réelle du dossier.
           </p>
         </div>
         <button
@@ -104,7 +106,18 @@ export default function LeadEditPanel({
           />
         </label>
 
-        <label className="text-[10px] uppercase tracking-[0.12em] text-white/35 md:col-span-2">
+        <label className="text-[10px] uppercase tracking-[0.12em] text-white/35">
+          Date du dossier / prestation
+          <input
+            name="dossierDateTime"
+            type="datetime-local"
+            required
+            defaultValue={initialDateTime}
+            className="mt-1.5 w-full rounded-xl border border-white/10 bg-[#081019] px-3 py-2.5 text-sm normal-case tracking-normal text-white outline-none"
+          />
+        </label>
+
+        <label className="text-[10px] uppercase tracking-[0.12em] text-white/35">
           Prestation
           <input
             name="serviceName"

@@ -95,6 +95,23 @@ function serviceName(item: LeadListItem, serviceOverride?: string | null) {
     : item.latestJob?.title || "Prestation AUTO 9";
 }
 
+function toParisDateTimeLocal(value?: string | null) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Paris",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+  const map = new Map(parts.map((part) => [part.type, part.value]));
+  return `${map.get("year")}-${map.get("month")}-${map.get("day")}T${map.get("hour")}:${map.get("minute")}`;
+}
+
 function money(value?: number | null) {
   if (typeof value !== "number") return null;
   return new Intl.NumberFormat("fr-FR", {
@@ -323,6 +340,7 @@ function LeadProgress({
                 initialEmail={item.customer.email || ""}
                 initialCity={item.customer.city || ""}
                 initialService={serviceName(item, serviceOverride)}
+                initialDateTime={toParisDateTimeLocal(item.lead.created_at)}
                 initialPrice={String(item.latestQuote?.total_price ?? item.latestJob?.total_amount ?? "")}
                 initialNote={item.lead.notes || ""}
                 action={updateV2LeadDetails}
@@ -599,7 +617,7 @@ export default async function CrmV2Pipeline({
       )}
       {editUpdated && (
         <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/[0.05] px-4 py-3 text-sm text-emerald-100">
-          Coordonnées du client mises à jour.
+          Dossier client mis à jour.
         </div>
       )}
       {editError && (

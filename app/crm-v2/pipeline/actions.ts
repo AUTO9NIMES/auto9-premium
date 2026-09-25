@@ -306,6 +306,28 @@ export async function toggleV2LeadStep(formData: FormData) {
 }
 
 
+function parisLocalDateTimeToIso(value: string): string | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(value);
+  if (!match) return null;
+
+  const [, y, mo, d, h, mi] = match;
+  const localAsUtc = Date.UTC(Number(y), Number(mo) - 1, Number(d), Number(h), Number(mi));
+  const probe = new Date(localAsUtc);
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Europe/Paris",
+    timeZoneName: "shortOffset",
+    hour: "2-digit",
+  }).formatToParts(probe);
+  const zone = parts.find((part) => part.type === "timeZoneName")?.value || "GMT+0";
+  const zoneMatch = /GMT([+-])(\d{1,2})(?::(\d{2}))?/.exec(zone);
+  const offsetMinutes = zoneMatch
+    ? (zoneMatch[1] === "+" ? 1 : -1) *
+      (Number(zoneMatch[2]) * 60 + Number(zoneMatch[3] || 0))
+    : 0;
+
+  return new Date(localAsUtc - offsetMinutes * 60_000).toISOString();
+}
+
 // Save customer profile and the editable service label for this dossier.
 export async function updateV2LeadDetails(formData: FormData) {
   await requireCrmAccess();
@@ -316,18 +338,26 @@ export async function updateV2LeadDetails(formData: FormData) {
   const email = String(formData.get("email") || "").trim();
   const city = String(formData.get("city") || "").trim();
   const serviceName = String(formData.get("serviceName") || "").trim();
-  if (!UUID_REGEX.test(leadId) || !fullName || !serviceName || serviceName.length > 200) {
+  const dossierDateTime = String(formData.get("dossierDateTime") || "").trim();
+  const dossierCreatedAt = parisLocalDateTimeToIso(dossierDateTime);
+  if (
+    !UUID_REGEX.test(leadId) ||
+    !fullName ||
+    !serviceName ||
+    serviceName.length > 200 ||
+    !dossierCreatedAt
+  ) {
     redirect("/crm-v2/pipeline?edit_error=invalid");
   }
 
   const { businessId } = await resolveCurrentBusinessContext();
   let customerId: string;
   try {
-    const rows = await supabaseRest<Array<{ customer_id: string }>>(
+    const rows = await supabaseRest<Array<{ customer_id: string; created_at: string }>>(
       "leads", "GET", null,
-      `business_id=eq.${businessId}&id=eq.${leadId}&select=customer_id&limit=1`,
+      `business_id=eq.${businessId}&id=eq.${leadId}&select=customer_id,created_at&limit=1`,
     );
-    const lead = (rows as Array<{ customer_id: string }> | null)?.[0];
+    const lead = (rows as Array<{ customer_id: string; created_at: string }> | null)?.[0];
     if (!lead) redirect("/crm-v2/pipeline?edit_error=not_found");
     customerId = lead.customer_id;
     const parts = fullName.split(/\s+/).filter(Boolean);
@@ -364,6 +394,35 @@ export async function updateV2LeadDetails(formData: FormData) {
           business_id: businessId,
           lead_id: leadId,
           service_name: serviceName,
+        },
+        "select=id",
+      );
+    }
+
+    if (lead.created_at !== dossierCreatedAt) {
+      await supabaseRest(
+        "leads",
+        "PATCH",
+        {
+          created_at: dossierCreatedAt,
+          updated_at: new Date().toISOString(),
+        },
+        `business_id=eq.${businessId}&id=eq.${leadId}`,
+      );
+
+      await supabaseRest(
+        "activity_log",
+        "POST",
+        {
+          business_id: businessId,
+          customer_id: customerId,
+          lead_id: leadId,
+          event_type: "crm_v2.dossier.date_adjusted",
+          event_data: {
+            source: "crm_v2_pipeline",
+            previous_created_at: lead.created_at,
+            new_created_at: dossierCreatedAt,
+          },
         },
         "select=id",
       );
