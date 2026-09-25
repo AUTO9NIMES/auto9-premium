@@ -3,7 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import type { Payment } from "../../app/lib/crm";
-import { summarizeCustomerPayments } from "../../app/crm-v2/clients/[customerId]/finance";
+import { summarizeCustomerPayments } from "../../app/crm/clients/[customerId]/finance";
 
 function payment(
   id: string,
