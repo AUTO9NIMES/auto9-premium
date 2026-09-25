@@ -51,7 +51,7 @@ export default function LeadEditPanel({
         <div>
           <p className="text-sm font-semibold text-white">Modifier la demande</p>
           <p className="mt-1 text-[10px] leading-4 text-white/35">
-            Enregistre séparément les coordonnées du client et le montant du devis brouillon.
+            Modifie les coordonnées du client et le nom de la prestation.
           </p>
         </div>
         <button
@@ -104,24 +104,27 @@ export default function LeadEditPanel({
           />
         </label>
 
+        <label className="text-[10px] uppercase tracking-[0.12em] text-white/35 md:col-span-2">
+          Prestation
+          <input
+            name="serviceName"
+            required
+            maxLength={200}
+            defaultValue={initialService}
+            className="mt-1.5 w-full rounded-xl border border-white/10 bg-[#081019] px-3 py-2.5 text-sm normal-case tracking-normal text-white outline-none"
+          />
+        </label>
+
         <button className="rounded-xl border border-cyan-300/25 bg-cyan-300/10 px-4 py-3 text-xs font-semibold text-cyan-100 md:col-span-2">
-          Enregistrer les coordonnées
+          Enregistrer les modifications
         </button>
       </form>
 
-      <div className="mt-4 grid gap-3 border-t border-white/10 pt-4 md:grid-cols-2">
-        <p className="text-xs leading-5 text-white/45 md:col-span-2">
-          La prestation et les notes sont temporairement en lecture seule pour préserver l&apos;historique du dossier.
+      <div className="mt-4 border-t border-white/10 pt-4">
+        <p className="text-xs leading-5 text-white/45">
+          La note complémentaire reste en lecture seule pour préserver l&apos;historique du dossier.
         </p>
-        <label className="text-[10px] uppercase tracking-[0.12em] text-white/35">
-          Prestation
-          <input
-            readOnly
-            value={initialService}
-            className="mt-1.5 w-full rounded-xl border border-white/10 bg-[#081019] px-3 py-2.5 text-sm normal-case tracking-normal text-white/60"
-          />
-        </label>
-        <label className="text-[10px] uppercase tracking-[0.12em] text-white/35">
+        <label className="mt-3 block text-[10px] uppercase tracking-[0.12em] text-white/35">
           Note complémentaire
           <textarea
             readOnly
