@@ -79,6 +79,20 @@ export async function cancelV2Lead(formData: FormData) {
     customerId = lead.customer_id;
 
     if (lead.lifecycle_status !== "CLOSED_LOST") {
+      // Remove any V2 calendar event linked to this request so an
+      // cancelled customer request no longer appears in the planning.
+      try {
+        await supabaseRest(
+          "crm_calendar_events",
+          "DELETE",
+          null,
+          `business_id=eq.${businessId}&lead_id=eq.${leadId}`,
+        );
+      } catch {
+        // Calendar storage may not exist on older environments. Cancellation
+        // of the customer request must remain possible in that case.
+      }
+
       await supabaseRest(
         "leads",
         "PATCH",
@@ -117,6 +131,7 @@ export async function cancelV2Lead(formData: FormData) {
   revalidatePath("/crm-v2");
   revalidatePath("/crm-v2/pipeline");
   revalidatePath("/crm-v2/clients");
+  revalidatePath("/crm-v2/calendar");
   revalidatePath("/crm");
   revalidatePath("/crm/pipeline");
   revalidatePath(`/crm/pipeline/${leadId}`);
