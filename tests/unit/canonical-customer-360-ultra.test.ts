@@ -108,7 +108,30 @@ describe("canonical Customer 360 intelligence wiring", () => {
     expect(page).not.toContain('href="/crm-v2/');
   });
 
-  it("does not promote V8 operational Server Actions in the wiring PR", () => {
+  it("wires canonical operational actions without leaking V2 actions", () => {
+    expect(page).toContain("scheduleCustomerJob");
+    expect(page).toContain("confirmCustomerAppointment");
+    expect(page).toContain("startCustomerJob");
+    expect(page).toContain("completeCustomerJob");
+    expect(page).toContain("recordCustomerJobPayment");
+    expect(page).toContain("requestCustomerJobReview");
+
+    expect(page).toContain('nextAction.kind === "SCHEDULE_JOB"');
+    expect(page).toContain('nextAction.kind === "CONFIRM_APPOINTMENT"');
+    expect(page).toContain('nextAction.kind === "START_JOB"');
+    expect(page).toContain('nextAction.kind === "COMPLETE_JOB"');
+    expect(page).toContain('nextAction.kind === "RECORD_PAYMENT"');
+    expect(page).toContain('nextAction.kind === "REQUEST_REVIEW"');
+
+    expect(page).toContain("nextActionJob");
+    expect(page).toContain("nextActionAppointment");
+    expect(page).toContain("nextActionAppointment.id");
+    expect(page).toContain("paymentIdempotencyKey");
+    expect(page).toContain("reviewIdempotencyKey");
+    expect(page).toContain('type="datetime-local"');
+    expect(page).toContain('name="method"');
+    expect(page).toContain("randomUUID()");
+
     expect(page).not.toContain("scheduleV2CustomerJob");
     expect(page).not.toContain("confirmV2CustomerAppointment");
     expect(page).not.toContain("startV2CustomerJob");
