@@ -6,15 +6,18 @@ import type { LeadLifecycleStatus } from "../../lib/crm";
 export default function LeadDangerActions({
   leadId,
   lifecycleStatus,
+  hasOperationalHistory = false,
   cancelAction,
   deleteAction,
 }: {
   leadId: string;
   lifecycleStatus: LeadLifecycleStatus;
+  hasOperationalHistory?: boolean;
   cancelAction: (formData: FormData) => void | Promise<void>;
   deleteAction: (formData: FormData) => void | Promise<void>;
 }) {
-  const canCancel = lifecycleStatus !== "CLOSED_LOST";
+  const canCancel = !hasOperationalHistory &&
+    ["NEW", "QUALIFIED", "CONTACTED", "QUOTE_SENT"].includes(lifecycleStatus);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
 

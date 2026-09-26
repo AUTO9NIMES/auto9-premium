@@ -359,6 +359,7 @@ function LeadProgress({
             <LeadDangerActions
               leadId={item.lead.id}
               lifecycleStatus={item.lead.lifecycle_status}
+              hasOperationalHistory={Boolean(item.latestJob || item.latestAppointment)}
               cancelAction={cancelV2Lead}
               deleteAction={deleteV2Lead}
             />

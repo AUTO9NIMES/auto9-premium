@@ -24,10 +24,15 @@ vi.mock("../../app/lib/supabase", () => ({
   supabaseUrl: "https://example.invalid",
   supabaseServiceRoleKey: "test-only",
 }));
-vi.mock("../../app/lib/crm", async (original) => ({
-  ...await original<typeof import("../../app/lib/crm")>(),
-  getLeadsList: mocks.getLeadsList,
-}));
+vi.mock("../../app/lib/crm", async (original) => {
+  const actual = await original<typeof import("../../app/lib/crm")>();
+  return {
+    ...actual,
+    // Observe delegation while still executing the real canonical helper.
+    transitionLeadStatus: vi.fn(actual.transitionLeadStatus),
+    getLeadsList: mocks.getLeadsList,
+  };
+});
 vi.mock("react", async (original) => ({
   ...await original<typeof import("react")>(),
   // Render both collapsed/open presentations without a browser or DOM runner.
@@ -148,6 +153,153 @@ describe("V2 cancellation at the canonical RPC boundary", () => {
   it("rejects invalid UUIDs without contacting persistence", async () => {
     await expect(cancelV2Lead(form({ leadId: "invalid" }))).rejects.toThrow("lead_error=invalid");
     expect(mocks.supabaseRest).not.toHaveBeenCalled();
+  });
+});
+
+describe("STEP275 regression A: canonical cancellation delegation", () => {
+  // Route-aware fixtures let the existing bypass reach its writes instead of
+  // failing early because a GET was given an RPC-shaped response. All transport
+  // is mocked; these fixtures do not simulate database transactions or policy.
+  function transport(options: { rejectRpc?: boolean; replay?: boolean } = {}) {
+    mocks.supabaseRest.mockImplementation(async (path, method) => {
+      if (path === "rpc/transition_lead_status" && method === "POST") {
+        if (options.rejectRpc) throw new Error("Canonical transition rejected");
+        return transitionResult(options.replay ? "CLOSED_LOST" : "CONTACTED", options.replay);
+      }
+      if (path === "leads" && method === "GET") {
+        return [{ id: leadId, customer_id: customerId, lifecycle_status: options.replay ? "CLOSED_LOST" : "CONTACTED" }];
+      }
+      if (path === "crm_calendar_events" && method === "DELETE") return null;
+      if (path === "leads" && method === "PATCH") return transitionResult().lead;
+      if (path === "activity_log" && method === "POST") return transitionResult().activity;
+      throw new Error(`Unexpected test transport: ${method} ${path}`);
+    });
+  }
+
+  const rpcCalls = () => mocks.supabaseRest.mock.calls.filter(([path]) => path === "rpc/transition_lead_status");
+  const independentWrites = () => mocks.supabaseRest.mock.calls.filter(([path, method]) =>
+    !String(path).startsWith("rpc/") && ["POST", "PATCH", "PUT", "DELETE"].includes(method),
+  );
+
+  it("calls the real canonical helper once with server tenant, lead and comment", async () => {
+    transport();
+    await expect(cancelV2Lead(form({ leadId, comment: " Véhicule vendu ", business_id: otherBusiness })))
+      .rejects.toThrow("/crm-v2/pipeline?lead_cancelled=1");
+    expect.soft(transitionLeadStatus).toHaveBeenCalledExactlyOnceWith({
+      leadId, targetStatus: "CLOSED_LOST", source: "crm_v2", comment: "Véhicule vendu",
+    });
+    expect.soft(rpcCalls()).toEqual([["rpc/transition_lead_status", "POST", {
+      p_business_id: businessId, p_lead_id: leadId, p_target_status: "CLOSED_LOST",
+      p_source: "crm_v2", p_comment: "Véhicule vendu",
+    }]]);
+    expect(mocks.resolveCurrentBusinessContext).toHaveBeenCalled();
+    expect(mocks.requireCrmAccess.mock.invocationCallOrder[0]).toBeLessThan(mocks.supabaseRest.mock.invocationCallOrder[0]);
+  });
+
+  it.each([
+    ["crm_calendar_events", "DELETE"], ["leads", "PATCH"], ["activity_log", "POST"],
+  ])("never performs independent %s %s during cancellation", async (path, method) => {
+    transport();
+    await expect(cancelV2Lead(form({ leadId, comment: "Motif" }))).rejects.toThrow("lead_cancelled=1");
+    expect(mocks.supabaseRest.mock.calls.filter(([actualPath, actualMethod]) => actualPath === path && actualMethod === method)).toEqual([]);
+  });
+
+  it("propagates canonical rejection without fallback persistence", async () => {
+    transport({ rejectRpc: true });
+    await expect.soft(cancelV2Lead(form({ leadId, comment: "Motif" }))).rejects.toThrow("lead_error=unavailable");
+    expect.soft(rpcCalls()).toHaveLength(1);
+    expect.soft(independentWrites()).toEqual([]);
+    expect.soft(mocks.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("delegates both first submission and replay without independent activity", async () => {
+    for (const replay of [false, true]) {
+      transport({ replay });
+      await expect(cancelV2Lead(form({ leadId, comment: "Motif" }))).rejects.toThrow("lead_cancelled=1");
+    }
+    expect.soft(transitionLeadStatus).toHaveBeenCalledTimes(2);
+    expect.soft(rpcCalls()).toHaveLength(2);
+    expect.soft(independentWrites()).toEqual([]);
+  });
+});
+
+// Architecture checks only: inspect the final CREATE OR REPLACE body for each
+// signature in numeric migration order. No SQL is executed and no transactional,
+// PostgREST resolution or deployed-schema guarantee is inferred from this scan.
+describe("STEP275 regression B: effective migration-chain contract", () => {
+  const migrations = fs.readdirSync("supabase/migrations")
+    .filter((file) => /^\d+_.*\.sql$/.test(file))
+    .sort((a, b) => {
+      const left = BigInt(a.split("_")[0]);
+      const right = BigInt(b.split("_")[0]);
+      return left < right ? -1 : left > right ? 1 : a.localeCompare(b);
+    });
+  const definitions = migrations.flatMap((file) => {
+    const sql = read(`supabase/migrations/${file}`).replace(/\/\*[\s\S]*?\*\/|--[^\n]*/g, "");
+    // Fail closed if the chain begins dropping these functions: this small
+    // scanner intentionally supports the repository's replacement-only history.
+    if (/drop\s+function[^;]*(transition_lead_status|mark_quote_as_sent|issue_quote_share_token)/i.test(sql)) {
+      throw new Error(`Unsupported function drop in migration scan: ${file}`);
+    }
+    return [...sql.matchAll(/create\s+or\s+replace\s+function\s+public\.(\w+)\s*\(([\s\S]*?)\)\s*returns\s+[\s\S]*?\bas\s+(\$(?:[a-z_]\w*)?\$)([\s\S]*?)\3\s*;/gi)]
+      .map((match) => ({ file, name: match[1], parameters: match[2].split(",").map((parameter) => parameter.trim()), body: match[4] }));
+  });
+  function effective(name: string, types: string[]) {
+    const matches = definitions.filter((definition) => definition.name === name &&
+      definition.parameters.map((parameter) => parameter.split(/\s+/)[1].toLowerCase()).join(",") === types.join(","));
+    const latest = matches[matches.length - 1];
+    if (!latest) throw new Error(`Missing effective SQL signature: ${name}(${types})`);
+    return latest;
+  }
+  const four = effective("transition_lead_status", ["uuid", "uuid", "text", "text"]);
+  const five = effective("transition_lead_status", ["uuid", "uuid", "text", "text", "text"]);
+
+  it("prohibits generic CONTACTED -> QUOTE_SENT in the final four-argument body", () => {
+    // Check the explicit rejection guard, not comments or the enum whitelist.
+    // This contract allows an unconditional rejection or migration 031's
+    // cancellation-only guard within the CONTACTED branch.
+    const branch = four.body.match(/elsif\s+v_lead\.lifecycle_status\s*=\s*'CONTACTED'\s+then([\s\S]*?)(?=elsif\s+v_lead\.lifecycle_status)/i)?.[1];
+    expect(branch, `CONTACTED branch missing from ${four.file}`).toBeDefined();
+    expect(branch?.trim(), `Effective definition from ${four.file} must reject generic quote sending`)
+      .toMatch(/^(?:if\s+v_target_status\s*(?:<>\s*'CLOSED_LOST'|=\s*'QUOTE_SENT')\s+then\s+)?raise\s+exception\s+using\s+errcode\s*=\s*'23514'/i);
+  });
+
+  it("STEP276 fails closed for operational history before any lead write", () => {
+    const guardStart = four.body.indexOf("if v_target_status = 'CLOSED_LOST' then");
+    const guardEnd = four.body.indexOf("if v_lead.lifecycle_status = 'NEW' then", guardStart);
+    const guard = four.body.slice(guardStart, guardEnd);
+    expect(guardStart).toBeGreaterThan(four.body.indexOf("if v_lead.lifecycle_status = v_target_status then"));
+    expect(guard).toMatch(/exists \(\s*select 1 from public\.jobs\s+where business_id = p_business_id and lead_id = v_lead\.id/);
+    expect(guard).toMatch(/or exists \(\s*select 1 from public\.appointments\s+where business_id = p_business_id and lead_id = v_lead\.id/);
+    // All child states are protected, not just a subset of job/appointment states.
+    expect(guard).not.toMatch(/\bstatus\s*(?:=|in|not)/i);
+    expect(guard).toContain("errcode = '23514'");
+    expect(guardEnd).toBeLessThan(four.body.indexOf("update public.leads"));
+    expect(four.body).not.toMatch(/(?:update|delete from) public\.(?:jobs|appointments|crm_calendar_events|payments)/);
+    expect(four.body).not.toMatch(/(?:if|elsif) v_lead\.lifecycle_status = '(?:BOOKED|IN_PROGRESS|COMPLETED|REVIEW_REQUESTED)'/);
+    expect(four.body).toContain("Lead status %s is not manually transitionable");
+  });
+
+  it("preserves three-/four-argument SQL calls and the explicit five-argument wrapper", () => {
+    expect(four.parameters).toEqual([
+      "p_business_id uuid", "p_lead_id uuid", "p_target_status text", "p_source text default 'internal'",
+    ]);
+    expect(five.parameters).toEqual([
+      "p_business_id uuid", "p_lead_id uuid", "p_target_status text", "p_source text", "p_comment text",
+    ]);
+    expect(five.body).toMatch(/public\.transition_lead_status\(\s*p_business_id,\s*p_lead_id,\s*p_target_status,\s*p_source\s*\)/);
+    expect(five.body).toContain("v_result->'activity'->>'id' is not null");
+  });
+
+  it("preserves canonical quote-send and share paths in their effective definitions", () => {
+    const send = effective("mark_quote_as_sent", ["uuid", "uuid", "text"]);
+    const share = effective("issue_quote_share_token", ["uuid", "uuid"]);
+    for (const definition of [send, share]) {
+      expect(definition.body, definition.file).toMatch(/update public\.quotes\s+set status = 'SENT'/);
+      expect(definition.body, definition.file).toMatch(/update public\.leads\s+set lifecycle_status = 'QUOTE_SENT'/);
+      expect(definition.body, definition.file).toContain("v_lead.lifecycle_status <> 'CONTACTED'");
+      expect(definition.body, definition.file).toContain("and lifecycle_status = 'CONTACTED'");
+    }
   });
 });
 
@@ -407,5 +559,18 @@ describe("one additive migration preserves canonical SQL authority", () => {
     expect(canonical).toContain("v_quote.total_price is distinct from p_expected_total_price");
     expect(canonical).toContain("'quote.amount_updated'");
     expect(canonical).not.toMatch(/update public.jobs/);
+  });
+});
+
+
+describe("STEP276 cancellation presentation", () => {
+  it.each(["NEW", "QUALIFIED", "CONTACTED", "QUOTE_SENT"] as const)("hides cancellation for %s with operational history", (lifecycleStatus) => {
+    for (const open of [false, true]) {
+      mocks.open = open;
+      const html = renderToStaticMarkup(<LeadDangerActions leadId={leadId} lifecycleStatus={lifecycleStatus}
+        hasOperationalHistory cancelAction={vi.fn()} deleteAction={vi.fn()} />);
+      expect(html).not.toContain("Annuler la demande");
+      expect(html).not.toContain('name="comment"');
+    }
   });
 });
