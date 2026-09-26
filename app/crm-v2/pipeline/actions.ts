@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireCrmAccess } from "../../lib/auth/dal";
 import {
-  recordJobPayment, updateCustomerProfile,
+  recordJobPayment, transitionLeadStatus, updateCustomerProfile,
   updateDraftQuoteAmount, type Payment, type UpdateDraftQuoteAmountResult,
 } from "../../lib/crm";
 import { resolveCurrentBusinessContext } from "../../lib/business";
@@ -119,80 +119,18 @@ export async function cancelV2Lead(formData: FormData) {
     redirect("/crm-v2/pipeline?lead_error=invalid");
   }
 
-  const { businessId } = await resolveCurrentBusinessContext();
-  let customerId = "";
-
+  let customerId: string;
   try {
-    const rows = await supabaseRest<Array<{
-      id: string;
-      customer_id: string;
-      lifecycle_status: string;
-    }>>(
-      "leads",
-      "GET",
-      null,
-      `business_id=eq.${businessId}&id=eq.${leadId}&select=id,customer_id,lifecycle_status&limit=1`,
-    );
-
-    const lead = (rows as Array<{
-      id: string;
-      customer_id: string;
-      lifecycle_status: string;
-    }> | null)?.[0];
-
-    if (!lead) {
-      redirect("/crm-v2/pipeline?lead_error=invalid");
-    }
-
-    customerId = lead.customer_id;
-
-    if (lead.lifecycle_status !== "CLOSED_LOST") {
-      // Remove any V2 calendar event linked to this request so an
-      // cancelled customer request no longer appears in the planning.
-      try {
-        await supabaseRest(
-          "crm_calendar_events",
-          "DELETE",
-          null,
-          `business_id=eq.${businessId}&lead_id=eq.${leadId}`,
-        );
-      } catch {
-        // Calendar storage may not exist on older environments. Cancellation
-        // of the customer request must remain possible in that case.
-      }
-
-      await supabaseRest(
-        "leads",
-        "PATCH",
-        {
-          lifecycle_status: "CLOSED_LOST",
-          updated_at: new Date().toISOString(),
-        },
-        `business_id=eq.${businessId}&id=eq.${leadId}`,
-      );
-
-      await supabaseRest(
-        "activity_log",
-        "POST",
-        {
-          business_id: businessId,
-          customer_id: customerId,
-          lead_id: leadId,
-          event_type: "lead.status_changed",
-          event_data: {
-            source: "crm_v2",
-            previous_status: lead.lifecycle_status,
-            new_status: "CLOSED_LOST",
-            comment: comment || null,
-          },
-        },
-        "select=id",
-      );
-    }
-  } catch (error) {
-    if (error && typeof error === "object" && "digest" in error) {
-      throw error;
-    }
+    // The canonical helper resolves the business server-side. The RPC owns
+    // lifecycle eligibility, related-record protection, replay and activity.
+    const result = await transitionLeadStatus({
+      leadId,
+      targetStatus: "CLOSED_LOST",
+      source: "crm_v2",
+      comment: comment || null,
+    });
+    customerId = result.lead.customer_id;
+  } catch {
     redirect("/crm-v2/pipeline?lead_error=unavailable");
   }
 
