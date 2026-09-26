@@ -23,6 +23,8 @@ import {
   type UpdateDraftQuoteAmountResult,
 } from "../../lib/crm";
 import { publicQuoteUrl } from "../../lib/site";
+import { resolveCurrentBusinessContext } from "../../lib/business";
+import { supabaseRest } from "../../lib/supabase";
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -501,4 +503,108 @@ export async function updateDraftQuoteAmountAction(formData: FormData) {
   }
 
   redirectWithQuoteAmountError(normalizedLeadId, "invalid");
+}
+
+
+type LeadNoteRow = {
+  id: string;
+  customer_id: string;
+  notes: string | null;
+  updated_at: string | null;
+};
+
+// Isolated, tenant-scoped edit: never changes lifecycle, quotes or scheduling.
+export async function updatePipelineLeadNoteAction(formData: FormData) {
+  try {
+    await requireCrmAccess();
+  } catch (error) {
+    if (error instanceof CrmAccessError) {
+      if (error.code === "UNAUTHENTICATED") redirect("/crm/login");
+      if (error.code === "FORBIDDEN") redirect("/crm/pipeline?error=access");
+    }
+    redirect("/crm/pipeline?error=unavailable");
+  }
+
+  const rawId = formData.get("leadId");
+  const rawExpected = formData.get("expectedNotes");
+  const rawNote = formData.get("note");
+
+  if (
+    typeof rawId !== "string" ||
+    !UUID_REGEX.test(rawId.trim()) ||
+    typeof rawExpected !== "string" ||
+    typeof rawNote !== "string"
+  ) {
+    redirect("/crm/pipeline?error=invalid");
+  }
+
+  const leadId = rawId.trim();
+  const note = rawNote.trim();
+
+  if (rawNote.length > 2000 || note.length > 2000) {
+    redirect(`/crm/pipeline/${leadId}?note_error=invalid`);
+  }
+
+  let outcome: "updated" | "noop" | "conflict" | "not_found" | "unavailable" = "unavailable";
+  let customerId: string | null = null;
+
+  try {
+    const { businessId } = await resolveCurrentBusinessContext();
+    const rows = await supabaseRest<LeadNoteRow>(
+      "leads",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&id=eq.${leadId}&select=id,customer_id,notes,updated_at&limit=1`,
+    );
+    const lead = Array.isArray(rows) ? rows[0] : null;
+
+    if (!lead) {
+      outcome = "not_found";
+    } else {
+      customerId = lead.customer_id;
+      const currentNote = lead.notes ?? "";
+
+      if (currentNote !== rawExpected) {
+        outcome = "conflict";
+      } else if (currentNote === note) {
+        outcome = "noop";
+      } else {
+        const versionFilter = lead.updated_at
+          ? `updated_at=eq.${encodeURIComponent(lead.updated_at)}`
+          : "updated_at=is.null";
+
+        const updated = await supabaseRest<LeadNoteRow>(
+          "leads",
+          "PATCH",
+          { notes: note || null, updated_at: new Date().toISOString() },
+          `business_id=eq.${businessId}&id=eq.${leadId}&${versionFilter}&select=id,customer_id`,
+        );
+
+        outcome = updated && !Array.isArray(updated) && updated.id === leadId
+          ? "updated"
+          : "conflict";
+      }
+    }
+  } catch {
+    outcome = "unavailable";
+  }
+
+  if (outcome === "updated") {
+    revalidatePath("/crm");
+    revalidatePath("/crm/pipeline");
+    revalidatePath(`/crm/pipeline/${leadId}`);
+    revalidatePath("/crm-v2");
+    revalidatePath("/crm-v2/pipeline");
+
+    if (customerId) {
+      revalidatePath(`/crm/clients/${customerId}`);
+      revalidatePath(`/crm-v2/clients/${customerId}`);
+    }
+  }
+
+  if (outcome === "updated" || outcome === "noop") {
+    redirect(`/crm/pipeline/${leadId}?note=${outcome}`);
+  }
+
+  redirect(`/crm/pipeline/${leadId}?note_error=${outcome}`);
 }

@@ -11,6 +11,7 @@ import {
   createCrmQuoteAction,
   sharePipelineQuote,
   updateDraftQuoteAmountAction,
+  updatePipelineLeadNoteAction,
 } from "../actions";
 import {
   getLeadDetails,
@@ -150,6 +151,10 @@ export default async function LeadDetailPage({ params, searchParams }: {
   const quoteAmount = Array.isArray(quoteAmountValue) ? quoteAmountValue[0] : quoteAmountValue;
   const quoteAmountErrorValue = (await searchParams).quote_amount_error;
   const quoteAmountError = Array.isArray(quoteAmountErrorValue) ? quoteAmountErrorValue[0] : quoteAmountErrorValue;
+  const noteFeedbackValue = (await searchParams).note;
+  const noteFeedback = Array.isArray(noteFeedbackValue) ? noteFeedbackValue[0] : noteFeedbackValue;
+  const noteErrorValue = (await searchParams).note_error;
+  const noteError = Array.isArray(noteErrorValue) ? noteErrorValue[0] : noteErrorValue;
   const canCreateQuote = ["NEW", "QUALIFIED", "CONTACTED"].includes(lead.lifecycle_status) && quotes.length === 0 && services.length > 0;
   // A DRAFT quote remains correctable only while the lead is still in the
   // pre-quote lifecycle and no job has been produced from it. The database RPC
@@ -205,6 +210,8 @@ export default async function LeadDetailPage({ params, searchParams }: {
       return leftTime - rightTime;
     });
 
+  // Dynamic server-rendered page: capture request-time clock for upcoming appointments.
+  // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
 
   const nextAppointment =
@@ -396,6 +403,49 @@ export default async function LeadDetailPage({ params, searchParams }: {
           </div>
         </details>
       )}
+    </section>
+
+    <section className="space-y-4">
+      {sectionHeading("Édition", "Note commerciale")}
+      {noteFeedback && (
+        <p role="status" className="border border-emerald-300/30 bg-emerald-300/5 px-4 py-3 text-sm text-emerald-200">
+          {noteFeedback === "updated" ? "Note du dossier mise à jour." : "La note est déjà à jour."}
+        </p>
+      )}
+      {noteError && (
+        <p role="alert" className="border border-red-300/30 bg-red-300/5 px-4 py-3 text-sm text-red-200">
+          {noteError === "conflict" ? "La fiche a changé entre-temps. Rechargez la page avant de réessayer."
+            : noteError === "invalid" ? "Note invalide (2 000 caractères maximum)."
+            : noteError === "not_found" ? "Dossier introuvable."
+            : "Modification momentanément indisponible."}
+        </p>
+      )}
+      <details className="border border-white/10 bg-[#101419]">
+        <summary className="cursor-pointer p-5 text-sm text-[#d8b477]">
+          Modifier la note du dossier
+        </summary>
+        <form action={updatePipelineLeadNoteAction} className="space-y-4 border-t border-white/10 p-5">
+          <input type="hidden" name="leadId" value={normalizedLeadId} />
+          <input type="hidden" name="expectedNotes" value={lead.notes ?? ""} />
+          <label htmlFor="lead-commercial-note" className="block text-xs text-white/55">
+            Note commerciale
+          </label>
+          <textarea
+            id="lead-commercial-note"
+            name="note"
+            rows={4}
+            maxLength={2000}
+            defaultValue={lead.notes ?? ""}
+            className="w-full border border-white/15 bg-[#0d1014] px-3 py-3 text-sm text-white outline-none focus:border-[#d8b477]"
+          />
+          <p className="text-xs text-white/40">
+            Cette action ne modifie ni la date de création, ni le planning, ni le devis.
+          </p>
+          <button type="submit" className="border border-[#d8b477] px-5 py-2.5 text-xs uppercase tracking-[0.14em] text-[#d8b477] hover:bg-[#d8b477] hover:text-[#080a0d]">
+            Enregistrer la note
+          </button>
+        </form>
+      </details>
     </section>
     <section className="space-y-4">{sectionHeading("01 / Véhicule", "Véhicule associé")}{vehicle ? <div className="border border-white/10 bg-[#101419] p-5"><p className="text-sm font-medium text-white">{vehicleName(vehicle)}</p><p className="mt-2 text-xs text-white/45">{[vehicle.year ? String(vehicle.year) : null, vehicle.color, vehicle.plate].filter((value): value is string => Boolean(value?.trim())).join(" · ") || "Détails non renseignés"}</p>{vehicle.mileage_km !== null && vehicle.mileage_km !== undefined && <p className="mt-2 text-xs text-white/35">{vehicle.mileage_km.toLocaleString("fr-FR")} km</p>}</div> : emptySection("Aucun véhicule associé à ce lead.")}</section>
     <section className="space-y-4">{sectionHeading("02 / Services", "Services demandés")}<div className="border border-white/10 bg-[#101419]">{services.length ? services.map((service: LeadService) => <article key={service.id || service.service_name} className="border-b border-white/10 px-5 py-5 last:border-b-0 md:px-7"><p className="text-sm font-medium text-white">{service.service_name}</p>{service.service_slug && <p className="mt-1 text-xs text-white/35">{service.service_slug}</p>}{service.base_price !== null && service.base_price !== undefined && <p className="mt-2 text-xs text-[#d8b477]">{formatAmount(service.base_price)}</p>}{service.estimated_time && <p className="mt-2 text-xs text-white/40">{service.estimated_time}</p>}{service.customer_comment && <p className="mt-3 text-xs leading-6 text-white/45">{service.customer_comment}</p>}</article>) : emptySection("Aucun service détaillé pour ce lead.")}</div></section>
