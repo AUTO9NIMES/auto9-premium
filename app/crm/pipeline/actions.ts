@@ -23,6 +23,7 @@ import {
   type UpdateDraftQuoteAmountResult,
 } from "../../lib/crm";
 import { publicQuoteUrl } from "../../lib/site";
+import { updateLeadServiceDetails } from "../../lib/crm-service-edit";
 import { resolveCurrentBusinessContext } from "../../lib/business";
 import { supabaseRest } from "../../lib/supabase";
 
@@ -607,4 +608,77 @@ export async function updatePipelineLeadNoteAction(formData: FormData) {
   }
 
   redirect(`/crm/pipeline/${leadId}?note_error=${outcome}`);
+}
+
+
+export async function updatePipelineLeadServiceAction(formData: FormData) {
+  try {
+    await requireCrmAccess();
+  } catch (error) {
+    if (error instanceof CrmAccessError) {
+      if (error.code === "UNAUTHENTICATED") redirect("/crm/login");
+      if (error.code === "FORBIDDEN") redirect("/crm/pipeline?error=access");
+    }
+    redirect("/crm/pipeline?error=unavailable");
+  }
+
+  const leadIdValue = formData.get("leadId");
+  const serviceIdValue = formData.get("serviceId");
+  const expectedNameValue = formData.get("expectedServiceName");
+  const expectedUpdatedAtValue = formData.get("expectedUpdatedAt");
+  const serviceNameValue = formData.get("serviceName");
+
+  if (typeof leadIdValue !== "string" || !UUID_REGEX.test(leadIdValue.trim())) {
+    redirect("/crm/pipeline?error=invalid");
+  }
+
+  const leadId = leadIdValue.trim();
+
+  if (
+    typeof serviceIdValue !== "string" ||
+    !UUID_REGEX.test(serviceIdValue.trim()) ||
+    typeof expectedNameValue !== "string" ||
+    typeof expectedUpdatedAtValue !== "string" ||
+    !expectedUpdatedAtValue.trim() ||
+    !Number.isFinite(Date.parse(expectedUpdatedAtValue)) ||
+    typeof serviceNameValue !== "string" ||
+    !serviceNameValue.trim() ||
+    serviceNameValue.length > 200 ||
+    serviceNameValue.trim().length > 200
+  ) {
+    redirect(`/crm/pipeline/${leadId}?service_error=invalid`);
+  }
+
+  let result;
+  try {
+    result = await updateLeadServiceDetails({
+      leadId,
+      serviceId: serviceIdValue.trim(),
+      expectedServiceName: expectedNameValue,
+      expectedUpdatedAt: expectedUpdatedAtValue,
+      serviceName: serviceNameValue.trim(),
+    });
+  } catch {
+    redirect(`/crm/pipeline/${leadId}?service_error=unavailable`);
+  }
+
+  if (result.status !== "updated" && result.status !== "no_op") {
+    redirect(`/crm/pipeline/${leadId}?service_error=${result.status}`);
+  }
+
+  if (result.status === "updated") {
+    revalidatePath("/crm");
+    revalidatePath("/crm/pipeline");
+    revalidatePath(`/crm/pipeline/${leadId}`);
+    revalidatePath("/crm-v2");
+    revalidatePath("/crm-v2/pipeline");
+    revalidatePath("/crm/jobs/[jobId]", "page");
+
+    if (result.customerId) {
+      revalidatePath(`/crm/clients/${result.customerId}`);
+      revalidatePath(`/crm-v2/clients/${result.customerId}`);
+    }
+  }
+
+  redirect(`/crm/pipeline/${leadId}?service=${result.status}`);
 }
