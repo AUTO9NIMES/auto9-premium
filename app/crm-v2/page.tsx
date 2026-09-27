@@ -172,7 +172,7 @@ export default async function CrmV2Dashboard() {
       <header className="relative min-h-[260px] overflow-hidden rounded-[28px] border border-cyan-300/12 bg-[#081019] shadow-[0_24px_70px_rgba(0,0,0,0.28)] md:min-h-[300px]">
         <div
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: "url('/crm-v2-hero.webp')" }}
+          style={{ backgroundImage: "url('/crm-v2-hero.jpg')" }}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-[#071019]/95 via-[#071019]/78 to-[#071019]/10" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#070b10]/70 via-transparent to-black/10" />
