@@ -24,6 +24,36 @@ function parisMonthKey(value: string | Date) {
   }).format(d);
 }
 
+type DashboardLeadRow = {
+  id: string;
+  lifecycle_status: string;
+};
+
+type DashboardStepActivity = {
+  lead_id: string | null;
+  event_type: string;
+  event_data: Record<string, unknown> | null;
+  created_at: string;
+};
+
+function hasBookedStep(lead: DashboardLeadRow, activity: DashboardStepActivity[]) {
+  const latestOverride = activity.find(
+    (row) =>
+      row.lead_id === lead.id &&
+      (row.event_type === "crm_v2.step.completed" ||
+        row.event_type === "crm_v2.step.reopened") &&
+      row.event_data?.step_key === "BOOKED",
+  );
+
+  if (latestOverride) {
+    return latestOverride.event_type === "crm_v2.step.completed";
+  }
+
+  return ["BOOKED", "IN_PROGRESS", "COMPLETED", "REVIEW_REQUESTED"].includes(
+    lead.lifecycle_status,
+  );
+}
+
 function MiniEvent({ item }: { item: CalendarAppointmentItem }) {
   const when = new Date(item.appointment.scheduledAt);
   return (
@@ -57,7 +87,7 @@ export default async function CrmV2Dashboard() {
     subscriptionsDue = 0;
   }
 
-  const [metrics, calendar, paymentsRaw] = await Promise.all([
+  const [metrics, calendar, paymentsRaw, leadsRaw, stepActivityRaw] = await Promise.all([
     getCrmDashboardMetrics(),
     getCalendarMonth({ month: monthKey() }),
     supabaseRest<Payment[]>(
@@ -65,6 +95,18 @@ export default async function CrmV2Dashboard() {
       "GET",
       null,
       `business_id=eq.${businessId}&order=received_at.desc&limit=500&select=id,business_id,job_id,amount,method,idempotency_key,received_at,created_at`,
+    ),
+    supabaseRest<DashboardLeadRow[]>(
+      "leads",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&lifecycle_status=neq.CLOSED_LOST&order=created_at.desc&limit=5000&select=id,lifecycle_status`,
+    ),
+    supabaseRest<DashboardStepActivity[]>(
+      "activity_log",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&event_type=in.(crm_v2.step.completed,crm_v2.step.reopened)&order=created_at.desc&limit=5000&select=lead_id,event_type,event_data,created_at`,
     ),
   ]);
 
@@ -87,29 +129,75 @@ export default async function CrmV2Dashboard() {
     manualThisMonth
       .filter((payment) => payment.method === "CARD" || payment.method === "BANK_TRANSFER")
       .reduce((sum, payment) => sum + payment.amount, 0);
+  const activeLeads = (leadsRaw as DashboardLeadRow[] | null) ?? [];
+  const stepActivity = (stepActivityRaw as DashboardStepActivity[] | null) ?? [];
+  const leadsToTreat = activeLeads.filter((lead) => !hasBookedStep(lead, stepActivity)).length;
+  const clientDossiers = activeLeads.filter((lead) => hasBookedStep(lead, stepActivity)).length;
+
   const nextEvents = calendar.items
     .filter((item) => new Date(item.appointment.scheduledAt).getTime() >= Date.now())
     .sort((a, b) => new Date(a.appointment.scheduledAt).getTime() - new Date(b.appointment.scheduledAt).getTime())
     .slice(0, 5);
 
   const cards = [
-    { label: "Leads", value: String(metrics.activeLeads), detail: `${metrics.leadsRequiringAttention} à traiter`, accent: true, href: "/crm-v2/pipeline" },
-    { label: "CA espèces", value: eur.format(cashRevenue), detail: "Paiements en espèces", href: "/crm-v2/revenue" },
-    { label: "CA carte + virement", value: eur.format(bankRevenue), detail: "Encaissements bancaires", href: "/crm-v2/revenue" },
-    { label: "Clients", value: String(metrics.customersTotal), detail: `${metrics.activeLeads} lead${metrics.activeLeads > 1 ? "s" : ""} actif${metrics.activeLeads > 1 ? "s" : ""}`, href: "/crm-v2/clients" },
+    {
+      label: "Leads à traiter",
+      value: String(leadsToTreat),
+      detail: "RDV non réservé",
+      accent: true,
+      href: "/crm-v2/pipeline",
+    },
+    {
+      label: "Dossiers clients",
+      value: String(clientDossiers),
+      detail: "RDV réservé · en suivi",
+      href: "/crm-v2/pipeline",
+    },
+    {
+      label: "CA espèces",
+      value: eur.format(cashRevenue),
+      detail: "Paiements en espèces",
+      href: "/crm-v2/revenue",
+    },
+    {
+      label: "CA carte + virement",
+      value: eur.format(bankRevenue),
+      detail: "Encaissements bancaires",
+      href: "/crm-v2/revenue",
+    },
   ];
 
   return (
     <div className="space-y-8">
-      <header className="flex flex-col justify-between gap-5 xl:flex-row xl:items-end">
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.28em] text-cyan-200/55">AUTO 9 · Pilotage</p>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight md:text-5xl">Vue d'ensemble</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-white/45">Tout ce qui compte aujourd'hui : chiffre, clients, dossiers et planning.</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Link href="/crm-v2/clients?new=1" className="rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-3 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/15">+ Nouveau client</Link>
-          <Link href="/crm-v2/calendar?new=1" className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-xs font-semibold text-white/75 transition hover:border-white/20">+ Événement</Link>
+      <header className="relative min-h-[260px] overflow-hidden rounded-[28px] border border-cyan-300/12 bg-[#081019] shadow-[0_24px_70px_rgba(0,0,0,0.28)] md:min-h-[300px]">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url('/crm-v2-hero.webp')" }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#071019]/95 via-[#071019]/78 to-[#071019]/10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#070b10]/70 via-transparent to-black/10" />
+        <div className="relative z-10 flex min-h-[260px] flex-col justify-end p-6 md:min-h-[300px] md:p-8 xl:p-10">
+          <div className="max-w-3xl">
+            <p className="text-[11px] uppercase tracking-[0.30em] text-cyan-200/70">AUTO 9 · Pilotage</p>
+            <h1 className="mt-3 text-4xl font-bold tracking-tight text-white md:text-6xl">Vue d'ensemble</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-white/55">
+              Tout ce qui compte aujourd'hui : chiffre, clients, dossiers et planning.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-2">
+              <Link
+                href="/crm-v2/clients?new=1"
+                className="rounded-xl border border-cyan-300/35 bg-cyan-300/12 px-4 py-3 text-xs font-semibold text-cyan-100 backdrop-blur-sm transition hover:bg-cyan-300/20"
+              >
+                + Nouveau client
+              </Link>
+              <Link
+                href="/crm-v2/calendar?new=1"
+                className="rounded-xl border border-white/12 bg-black/20 px-4 py-3 text-xs font-semibold text-white/80 backdrop-blur-sm transition hover:border-white/25 hover:bg-black/30"
+              >
+                + Événement
+              </Link>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -118,7 +206,7 @@ export default async function CrmV2Dashboard() {
           <Link
             key={card.label}
             href={card.href}
-            className={`group rounded-2xl border p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-300/30 hover:bg-cyan-300/[0.045] hover:shadow-[0_12px_35px_rgba(34,211,238,0.07)] ${card.accent ? "border-cyan-300/25 bg-gradient-to-br from-cyan-300/10 to-blue-500/[0.04]" : "border-white/8 bg-white/[0.025]"}`}
+            className={`group min-h-[150px] rounded-2xl border p-6 transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-300/30 hover:bg-cyan-300/[0.045] hover:shadow-[0_12px_35px_rgba(34,211,238,0.07)] ${card.accent ? "border-cyan-300/25 bg-gradient-to-br from-cyan-300/10 to-blue-500/[0.04]" : "border-white/8 bg-white/[0.025]"}`}
           >
             <div className="flex items-start justify-between gap-3">
               <p className="text-[10px] uppercase tracking-[0.2em] text-white/35">{card.label}</p>
