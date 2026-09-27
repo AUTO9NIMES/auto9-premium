@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { CrmAccessError, requireCrmAccess } from "../../../lib/auth/dal";
+import { resolveCurrentBusinessContext } from "../../../lib/business";
+import { supabaseRest } from "../../../lib/supabase";
 import {
   createManualLead,
   createManualLeadWithCustomer,
@@ -17,6 +19,34 @@ const UUID_REGEX =
 
 function fail(error: "invalid" | "access" | "unavailable"): never {
   redirect(`/crm-v2/pipeline/new?error=${error}`);
+}
+
+function parisLocalDateTimeToIso(value: string): string | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(value);
+  if (!match) return null;
+
+  const [, year, month, day, hour, minute] = match;
+  const localAsUtc = Date.UTC(
+    Number(year),
+    Number(month) - 1,
+    Number(day),
+    Number(hour),
+    Number(minute),
+  );
+  const probe = new Date(localAsUtc);
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Europe/Paris",
+    timeZoneName: "shortOffset",
+    hour: "2-digit",
+  }).formatToParts(probe);
+  const zone = parts.find((part) => part.type === "timeZoneName")?.value || "GMT+0";
+  const zoneMatch = /GMT([+-])(\d{1,2})(?::(\d{2}))?/.exec(zone);
+  const offsetMinutes = zoneMatch
+    ? (zoneMatch[1] === "+" ? 1 : -1) *
+      (Number(zoneMatch[2]) * 60 + Number(zoneMatch[3] || 0))
+    : 0;
+
+  return new Date(localAsUtc - offsetMinutes * 60_000).toISOString();
 }
 
 export async function createV2ManualLeadAction(formData: FormData) {
@@ -68,12 +98,14 @@ export async function createV2ManualLeadAction(formData: FormData) {
   const basePriceValue = formData.get("basePrice");
   const estimatedTime = formData.get("estimatedTime");
   const customerComment = formData.get("customerComment");
+  const performanceDate = formData.get("performanceDate");
 
   if (
     typeof serviceName !== "string" ||
     typeof basePriceValue !== "string" ||
     typeof estimatedTime !== "string" ||
-    typeof customerComment !== "string"
+    typeof customerComment !== "string" ||
+    typeof performanceDate !== "string"
   ) {
     fail("invalid");
   }
@@ -82,13 +114,15 @@ export async function createV2ManualLeadAction(formData: FormData) {
   const normalizedPrice = basePriceValue.trim() ? Number(basePriceValue) : null;
   const normalizedVehicleId =
     typeof vehicleId === "string" && vehicleId.trim() ? vehicleId.trim() : null;
+  const performanceDateIso = parisLocalDateTimeToIso(performanceDate.trim());
 
   if (
     !normalizedServiceName ||
     normalizedServiceName.length > 200 ||
     (normalizedPrice !== null &&
       (!Number.isFinite(normalizedPrice) || normalizedPrice < 0 || normalizedPrice > 10000000)) ||
-    (normalizedVehicleId !== null && !UUID_REGEX.test(normalizedVehicleId))
+    (normalizedVehicleId !== null && !UUID_REGEX.test(normalizedVehicleId)) ||
+    !performanceDateIso
   ) {
     fail("invalid");
   }
@@ -191,6 +225,36 @@ export async function createV2ManualLeadAction(formData: FormData) {
     }
   } catch (error) {
     if (error && typeof error === "object" && "digest" in error) throw error;
+    fail("unavailable");
+  }
+
+  try {
+    const { businessId } = await resolveCurrentBusinessContext();
+    await supabaseRest(
+      "leads",
+      "PATCH",
+      {
+        created_at: performanceDateIso,
+        updated_at: new Date().toISOString(),
+      },
+      `business_id=eq.${businessId}&id=eq.${result.leadId}`,
+    );
+
+    await supabaseRest(
+      "activity_log",
+      "POST",
+      {
+        business_id: businessId,
+        lead_id: result.leadId,
+        event_type: "crm_v2.dossier.date_adjusted",
+        event_data: {
+          source: "crm_v2_new_dossier",
+          new_created_at: performanceDateIso,
+        },
+      },
+      "select=id",
+    );
+  } catch {
     fail("unavailable");
   }
 
