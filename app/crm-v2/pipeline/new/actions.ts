@@ -254,12 +254,60 @@ export async function createV2ManualLeadAction(formData: FormData) {
       },
       "select=id",
     );
+
+    const leadRows = await supabaseRest<Array<{
+      customer_id: string;
+      vehicle_id: string | null;
+    }>>(
+      "leads",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&id=eq.${result.leadId}&select=customer_id,vehicle_id&limit=1`,
+    );
+    const createdLead = (leadRows as Array<{
+      customer_id: string;
+      vehicle_id: string | null;
+    }> | null)?.[0];
+
+    if (createdLead?.customer_id) {
+      const [eventDate, eventTimeRaw] = performanceDate.trim().split("T");
+      const eventTime = eventTimeRaw?.slice(0, 5) || "09:00";
+
+      const existingEvents = await supabaseRest<Array<{ id: string }>>(
+        "crm_calendar_events",
+        "GET",
+        null,
+        `business_id=eq.${businessId}&lead_id=eq.${result.leadId}&select=id&limit=1`,
+      );
+
+      if (!((existingEvents as Array<{ id: string }> | null)?.length)) {
+        await supabaseRest(
+          "crm_calendar_events",
+          "POST",
+          {
+            business_id: businessId,
+            customer_id: createdLead.customer_id,
+            vehicle_id: createdLead.vehicle_id,
+            lead_id: result.leadId,
+            title: normalizedServiceName,
+            service_name: normalizedServiceName,
+            price: normalizedPrice,
+            event_date: eventDate,
+            event_time: eventTime,
+            notes: customerComment.trim() || null,
+            status: "CONFIRMED",
+          },
+          "select=id",
+        );
+      }
+    }
   } catch {
     fail("unavailable");
   }
 
   revalidatePath("/crm-v2");
   revalidatePath("/crm-v2/pipeline");
+  revalidatePath("/crm-v2/calendar");
   revalidatePath("/crm-v2/clients");
   revalidatePath("/crm/pipeline");
   redirect(`/crm-v2/pipeline?created=1&lead=${result.leadId}`);

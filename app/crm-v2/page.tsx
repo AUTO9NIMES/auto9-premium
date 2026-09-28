@@ -14,6 +14,12 @@ function monthKey(date = new Date()) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
+function nextMonthKey(value: string) {
+  const [year, month] = value.split("-").map(Number);
+  const date = new Date(year, month, 1);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
 function parisMonthKey(value: string | Date) {
   const d = typeof value === "string" ? new Date(value) : value;
   if (Number.isNaN(d.getTime())) return "";
@@ -34,6 +40,13 @@ type DashboardStepActivity = {
   event_type: string;
   event_data: Record<string, unknown> | null;
   created_at: string;
+};
+
+type DashboardCustomEvent = {
+  id: string;
+  event_date: string;
+  event_time: string;
+  status: string;
 };
 
 function hasBookedStep(lead: DashboardLeadRow, activity: DashboardStepActivity[]) {
@@ -87,9 +100,12 @@ export default async function CrmV2Dashboard() {
     subscriptionsDue = 0;
   }
 
-  const [metrics, calendar, paymentsRaw, leadsRaw, stepActivityRaw] = await Promise.all([
+  const currentMonth = monthKey();
+  const nextMonth = nextMonthKey(currentMonth);
+
+  const [metrics, calendar, paymentsRaw, leadsRaw, stepActivityRaw, customEventsRaw] = await Promise.all([
     getCrmDashboardMetrics(),
-    getCalendarMonth({ month: monthKey() }),
+    getCalendarMonth({ month: currentMonth }),
     supabaseRest<Payment[]>(
       "payments",
       "GET",
@@ -108,11 +124,17 @@ export default async function CrmV2Dashboard() {
       null,
       `business_id=eq.${businessId}&event_type=in.(crm_v2.step.completed,crm_v2.step.reopened)&order=created_at.desc&limit=5000&select=lead_id,event_type,event_data,created_at`,
     ),
+    supabaseRest<DashboardCustomEvent[]>(
+      "crm_calendar_events",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&event_date=gte.${currentMonth}-01&event_date=lt.${nextMonth}-01&status=neq.CANCELLED&order=event_date.asc,event_time.asc&limit=5000&select=id,event_date,event_time,status`,
+    ),
   ]);
 
   const payments = (paymentsRaw as Payment[] | null) ?? [];
   const manualPayments = await getManualRevenueEntries(businessId, payments);
-  const currentMonth = monthKey();
+  const customEvents = (customEventsRaw as DashboardCustomEvent[] | null) ?? [];
   const paymentsThisMonth = payments.filter((payment) => parisMonthKey(payment.received_at) === currentMonth);
   const manualThisMonth = manualPayments.filter((payment) => parisMonthKey(payment.receivedAt) === currentMonth);
   const cashRevenue =
@@ -172,7 +194,7 @@ export default async function CrmV2Dashboard() {
       <header className="relative min-h-[260px] overflow-hidden rounded-[28px] border border-cyan-300/12 bg-[#081019] shadow-[0_24px_70px_rgba(0,0,0,0.28)] md:min-h-[300px]">
         <div
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: "url('/crm-v2-hero.jpg')" }}
+          style={{ backgroundImage: "url('/hero-audi.jpg')" }}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-[#071019]/95 via-[#071019]/78 to-[#071019]/10" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#070b10]/70 via-transparent to-black/10" />
@@ -233,7 +255,9 @@ export default async function CrmV2Dashboard() {
             {Array.from({ length: new Date(new Date().getFullYear(), new Date().getMonth(), 1).getDay() === 0 ? 6 : new Date(new Date().getFullYear(), new Date().getMonth(), 1).getDay() - 1 }).map((_, i) => <div key={`e-${i}`} />)}
             {Array.from({ length: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate() }, (_, i) => i + 1).map((n) => {
               const key = `${monthKey()}-${String(n).padStart(2, "0")}`;
-              const count = calendar.items.filter((item) => item.appointment.scheduledAt.startsWith(key)).length;
+              const canonicalCount = calendar.items.filter((item) => item.appointment.scheduledAt.startsWith(key)).length;
+              const customCount = customEvents.filter((item) => item.event_date === key).length;
+              const count = canonicalCount + customCount;
               const today = n === new Date().getDate();
               return (
                 <Link href={`/crm-v2/calendar?day=${key}`} key={n} className={`relative min-h-16 rounded-xl border p-2 transition hover:border-cyan-300/25 ${today ? "border-cyan-300/35 bg-cyan-300/[0.07]" : "border-white/6 bg-white/[0.018]"}`}>
