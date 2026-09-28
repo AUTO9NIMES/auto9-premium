@@ -62,7 +62,7 @@ describe("Paris business calendar, independent of process TZ", () => {
     expect(dayCell(html, dateKey)).toContain("1 RDV");
     expect([...html.matchAll(/href="\/crm-v2\/calendar\?day=/g)]).toHaveLength(days);
     expect(mocks.connection).toHaveBeenCalledTimes(2);
-    expect(mocks.rest).toHaveBeenCalledTimes(2);
+    expect(mocks.rest).toHaveBeenCalledTimes(5);
     for (const call of mocks.rest.mock.calls) expect(call[3]).toContain("business_id=eq.server-business");
   });
 

@@ -146,7 +146,7 @@ describe("request-time dashboard clock", () => {
     expect(JSON.stringify(items)).toBe(original);
     expect(mocks.calendar).toHaveBeenCalledWith({ month: "2026-09" });
     expect(mocks.connection).toHaveBeenCalledTimes(2);
-    expect(mocks.rest).toHaveBeenCalledTimes(2);
+    expect(mocks.rest).toHaveBeenCalledTimes(5);
     for (const call of mocks.rest.mock.calls) expect(call[3]).toContain("business_id=eq.server-business");
     expect(mocks.manual).toHaveBeenCalledWith("server-business", []);
   });
