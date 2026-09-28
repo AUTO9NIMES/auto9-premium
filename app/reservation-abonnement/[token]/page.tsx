@@ -99,7 +99,7 @@ export default async function SubscriptionBookingPage({
             Bonjour {displayName(customer)}
           </h1>
           <p className="mt-4 text-sm leading-7 text-white/50">
-            Choisis simplement le jour et l'heure qui te conviennent pour ton prochain entretien AUTO 9.
+            Choisis simplement le jour et l&apos;heure qui te conviennent pour ton prochain entretien AUTO 9.
           </p>
         </div>
 

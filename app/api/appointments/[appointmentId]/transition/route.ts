@@ -40,7 +40,7 @@ function isAuthorized(request: Request) {
 
 export async function POST(
   request: Request,
-  context: { params?: Promise<{ appointmentId?: string }> | { appointmentId?: string } },
+  context: { params: Promise<{ appointmentId: string }> },
 ) {
   const auth = isAuthorized(request);
 
@@ -64,7 +64,7 @@ export async function POST(
     );
   }
 
-  const params = context.params ? await context.params : undefined;
+  const params = await context.params;
   const appointmentId = params?.appointmentId?.trim();
 
   if (!isValidUuid(appointmentId)) {

@@ -37,7 +37,7 @@ export default async function EmailsPage() {
         <p className="text-[11px] uppercase tracking-[0.28em] text-cyan-200/55">Communication</p>
         <h1 className="mt-3 text-3xl font-bold tracking-tight md:text-5xl">Emails AUTO 9</h1>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-white/45">
-          Choisis un modèle, sélectionne un client, modifie le contenu si besoin et vérifie exactement ce qu'il verra avant d'envoyer.
+          Choisis un modèle, sélectionne un client, modifie le contenu si besoin et vérifie exactement ce qu&apos;il verra avant d&apos;envoyer.
         </p>
       </header>
 

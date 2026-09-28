@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { readRequestClock } from "../lib/request-clock";
+import { parisDateKey } from "../lib/paris-business-calendar";
 import { getCalendarMonth, getCrmDashboardMetrics, type CalendarAppointmentItem, type Payment } from "../lib/crm";
 import { resolveCurrentBusinessContext } from "../lib/business";
 import { supabaseRest } from "../lib/supabase";
@@ -8,12 +10,18 @@ import { getHistoricalCalendarEntries } from "../lib/historical-calendar";
 export const dynamic = "force-dynamic";
 
 const eur = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
-const day = new Intl.DateTimeFormat("fr-FR", { weekday: "short", day: "2-digit" });
-const hour = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" });
+const day = new Intl.DateTimeFormat("fr-FR", {
+  timeZone: "Europe/Paris",
+  weekday: "short",
+  day: "2-digit",
+});
 
-function monthKey(date = new Date()) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-}
+const hour = new Intl.DateTimeFormat("fr-FR", {
+  timeZone: "Europe/Paris",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
 
 function nextMonthKey(value: string) {
   const [year, month] = value.split("-").map(Number);
@@ -22,13 +30,7 @@ function nextMonthKey(value: string) {
 }
 
 function parisMonthKey(value: string | Date) {
-  const d = typeof value === "string" ? new Date(value) : value;
-  if (Number.isNaN(d.getTime())) return "";
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Paris",
-    year: "numeric",
-    month: "2-digit",
-  }).format(d);
+  return parisDateKey(value).slice(0, 7);
 }
 
 type DashboardLeadRow = {
@@ -86,6 +88,19 @@ function MiniEvent({ item }: { item: CalendarAppointmentItem }) {
 
 export default async function CrmV2Dashboard() {
   const { businessId } = await resolveCurrentBusinessContext();
+  const calendarDate = new Date(await readRequestClock());
+  const currentDay = parisDateKey(calendarDate);
+  const currentMonth = currentDay.slice(0, 7);
+  const [calendarYear, calendarMonth] = currentMonth.split("-").map(Number);
+  const todayNumber = Number(currentDay.slice(8, 10));
+
+  const firstWeekday = new Date(
+    Date.UTC(calendarYear, calendarMonth - 1, 1),
+  ).getUTCDay();
+
+  const daysInMonth = new Date(
+    Date.UTC(calendarYear, calendarMonth, 0),
+  ).getUTCDate();
   let subscriptionsDue = 0;
   try {
     const subscriptionRows = await supabaseRest<Array<{ next_due_on: string; active: boolean }>>(
@@ -94,14 +109,13 @@ export default async function CrmV2Dashboard() {
       null,
       `business_id=eq.${businessId}&active=eq.true&select=next_due_on,active`,
     );
-    const current = monthKey();
+    const current = currentMonth;
     subscriptionsDue = ((subscriptionRows as Array<{ next_due_on: string; active: boolean }> | null) ?? [])
       .filter((item) => item.next_due_on?.startsWith(current)).length;
   } catch {
     subscriptionsDue = 0;
   }
 
-  const currentMonth = monthKey();
   const nextMonth = nextMonthKey(currentMonth);
 
   const [metrics, calendar, paymentsRaw, leadsRaw, stepActivityRaw, customEventsRaw, historicalEvents] = await Promise.all([
@@ -136,6 +150,7 @@ export default async function CrmV2Dashboard() {
 
   const payments = (paymentsRaw as Payment[] | null) ?? [];
   const manualPayments = await getManualRevenueEntries(businessId, payments);
+  const appointmentCutoff = await readRequestClock();
   const customEvents = (customEventsRaw as DashboardCustomEvent[] | null) ?? [];
   const paymentsThisMonth = payments.filter((payment) => parisMonthKey(payment.received_at) === currentMonth);
   const manualThisMonth = manualPayments.filter((payment) => parisMonthKey(payment.receivedAt) === currentMonth);
@@ -159,7 +174,7 @@ export default async function CrmV2Dashboard() {
   const clientDossiers = activeLeads.filter((lead) => hasBookedStep(lead, stepActivity)).length;
 
   const nextEvents = calendar.items
-    .filter((item) => new Date(item.appointment.scheduledAt).getTime() >= Date.now())
+    .filter((item) => new Date(item.appointment.scheduledAt).getTime() >= appointmentCutoff)
     .sort((a, b) => new Date(a.appointment.scheduledAt).getTime() - new Date(b.appointment.scheduledAt).getTime())
     .slice(0, 5);
 
@@ -196,28 +211,22 @@ export default async function CrmV2Dashboard() {
       <header className="relative min-h-[260px] overflow-hidden rounded-[28px] border border-cyan-300/12 bg-[#081019] shadow-[0_24px_70px_rgba(0,0,0,0.28)] md:min-h-[300px]">
         <div
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: "url('/hero-audi.jpg')" }}
+          style={{ backgroundImage: "url('/crm-v2-hero.webp')" }}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-[#071019]/95 via-[#071019]/78 to-[#071019]/10" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#070b10]/70 via-transparent to-black/10" />
         <div className="relative z-10 flex min-h-[260px] flex-col justify-end p-6 md:min-h-[300px] md:p-8 xl:p-10">
           <div className="max-w-3xl">
             <p className="text-[11px] uppercase tracking-[0.30em] text-cyan-200/70">AUTO 9 · Pilotage</p>
-            <h1 className="mt-3 text-4xl font-bold tracking-tight text-white md:text-6xl">Vue d'ensemble</h1>
+            <h1 className="mt-3 text-4xl font-bold tracking-tight text-white md:text-6xl">Vue d&apos;ensemble</h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-white/55">
-              Tout ce qui compte aujourd'hui : chiffre, clients, dossiers et planning.
+              Tout ce qui compte aujourd&apos;hui : chiffre, clients, dossiers et planning.
             </p>
             <div className="mt-6 flex flex-wrap gap-2">
-              <Link
-                href="/crm-v2/clients?new=1"
-                className="rounded-xl border border-cyan-300/35 bg-cyan-300/12 px-4 py-3 text-xs font-semibold text-cyan-100 backdrop-blur-sm transition hover:bg-cyan-300/20"
-              >
+              <Link href="/crm-v2/clients?new=1" className="rounded-xl border border-cyan-300/35 bg-cyan-300/12 px-4 py-3 text-xs font-semibold text-cyan-100 backdrop-blur-sm transition hover:bg-cyan-300/20">
                 + Nouveau client
               </Link>
-              <Link
-                href="/crm-v2/calendar?new=1"
-                className="rounded-xl border border-white/12 bg-black/20 px-4 py-3 text-xs font-semibold text-white/80 backdrop-blur-sm transition hover:border-white/25 hover:bg-black/30"
-              >
+              <Link href="/crm-v2/calendar?new=1" className="rounded-xl border border-white/12 bg-black/20 px-4 py-3 text-xs font-semibold text-white/80 backdrop-blur-sm transition hover:border-white/25 hover:bg-black/30">
                 + Événement
               </Link>
             </div>
@@ -254,14 +263,14 @@ export default async function CrmV2Dashboard() {
 
           <div className="mt-6 grid grid-cols-7 gap-1">
             {["L","M","M","J","V","S","D"].map((d, i) => <div key={i} className="py-2 text-center text-[10px] text-white/25">{d}</div>)}
-            {Array.from({ length: new Date(new Date().getFullYear(), new Date().getMonth(), 1).getDay() === 0 ? 6 : new Date(new Date().getFullYear(), new Date().getMonth(), 1).getDay() - 1 }).map((_, i) => <div key={`e-${i}`} />)}
-            {Array.from({ length: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate() }, (_, i) => i + 1).map((n) => {
-              const key = `${monthKey()}-${String(n).padStart(2, "0")}`;
-              const canonicalCount = calendar.items.filter((item) => item.appointment.scheduledAt.startsWith(key)).length;
+            {Array.from({ length: firstWeekday === 0 ? 6 : firstWeekday - 1 }).map((_, i) => <div key={`e-${i}`} />)}
+            {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((n) => {
+              const key = `${currentMonth}-${String(n).padStart(2, "0")}`;
+              const canonicalCount = calendar.items.filter((item) => parisDateKey(item.appointment.scheduledAt) === key).length;
               const customCount = customEvents.filter((item) => item.event_date === key).length;
               const historicalCount = historicalEvents.filter((item) => item.eventDate === key).length;
               const count = canonicalCount + customCount + historicalCount;
-              const today = n === new Date().getDate();
+              const today = n === todayNumber;
               return (
                 <Link href={`/crm-v2/calendar?day=${key}`} key={n} className={`relative min-h-16 rounded-xl border p-2 transition hover:border-cyan-300/25 ${today ? "border-cyan-300/35 bg-cyan-300/[0.07]" : "border-white/6 bg-white/[0.018]"}`}>
                   <span className={`text-xs ${today ? "font-bold text-cyan-100" : "text-white/55"}`}>{n}</span>
@@ -289,14 +298,14 @@ export default async function CrmV2Dashboard() {
         <Link href="/crm-v2/subscriptions" className="block rounded-2xl border border-amber-300/20 bg-amber-300/[0.05] p-5 transition hover:border-amber-300/35">
           <p className="text-[10px] uppercase tracking-[0.18em] text-amber-100/60">Rappel abonnements</p>
           <p className="mt-2 text-lg font-semibold text-amber-100">{subscriptionsDue} abonnement{subscriptionsDue > 1 ? "s" : ""} à planifier ce mois-ci</p>
-          <p className="mt-2 text-xs text-white/40">Ouvrir l'espace abonnements →</p>
+          <p className="mt-2 text-xs text-white/40">Ouvrir l&apos;espace abonnements →</p>
         </Link>
       )}
 
       <section className="grid gap-3 md:grid-cols-4">
         <Link href="/crm-v2/pipeline" className="rounded-2xl border border-white/8 bg-white/[0.025] p-5 transition hover:border-cyan-300/25">
           <p className="text-sm font-semibold">Pipeline checklist</p>
-          <p className="mt-2 text-xs leading-5 text-white/40">Chaque client, chaque étape, un seul coup d'œil.</p>
+          <p className="mt-2 text-xs leading-5 text-white/40">Chaque client, chaque étape, un seul coup d&apos;œil.</p>
         </Link>
         <Link href="/crm-v2/clients" className="rounded-2xl border border-white/8 bg-white/[0.025] p-5 transition hover:border-cyan-300/25">
           <p className="text-sm font-semibold">Clients</p>

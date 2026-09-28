@@ -9,9 +9,17 @@ export default function LeadEditPanel({
   initialEmail,
   initialCity,
   initialService,
-  initialDateTime,
+  serviceLockedWithoutRow,
+  initialPerformanceDate,
   initialPrice,
   initialNote,
+  expectedLeadUpdatedAt,
+  expectedCustomerUpdatedAt,
+  expectedCreatedAt,
+  expectedPerformanceDate,
+  expectedServiceId,
+  expectedServiceUpdatedAt,
+  expectedServiceName,
   action,
   quoteId,
   expectedPrice,
@@ -24,9 +32,17 @@ export default function LeadEditPanel({
   initialEmail: string;
   initialCity: string;
   initialService: string;
-  initialDateTime: string;
+  serviceLockedWithoutRow: boolean;
+  initialPerformanceDate: string;
   initialPrice: string;
   initialNote: string;
+  expectedLeadUpdatedAt: string;
+  expectedCustomerUpdatedAt: string;
+  expectedCreatedAt: string;
+  expectedPerformanceDate: string;
+  expectedServiceId: string;
+  expectedServiceUpdatedAt: string;
+  expectedServiceName: string;
   action: (formData: FormData) => void | Promise<void>;
   quoteId: string | null;
   expectedPrice: number | null;
@@ -53,7 +69,7 @@ export default function LeadEditPanel({
         <div>
           <p className="text-sm font-semibold text-white">Modifier la demande</p>
           <p className="mt-1 text-[10px] leading-4 text-white/35">
-            Modifie les coordonnées, la prestation et la date réelle du dossier.
+            Modifie les coordonnées, la prestation et la date métier du dossier.
           </p>
         </div>
         <button
@@ -67,6 +83,13 @@ export default function LeadEditPanel({
 
       <form action={action} className="mt-4 grid gap-3 md:grid-cols-2">
         <input type="hidden" name="leadId" value={leadId} />
+        <input type="hidden" name="expectedLeadUpdatedAt" value={expectedLeadUpdatedAt} />
+        <input type="hidden" name="expectedCustomerUpdatedAt" value={expectedCustomerUpdatedAt} />
+        <input type="hidden" name="expectedCreatedAt" value={expectedCreatedAt} />
+        <input type="hidden" name="expectedPerformanceDate" value={expectedPerformanceDate} />
+        <input type="hidden" name="expectedServiceId" value={expectedServiceId} />
+        <input type="hidden" name="expectedServiceUpdatedAt" value={expectedServiceUpdatedAt} />
+        <input type="hidden" name="expectedServiceName" value={expectedServiceName} />
 
         <label className="text-[10px] uppercase tracking-[0.12em] text-white/35">
           Nom client
@@ -107,18 +130,28 @@ export default function LeadEditPanel({
         </label>
 
         <label className="text-[10px] uppercase tracking-[0.12em] text-white/35">
-          Date du dossier / prestation
+          Date de prestation (facultative)
           <input
-            name="dossierDateTime"
-            type="datetime-local"
-            required
-            defaultValue={initialDateTime}
+            name="performanceDate"
+            type="date"
+            defaultValue={initialPerformanceDate}
             className="mt-1.5 w-full rounded-xl border border-white/10 bg-[#081019] px-3 py-2.5 text-sm normal-case tracking-normal text-white outline-none"
           />
         </label>
 
         <label className="text-[10px] uppercase tracking-[0.12em] text-white/35">
           Prestation
+          {serviceLockedWithoutRow ? (
+            <>
+              <input type="hidden" name="serviceName" value="" />
+              <div className="mt-1.5 rounded-xl border border-white/10 bg-[#081019] px-3 py-2.5 text-sm normal-case tracking-normal text-white/60">
+                {initialService}
+              </div>
+              <span className="mt-1 block text-[11px] normal-case tracking-normal text-amber-100/65">
+                Prestation historique verrouillée. Le profil client et les notes restent modifiables.
+              </span>
+            </>
+          ) : (
           <input
             name="serviceName"
             required
@@ -126,20 +159,7 @@ export default function LeadEditPanel({
             defaultValue={initialService}
             className="mt-1.5 w-full rounded-xl border border-white/10 bg-[#081019] px-3 py-2.5 text-sm normal-case tracking-normal text-white outline-none"
           />
-        </label>
-
-        <label className="text-[10px] uppercase tracking-[0.12em] text-white/35">
-          Prix (€)
-          <input
-            name="price"
-            type="number"
-            min="0"
-            max="10000000"
-            step="0.01"
-            defaultValue={initialPrice}
-            placeholder="Ex. 150"
-            className="mt-1.5 w-full rounded-xl border border-white/10 bg-[#081019] px-3 py-2.5 text-sm normal-case tracking-normal text-white outline-none"
-          />
+          )}
         </label>
 
         <label className="text-[10px] uppercase tracking-[0.12em] text-white/35 md:col-span-2">
@@ -158,6 +178,14 @@ export default function LeadEditPanel({
         </button>
       </form>
 
+      {canEditPrice && quoteId && (
+        <DraftPriceForm
+          quoteId={quoteId}
+          expectedPrice={expectedPrice}
+          initialPrice={initialPrice}
+          action={priceAction}
+        />
+      )}
     </div>
   );
 }

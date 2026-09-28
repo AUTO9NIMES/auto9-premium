@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireCrmAccess } from "../../lib/auth/dal";
 import {
-  recordJobPayment, transitionLeadStatus, updateCustomerProfile,
+  recordJobPayment, transitionLeadStatus,
   updateDraftQuoteAmount, type Payment, type UpdateDraftQuoteAmountResult,
 } from "../../lib/crm";
 import { resolveCurrentBusinessContext } from "../../lib/business";
@@ -260,29 +260,13 @@ export async function toggleV2LeadStep(formData: FormData) {
 }
 
 
-function parisLocalDateTimeToIso(value: string): string | null {
-  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(value);
-  if (!match) return null;
-
-  const [, y, mo, d, h, mi] = match;
-  const localAsUtc = Date.UTC(Number(y), Number(mo) - 1, Number(d), Number(h), Number(mi));
-  const probe = new Date(localAsUtc);
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Europe/Paris",
-    timeZoneName: "shortOffset",
-    hour: "2-digit",
-  }).formatToParts(probe);
-  const zone = parts.find((part) => part.type === "timeZoneName")?.value || "GMT+0";
-  const zoneMatch = /GMT([+-])(\d{1,2})(?::(\d{2}))?/.exec(zone);
-  const offsetMinutes = zoneMatch
-    ? (zoneMatch[1] === "+" ? 1 : -1) *
-      (Number(zoneMatch[2]) * 60 + Number(zoneMatch[3] || 0))
-    : 0;
-
-  return new Date(localAsUtc - offsetMinutes * 60_000).toISOString();
+function validExpectedTimestamp(value: string): boolean {
+  return Boolean(value) &&
+    /(?:Z|[+-]\d{2}:\d{2})$/i.test(value) &&
+    Number.isFinite(Date.parse(value));
 }
 
-// Save customer profile and the editable service label for this dossier.
+// All dossier and canonical customer changes execute inside one PostgreSQL RPC.
 export async function updateV2LeadDetails(formData: FormData) {
   await requireCrmAccess();
 
@@ -292,138 +276,157 @@ export async function updateV2LeadDetails(formData: FormData) {
   const email = String(formData.get("email") || "").trim();
   const city = String(formData.get("city") || "").trim();
   const serviceName = String(formData.get("serviceName") || "").trim();
-  const dossierDateTime = String(formData.get("dossierDateTime") || "").trim();
+  const performanceDate = String(formData.get("performanceDate") || "").trim();
   const note = String(formData.get("note") || "").trim();
-  const rawPrice = String(formData.get("price") || "").trim().replace(",", ".");
-  const price = rawPrice ? Number(rawPrice) : null;
-  const dossierCreatedAt = parisLocalDateTimeToIso(dossierDateTime);
+
+  const expectedLeadUpdatedAt = String(formData.get("expectedLeadUpdatedAt") || "").trim();
+  const expectedCustomerUpdatedAt = String(formData.get("expectedCustomerUpdatedAt") || "").trim();
+  const expectedCreatedAt = String(formData.get("expectedCreatedAt") || "").trim();
+  const expectedPerformanceDate = String(formData.get("expectedPerformanceDate") || "").trim();
+  const expectedServiceId = String(formData.get("expectedServiceId") || "").trim();
+  const expectedServiceUpdatedAt = String(formData.get("expectedServiceUpdatedAt") || "").trim();
+  const expectedServiceNameValue = formData.get("expectedServiceName");
+  const expectedServiceName =
+    typeof expectedServiceNameValue === "string" ? expectedServiceNameValue : "";
+
+  const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+  const validDate = (value: string) => {
+    if (!datePattern.test(value)) return false;
+    const date = new Date(`${value}T00:00:00.000Z`);
+    return Number.isFinite(date.getTime()) &&
+      date.toISOString().slice(0, 10) === value;
+  };
+  const hasExpectedService = expectedServiceId.length > 0;
+
   if (
     !UUID_REGEX.test(leadId) ||
-    !fullName ||
-    !serviceName ||
-    serviceName.length > 200 ||
+    !fullName || fullName.length > 200 ||
+    (hasExpectedService && !serviceName) || serviceName.length > 200 ||
     note.length > 2000 ||
-    (price !== null && (!Number.isFinite(price) || price < 0 || price > 10000000)) ||
-    !dossierCreatedAt
+    !validExpectedTimestamp(expectedLeadUpdatedAt) ||
+    !validExpectedTimestamp(expectedCustomerUpdatedAt) ||
+    !validExpectedTimestamp(expectedCreatedAt) ||
+    (performanceDate !== "" && !validDate(performanceDate)) ||
+    (expectedPerformanceDate !== "" && !validDate(expectedPerformanceDate)) ||
+    (hasExpectedService && (
+      !UUID_REGEX.test(expectedServiceId) ||
+      !validExpectedTimestamp(expectedServiceUpdatedAt)
+    )) ||
+    (!hasExpectedService && (expectedServiceUpdatedAt || expectedServiceName))
   ) {
     redirect("/crm-v2/pipeline?edit_error=invalid");
   }
 
   const { businessId } = await resolveCurrentBusinessContext();
-  let customerId: string;
+  const nameParts = fullName.split(/\s+/).filter(Boolean);
+
+  let customerId: string | null = null;
+  let failure: "invalid" | "not_found" | "conflict" | "blocked" | null = null;
+
   try {
-    const rows = await supabaseRest<Array<{ customer_id: string; created_at: string }>>(
-      "leads", "GET", null,
-      `business_id=eq.${businessId}&id=eq.${leadId}&select=customer_id,created_at&limit=1`,
-    );
-    const lead = (rows as Array<{ customer_id: string; created_at: string }> | null)?.[0];
-    if (!lead) redirect("/crm-v2/pipeline?edit_error=not_found");
-    customerId = lead.customer_id;
-    const parts = fullName.split(/\s+/).filter(Boolean);
-    await updateCustomerProfile({
-      customerId, fullName,
-      firstName: parts[0] || null,
-      lastName: parts.slice(1).join(" ") || null,
-      email: email || null, phone: phone || null, city: city || null,
-    });
-
-    const serviceRows = await supabaseRest<Array<{ id: string }>>(
-      "lead_services",
-      "GET",
-      null,
-      `business_id=eq.${businessId}&lead_id=eq.${leadId}&order=created_at.desc&select=id&limit=1`,
-    );
-    const service = (serviceRows as Array<{ id: string }> | null)?.[0];
-
-    if (service?.id) {
-      await supabaseRest(
-        "lead_services",
-        "PATCH",
-        {
-          service_name: serviceName,
-          base_price: price,
-          customer_comment: note || null,
-          updated_at: new Date().toISOString(),
-        },
-        `business_id=eq.${businessId}&id=eq.${service.id}`,
-      );
-    } else {
-      await supabaseRest(
-        "lead_services",
-        "POST",
-        {
-          business_id: businessId,
-          lead_id: leadId,
-          service_name: serviceName,
-          base_price: price,
-          customer_comment: note || null,
-        },
-        "select=id",
-      );
-    }
-
-    await supabaseRest(
-      "leads",
-      "PATCH",
-      {
-        notes: note || null,
-        updated_at: new Date().toISOString(),
-      },
-      `business_id=eq.${businessId}&id=eq.${leadId}`,
-    );
-
-    await supabaseRest(
-      "activity_log",
+    const response = await supabaseRest<unknown>(
+      "rpc/update_v2_dossier_business_date",
       "POST",
       {
-        business_id: businessId,
-        customer_id: customerId,
-        lead_id: leadId,
-        event_type: "lead.details_updated",
-        event_data: {
-          source: "crm_v2",
-          service_name: serviceName,
-          price,
-          note: note || null,
-        },
+        p_business_id: businessId,
+        p_lead_id: leadId,
+        p_expected_lead_updated_at: expectedLeadUpdatedAt,
+        p_expected_customer_updated_at: expectedCustomerUpdatedAt,
+        p_expected_created_at: expectedCreatedAt,
+        p_expected_performance_date: expectedPerformanceDate || null,
+        p_expected_service_id: hasExpectedService ? expectedServiceId : null,
+        p_expected_service_updated_at: hasExpectedService ? expectedServiceUpdatedAt : null,
+        p_expected_service_name: hasExpectedService ? expectedServiceName : null,
+        p_full_name: fullName,
+        p_first_name: nameParts[0] || null,
+        p_last_name: nameParts.slice(1).join(" ") || null,
+        p_email: email || null,
+        p_phone: phone || null,
+        p_city: city || null,
+        p_service_name: serviceName || null,
+        p_note: note || null,
+        p_performance_date: performanceDate || null,
       },
-      "select=id",
     );
 
-    if (lead.created_at !== dossierCreatedAt) {
-      await supabaseRest(
-        "leads",
-        "PATCH",
-        {
-          created_at: dossierCreatedAt,
-          updated_at: new Date().toISOString(),
-        },
-        `business_id=eq.${businessId}&id=eq.${leadId}`,
-      );
-
-      await supabaseRest(
-        "activity_log",
-        "POST",
-        {
-          business_id: businessId,
-          customer_id: customerId,
-          lead_id: leadId,
-          event_type: "crm_v2.dossier.date_adjusted",
-          event_data: {
-            source: "crm_v2_pipeline",
-            previous_created_at: lead.created_at,
-            new_created_at: dossierCreatedAt,
-          },
-        },
-        "select=id",
-      );
+    if (!response || typeof response !== "object" || Array.isArray(response)) {
+      throw new Error("Invalid atomic dossier RPC response.");
     }
-  } catch (error) {
-    if (error && typeof error === "object" && "digest" in error) throw error;
+
+    const result = response as Record<string, unknown>;
+    const status = result.status;
+
+    if (status === "updated" || status === "no_op") {
+      const lead = result.lead;
+      const service = result.service;
+      const profile = result.profile;
+
+      if (
+        typeof result.customer_id !== "string" ||
+        !UUID_REGEX.test(result.customer_id) ||
+        !lead || typeof lead !== "object" || Array.isArray(lead) ||
+        (service === null && (
+          hasExpectedService ||
+          Boolean(serviceName) ||
+          performanceDate !== expectedPerformanceDate
+        )) ||
+        (service !== null && (
+          typeof service !== "object" || Array.isArray(service)
+        )) ||
+        !profile || typeof profile !== "object" || Array.isArray(profile)
+      ) {
+        throw new Error("Incomplete atomic dossier RPC result.");
+      }
+
+      const returnedLead = lead as Record<string, unknown>;
+      const returnedService = service as Record<string, unknown> | null;
+      const returnedProfile = profile as Record<string, unknown>;
+      const returnedCustomer = returnedProfile.customer;
+
+      if (
+        returnedLead.id !== leadId ||
+        returnedLead.business_id !== businessId ||
+        returnedLead.customer_id !== result.customer_id ||
+        (returnedService !== null && (
+          typeof returnedService.id !== "string" ||
+          !UUID_REGEX.test(returnedService.id) ||
+          returnedService.business_id !== businessId ||
+          returnedService.lead_id !== leadId ||
+          (hasExpectedService &&
+            returnedService.id.toLowerCase() !== expectedServiceId.toLowerCase()) ||
+          returnedService.service_name !== serviceName
+        )) ||
+        !returnedCustomer || typeof returnedCustomer !== "object" ||
+        Array.isArray(returnedCustomer) ||
+        (returnedCustomer as Record<string, unknown>).id !== result.customer_id ||
+        (returnedCustomer as Record<string, unknown>).business_id !== businessId ||
+        (status === "no_op" && (
+          hasExpectedService
+            ? expectedServiceName !== serviceName
+            : Boolean(serviceName)
+        ))
+      ) {
+        throw new Error("Inconsistent atomic dossier RPC ownership.");
+      }
+
+      customerId = result.customer_id;
+    } else if (
+      status === "invalid" ||
+      status === "not_found" ||
+      status === "conflict" ||
+      status === "blocked"
+    ) {
+      failure = status;
+    } else {
+      throw new Error("Unknown atomic dossier RPC status.");
+    }
+  } catch {
     redirect("/crm-v2/pipeline?edit_error=unavailable");
   }
 
-  // A shared customer profile appears in every dossier and job for that customer.
+  if (failure) redirect(`/crm-v2/pipeline?edit_error=${failure}`);
+  if (!customerId) redirect("/crm-v2/pipeline?edit_error=unavailable");
+
   revalidatePath("/crm-v2");
   revalidatePath("/crm-v2/pipeline");
   revalidatePath("/crm-v2/clients");
@@ -435,6 +438,7 @@ export async function updateV2LeadDetails(formData: FormData) {
   revalidatePath("/crm/pipeline/[leadId]", "page");
   revalidatePath("/crm/jobs");
   revalidatePath("/crm/jobs/[jobId]", "page");
+
   redirect("/crm-v2/pipeline?edit_updated=1");
 }
 

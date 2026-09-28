@@ -95,22 +95,7 @@ function serviceName(item: LeadListItem, serviceOverride?: string | null) {
     : item.latestJob?.title || "Prestation AUTO 9";
 }
 
-function toParisDateTimeLocal(value?: string | null) {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Paris",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(date);
-  const map = new Map(parts.map((part) => [part.type, part.value]));
-  return `${map.get("year")}-${map.get("month")}-${map.get("day")}T${map.get("hour")}:${map.get("minute")}`;
-}
+
 
 function money(value?: number | null) {
   if (typeof value !== "number") return null;
@@ -269,11 +254,13 @@ function LeadProgress({
   activity,
   serviceOverride,
   servicePrice,
+  serviceSnapshot,
 }: {
   item: LeadListItem;
   activity: StepActivity[];
   serviceOverride?: string | null;
   servicePrice?: number | null;
+  serviceSnapshot?: { id: string; name: string; updatedAt: string } | null;
 }) {
   const amount = money(item.latestQuote?.total_price ?? item.latestJob?.total_amount ?? servicePrice ?? null);
   const closed = item.lead.lifecycle_status === "CLOSED_LOST";
@@ -341,8 +328,19 @@ function LeadProgress({
                 initialPhone={item.customer.phone || ""}
                 initialEmail={item.customer.email || ""}
                 initialCity={item.customer.city || ""}
-                initialService={serviceName(item, serviceOverride)}
-                initialDateTime={toParisDateTimeLocal(item.lead.created_at)}
+                initialService={serviceSnapshot?.name ?? serviceName(item, serviceOverride)}
+                serviceLockedWithoutRow={!serviceSnapshot && (
+                  Boolean(item.latestQuote || item.latestJob || item.latestAppointment) ||
+                  !["NEW", "QUALIFIED", "CONTACTED"].includes(item.lead.lifecycle_status)
+                )}
+                expectedLeadUpdatedAt={item.lead.updated_at ?? ""}
+                expectedCustomerUpdatedAt={item.customer.updated_at ?? ""}
+                expectedCreatedAt={item.lead.created_at ?? ""}
+                expectedPerformanceDate={item.lead.performance_date ?? ""}
+                expectedServiceId={serviceSnapshot?.id ?? ""}
+                expectedServiceUpdatedAt={serviceSnapshot?.updatedAt ?? ""}
+                expectedServiceName={serviceSnapshot?.name ?? ""}
+                initialPerformanceDate={item.lead.performance_date ?? ""}
                 initialPrice={String(item.latestQuote?.total_price ?? item.latestJob?.total_amount ?? servicePrice ?? "")}
                 initialNote={item.lead.notes || ""}
                 action={updateV2LeadDetails}
@@ -547,14 +545,16 @@ export default async function CrmV2Pipeline({
   const { businessId } = await resolveCurrentBusinessContext();
 
   type ServiceRow = {
+    id: string;
     lead_id: string;
     service_name: string;
     base_price: number | null;
-    created_at: string | null;
+    created_at: string;
+    updated_at: string;
   };
 
   let activity: StepActivity[] = [];
-  let serviceRows: ServiceRow[] = [];
+  const serviceRows: ServiceRow[] = [];
   try {
     const rows = await supabaseRest<StepActivity[]>(
       "activity_log",
@@ -567,24 +567,70 @@ export default async function CrmV2Pipeline({
     activity = [];
   }
 
-  try {
-    const rows = await supabaseRest<ServiceRow[]>(
-      "lead_services",
-      "GET",
-      null,
-      `business_id=eq.${businessId}&order=created_at.desc&limit=1000&select=lead_id,service_name,base_price,created_at`,
-    );
-    serviceRows = (rows as ServiceRow[] | null) ?? [];
-  } catch {
-    serviceRows = [];
-  }
+  // Fetch service snapshots for the displayed leads, not an arbitrary
+  // tenant-wide first page. Keep the same ordering as the atomic SQL RPC.
+  const visibleLeadIds = [...new Set(
+    result.items
+      .map((item) => item.lead.id)
+      .filter((id): id is string => Boolean(id)),
+  )];
 
-  const serviceByLead = new Map<string, { name: string; price: number | null }>();
+  if (visibleLeadIds.length > 0) {
+    try {
+      const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+      for (const leadId of visibleLeadIds) {
+        if (!uuidPattern.test(leadId)) {
+          throw new Error("Invalid displayed lead ID.");
+        }
+
+        // The atomic RPC selects the latest service by (created_at, id).
+        // Fetch only that row; no offset pagination or server page-size assumption.
+        const response = await supabaseRest<ServiceRow>(
+          "lead_services",
+          "GET",
+          null,
+          `business_id=eq.${businessId}&lead_id=eq.${leadId}&order=created_at.desc,id.desc&limit=1&select=id,lead_id,service_name,base_price,created_at,updated_at`,
+        );
+
+        if (!Array.isArray(response) || response.length > 1) {
+          throw new Error("Invalid latest-service response.");
+        }
+
+        if (response.length === 0) continue;
+
+        const row: ServiceRow = response[0];
+        if (
+          !row ||
+          typeof row.id !== "string" ||
+          !uuidPattern.test(row.id) ||
+          row.lead_id !== leadId ||
+          typeof row.service_name !== "string" ||
+          typeof row.created_at !== "string" ||
+          !Number.isFinite(Date.parse(row.created_at)) ||
+          typeof row.updated_at !== "string" ||
+          !Number.isFinite(Date.parse(row.updated_at)) ||
+          (row.base_price !== null &&
+            (typeof row.base_price !== "number" || !Number.isFinite(row.base_price)))
+        ) {
+          throw new Error("Inconsistent latest-service snapshot.");
+        }
+
+        serviceRows.push(row);
+      }
+    } catch {
+      // Never present a failed service read as an absent service.
+      throw new Error("CRM V2 service snapshots unavailable.");
+    }
+  }
+  const serviceByLead = new Map<string, { id: string; name: string; price: number | null; updatedAt: string }>();
   for (const row of serviceRows) {
-    if (!serviceByLead.has(row.lead_id) && row.service_name?.trim()) {
+    if (!serviceByLead.has(row.lead_id)) {
       serviceByLead.set(row.lead_id, {
-        name: row.service_name.trim(),
+        id: row.id,
+        name: row.service_name,
         price: row.base_price,
+        updatedAt: row.updated_at,
       });
     }
   }
@@ -629,7 +675,15 @@ export default async function CrmV2Pipeline({
       )}
       {editError && (
         <div className="rounded-xl border border-red-300/20 bg-red-300/[0.05] px-4 py-3 text-sm text-red-100">
-          Les modifications n&apos;ont pas pu être enregistrées.
+          {editError === "conflict"
+            ? "Le dossier ou le profil client a changé. Recharge la page avant de réessayer."
+            : editError === "blocked"
+              ? "Cette prestation ou cette date est verrouillée après engagement commercial. Aucune modification de cette sauvegarde n’a été enregistrée."
+              : editError === "not_found"
+                ? "Ce dossier ou son client est introuvable. Recharge la page."
+                : editError === "invalid"
+                  ? "Données invalides. Vérifie les champs et recharge la page si nécessaire."
+                  : "Les modifications n’ont pas pu être enregistrées. Réessaie plus tard."}
         </div>
       )}
       {priceUpdated && (
@@ -702,6 +756,10 @@ export default async function CrmV2Pipeline({
               activity={activity}
               serviceOverride={item.lead.id ? serviceByLead.get(item.lead.id)?.name : null}
               servicePrice={item.lead.id ? serviceByLead.get(item.lead.id)?.price : null}
+              serviceSnapshot={item.lead.id ? (() => {
+                const service = serviceByLead.get(item.lead.id);
+                return service ? { id: service.id, name: service.name, updatedAt: service.updatedAt } : null;
+              })() : null}
             />
           ))
         ) : (

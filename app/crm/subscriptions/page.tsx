@@ -132,7 +132,7 @@ export default async function SubscriptionsPage({
             <label className="text-xs text-white/45">
               Tarif négocié (€)
               <input name="price" inputMode="decimal" placeholder="Ex. 169" className="mt-2 w-full rounded-xl border border-white/10 bg-[#081019] px-4 py-3 text-sm outline-none placeholder:text-white/25" />
-              <span className="mt-1 block text-[10px] text-white/25">Montant libre selon l'accord conclu avec le client.</span>
+              <span className="mt-1 block text-[10px] text-white/25">Montant libre selon l&apos;accord conclu avec le client.</span>
             </label>
             <select name="frequencyMonths" defaultValue="1" className="rounded-xl border border-white/10 bg-[#081019] px-4 py-3 text-sm text-white">
               <option value="1">Tous les mois</option>
@@ -145,7 +145,7 @@ export default async function SubscriptionsPage({
               <input name="nextDueOn" type="date" required className="mt-2 w-full rounded-xl border border-white/10 bg-[#081019] px-4 py-3 text-sm text-white" />
             </label>
             <textarea name="notes" placeholder="Notes (facultatif)" className="rounded-xl border border-white/10 bg-[#081019] px-4 py-3 text-sm outline-none placeholder:text-white/25" />
-            <button className="rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-3 text-sm font-semibold text-cyan-100 md:col-span-2">Créer l'abonnement</button>
+            <button className="rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-3 text-sm font-semibold text-cyan-100 md:col-span-2">Créer l&apos;abonnement</button>
           </form>
         </section>
       )}
@@ -177,7 +177,7 @@ export default async function SubscriptionsPage({
                   </Link>
                   {emailReady ? (
                     <a href={emailHref(customer, subscription)} className="rounded-xl border border-cyan-300/25 bg-cyan-300/[0.07] px-3 py-2.5 text-xs font-semibold text-cyan-100">
-                      Préparer l'email
+                      Préparer l&apos;email
                     </a>
                   ) : (
                     <span className="rounded-xl border border-white/8 px-3 py-2.5 text-xs text-white/25">{customer?.email ? "Lien privé indisponible" : "Email manquant"}</span>

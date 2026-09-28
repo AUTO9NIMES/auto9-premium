@@ -2,9 +2,10 @@
 
 import Script from "next/script";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
+import { createBrowserPreference } from "../lib/browser-preference";
 
 const GOOGLE_ANALYTICS_ID = "G-CE110ZOZ4V";
 const CONSENT_STORAGE_KEY = "auto9_cookie_consent";
@@ -13,70 +14,74 @@ type ConsentChoice = "accepted" | "refused" | null;
 
 declare global {
   interface Window {
+    "ga-disable-G-CE110ZOZ4V"?: boolean;
     dataLayer: unknown[];
     gtag?: (...args: unknown[]) => void;
   }
 }
 
+const consentPreference = createBrowserPreference<ConsentChoice>(
+  CONSENT_STORAGE_KEY,
+  (stored) => stored === "accepted" || stored === "refused" ? stored : null,
+  (choice) => {
+    // Removing a Script element cannot unload a tracker already running.
+    // Disable it synchronously, including on cross-tab withdrawal.
+    window["ga-disable-G-CE110ZOZ4V"] = choice !== "accepted";
+  },
+);
+
 export default function GoogleAnalytics() {
   const pathname = usePathname();
-
-  const [consent, setConsent] = useState<ConsentChoice>(null);
+  const searchParams = useSearchParams();
+  const query = searchParams?.toString() ?? "";
+  const consent = useSyncExternalStore(
+    consentPreference.subscribe,
+    consentPreference.getSnapshot,
+    consentPreference.getServerSnapshot,
+  );
   const [showSettings, setShowSettings] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const initialized = useRef(false);
+  const lastPageView = useRef<string | null>(null);
 
-  const firstPageView = useRef(true);
-
-  useEffect(() => {
-    setMounted(true);
-
-    const savedConsent = window.localStorage.getItem(
-      CONSENT_STORAGE_KEY
-    );
-
-    if (
-      savedConsent === "accepted" ||
-      savedConsent === "refused"
-    ) {
-      setConsent(savedConsent);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (consent !== "accepted") return;
-
-    if (firstPageView.current) {
-      firstPageView.current = false;
-      return;
-    }
-
-    const pagePath =
-      `${window.location.pathname}${window.location.search}`;
-
+  const sendPageView = useCallback(() => {
+    if (consentPreference.getSnapshot() !== "accepted" || !initialized.current) return;
+    const pagePath = `${window.location.pathname}${window.location.search}`;
+    if (lastPageView.current === pagePath) return;
+    lastPageView.current = pagePath;
     window.gtag?.("event", "page_view", {
       page_path: pagePath,
       page_location: window.location.href,
       page_title: document.title,
     });
-  }, [pathname, consent]);
+  }, []);
+
+  function analyticsReady() {
+    // The script may finish loading after consent was withdrawn.
+    if (consentPreference.getSnapshot() !== "accepted" || !window.gtag) return;
+    if (!initialized.current) {
+      window.gtag("js", new Date());
+      window.gtag("config", GOOGLE_ANALYTICS_ID, { anonymize_ip: true, send_page_view: false });
+      initialized.current = true;
+    }
+    sendPageView();
+  }
+
+  useEffect(() => {
+    if (consent !== "accepted") lastPageView.current = null;
+    else sendPageView();
+  }, [pathname, query, consent, sendPageView]);
+
+  useEffect(() => () => {
+    window["ga-disable-G-CE110ZOZ4V"] = true;
+  }, []);
 
   function acceptCookies() {
-    window.localStorage.setItem(
-      CONSENT_STORAGE_KEY,
-      "accepted"
-    );
-
-    setConsent("accepted");
+    consentPreference.set("accepted");
     setShowSettings(false);
   }
 
   function refuseCookies() {
-    window.localStorage.setItem(
-      CONSENT_STORAGE_KEY,
-      "refused"
-    );
-
-    setConsent("refused");
+    consentPreference.set("refused");
     setShowSettings(false);
   }
 
@@ -85,9 +90,9 @@ export default function GoogleAnalytics() {
   }
 
   const bannerVisible =
-    consent === null || showSettings;
+    consent == null || showSettings;
 
-  const cookieInterface = mounted
+  const cookieInterface = consent !== undefined
     ? createPortal(
         <>
           {bannerVisible && (
@@ -188,29 +193,19 @@ export default function GoogleAnalytics() {
     <>
       {consent === "accepted" && (
         <>
-          <Script
-            id="auto9-google-analytics-init"
-            strategy="afterInteractive"
-          >
+          <Script id="auto9-google-analytics-init" strategy="afterInteractive">
             {`
               window.dataLayer = window.dataLayer || [];
-
-              window.gtag = function () {
+              window.gtag = window.gtag || function () {
                 window.dataLayer.push(arguments);
               };
-
-              window.gtag("js", new Date());
-
-              window.gtag("config", "${GOOGLE_ANALYTICS_ID}", {
-                anonymize_ip: true
-              });
             `}
           </Script>
-
           <Script
             id="auto9-google-analytics"
             src={`https://www.googletagmanager.com/gtag/js?id=${GOOGLE_ANALYTICS_ID}`}
             strategy="afterInteractive"
+            onReady={analyticsReady}
           />
         </>
       )}

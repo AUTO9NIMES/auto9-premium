@@ -1,3 +1,4 @@
+import Link from "next/link";
 const premiumServices = [
   {
     title: "Rénovation de phares",
@@ -46,12 +47,12 @@ export function PremiumServices() {
             </p>
           </div>
 
-          <a
+          <Link
             href="/devis"
             className="inline-flex items-center justify-center rounded-full border border-[#B8C7D1]/25 bg-[#B8C7D1]/5 px-7 py-4 text-sm font-black uppercase tracking-[0.25em] text-white transition hover:border-[#B8C7D1] hover:bg-[#B8C7D1]/20"
           >
             Demander un devis →
-          </a>
+          </Link>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">

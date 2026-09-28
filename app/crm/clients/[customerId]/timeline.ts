@@ -108,6 +108,15 @@ export function formatCustomerActivity(
       };
     }
 
+    case "lead.service_updated": {
+      const previous = stringValue(data, "previous_service_name");
+      const next = stringValue(data, "new_service_name");
+      return {
+        title: "Prestation demandée modifiée",
+        detail: previous && next ? `${previous} → ${next}` : next,
+      };
+    }
+
     case "quote.created": {
       const version = numberValue(data, "quote_version");
       return {

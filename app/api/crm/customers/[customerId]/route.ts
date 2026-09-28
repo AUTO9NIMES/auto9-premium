@@ -34,7 +34,7 @@ function isAuthorized(request: Request) {
 
 export async function GET(
   request: Request,
-  context: { params?: Promise<{ customerId?: string }> | { customerId?: string } },
+  context: { params: Promise<{ customerId: string }> },
 ) {
   const auth = isAuthorized(request);
 
@@ -58,7 +58,7 @@ export async function GET(
     );
   }
 
-  const params = context.params ? await context.params : undefined;
+  const params = await context.params;
   const customerId = params?.customerId?.trim();
 
   if (!isValidUuid(customerId)) {

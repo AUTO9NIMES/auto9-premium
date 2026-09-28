@@ -28,20 +28,6 @@ async function ensureCrmAccess() {
   }
 }
 
-function currentParisDateTimeLocal() {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Paris",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(new Date());
-  const values = new Map(parts.map((part) => [part.type, part.value]));
-  return `${values.get("year")}-${values.get("month")}-${values.get("day")}T${values.get("hour")}:${values.get("minute")}`;
-}
-
 function customerName(item: CustomerListItem): string {
   const name = [item.customer.first_name, item.customer.last_name]
     .filter((value): value is string => Boolean(value?.trim()))
@@ -87,7 +73,6 @@ export default async function NewManualLeadPage({ searchParams }: {
   }
 
   const idempotencyKey = randomUUID();
-  const defaultPerformanceDate = currentParisDateTimeLocal();
 
   return (
     <div data-crm-route="client-files" className="space-y-10">
@@ -140,7 +125,9 @@ export default async function NewManualLeadPage({ searchParams }: {
           <div><label htmlFor="new-serviceName" className="block text-xs text-white/55">Service demandé</label><input id="new-serviceName" name="serviceName" required maxLength={200} placeholder="Ex. Nettoyage intérieur" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[rgb(165 243 252)]" /></div>
           <div><label htmlFor="new-basePrice" className="block text-xs text-white/55">Prix de base <span className="text-white/30">(optionnel)</span></label><input id="new-basePrice" name="basePrice" type="number" min="0" step="0.01" inputMode="decimal" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[rgb(165 243 252)]" /></div>
           <div><label htmlFor="new-estimatedTime" className="block text-xs text-white/55">Durée estimée <span className="text-white/30">(optionnel)</span></label><input id="new-estimatedTime" name="estimatedTime" maxLength={100} placeholder="Ex. 3 heures" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[rgb(165 243 252)]" /></div>
-          <div><label htmlFor="new-performanceDate" className="block text-xs text-white/55">Date de la prestation</label><input id="new-performanceDate" name="performanceDate" type="datetime-local" required defaultValue={defaultPerformanceDate} className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[rgb(165 243 252)]" /></div>
+          <div><label htmlFor="new-performanceDate" className="block text-xs text-white/55">Date de prestation <span className="text-white/30">(optionnelle)</span></label><input id="new-performanceDate" name="performanceDate" type="date" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[rgb(165 243 252)]" /></div>
+          <div><label htmlFor="new-performanceTime" className="block text-xs text-white/55">Heure de prestation <span className="text-white/30">(optionnelle, avec une date)</span></label><input id="new-performanceTime" name="performanceTime" type="time" step="60" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[rgb(165 243 252)]" /></div>
+          <p className="md:col-span-2 text-xs leading-5 text-white/40">Sans date : dossier sans planification. Date seule : date indicative du dossier. Date + heure : création d’un événement calendrier. Aucun rendez-vous opérationnel n’est créé automatiquement.</p>
           <div className="md:col-span-2"><label htmlFor="new-customerComment" className="block text-xs text-white/55">Commentaire <span className="text-white/30">(optionnel)</span></label><textarea id="new-customerComment" name="customerComment" maxLength={2000} rows={4} className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[rgb(165 243 252)]" /></div>
         </section>
         <button type="submit" className="border border-[rgb(165 243 252)] px-5 py-2.5 text-xs font-medium uppercase tracking-[0.14em] text-[rgb(165 243 252)] hover:bg-[rgb(165 243 252)] hover:text-[#071018]">Créer le dossier</button>
@@ -156,7 +143,9 @@ export default async function NewManualLeadPage({ searchParams }: {
           <div><label htmlFor="serviceName" className="block text-xs text-white/55">Service demandé</label><input id="serviceName" name="serviceName" required maxLength={200} placeholder="Ex. Nettoyage intérieur" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[rgb(165 243 252)]" /></div>
           <div><label htmlFor="basePrice" className="block text-xs text-white/55">Prix de base <span className="text-white/30">(optionnel)</span></label><input id="basePrice" name="basePrice" type="number" min="0" step="0.01" inputMode="decimal" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[rgb(165 243 252)]" /></div>
           <div><label htmlFor="estimatedTime" className="block text-xs text-white/55">Durée estimée <span className="text-white/30">(optionnel)</span></label><input id="estimatedTime" name="estimatedTime" maxLength={100} placeholder="Ex. 3 heures" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[rgb(165 243 252)]" /></div>
-          <div><label htmlFor="performanceDate" className="block text-xs text-white/55">Date de la prestation</label><input id="performanceDate" name="performanceDate" type="datetime-local" required defaultValue={defaultPerformanceDate} className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[rgb(165 243 252)]" /></div>
+          <div><label htmlFor="existing-performanceDate" className="block text-xs text-white/55">Date de prestation <span className="text-white/30">(optionnelle)</span></label><input id="existing-performanceDate" name="performanceDate" type="date" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[rgb(165 243 252)]" /></div>
+          <div><label htmlFor="existing-performanceTime" className="block text-xs text-white/55">Heure de prestation <span className="text-white/30">(optionnelle, avec une date)</span></label><input id="existing-performanceTime" name="performanceTime" type="time" step="60" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[rgb(165 243 252)]" /></div>
+          <p className="md:col-span-2 text-xs leading-5 text-white/40">Sans date : dossier sans planification. Date seule : date indicative du dossier. Date + heure : création d’un événement calendrier. Aucun rendez-vous opérationnel n’est créé automatiquement.</p>
           <div className="md:col-span-2"><label htmlFor="customerComment" className="block text-xs text-white/55">Commentaire <span className="text-white/30">(optionnel)</span></label><textarea id="customerComment" name="customerComment" maxLength={2000} rows={4} className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[rgb(165 243 252)]" /></div>
         </section>
         <button type="submit" className="border border-[rgb(165 243 252)] px-5 py-2.5 text-xs font-medium uppercase tracking-[0.14em] text-[rgb(165 243 252)] hover:bg-[rgb(165 243 252)] hover:text-[#071018]">Créer le dossier</button>

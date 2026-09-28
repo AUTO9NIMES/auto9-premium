@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 type Customer = {
   id?: string;
@@ -101,11 +101,10 @@ export default function EmailEditor({
   const renderedSubject = replaceVars(subject, selectedCustomer);
   const renderedBody = replaceVars(body, selectedCustomer);
 
-  const mailto = useMemo(() => {
-    if (!selectedCustomer?.email) return "#";
-    const plain = renderedBody + "\n\n" + cta + " : " + url;
-    return `mailto:${selectedCustomer.email}?subject=${encodeURIComponent(renderedSubject)}&body=${encodeURIComponent(plain)}`;
-  }, [selectedCustomer?.email, renderedSubject, renderedBody, cta, url]);
+  const plain = renderedBody + "\n\n" + cta + " : " + url;
+  const mailto = selectedCustomer?.email
+    ? `mailto:${selectedCustomer.email}?subject=${encodeURIComponent(renderedSubject)}&body=${encodeURIComponent(plain)}`
+    : "#";
 
   return (
     <div className="grid gap-6 2xl:grid-cols-[0.85fr_1.15fr]">
