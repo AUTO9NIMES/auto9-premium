@@ -22,6 +22,8 @@ export const dynamic = "force-dynamic";
 const RECENT_ACTIVITY_LIMIT = 10;
 
 type DashboardSubscription = {
+  id: string;
+  business_id: string;
   next_due_on: string;
   active: boolean;
 };
@@ -211,6 +213,32 @@ function ActivityRow({ activity }: { activity: RecentActivity }) {
   );
 }
 
+// Keyset pagination continues after short server-capped pages. A failure never
+// turns a partial result into an apparently complete financial total.
+async function readDashboardRows<T extends { id: string; business_id: string }>(
+  table: "payments" | "crm_subscriptions",
+  businessId: string,
+  query: string,
+): Promise<T[]> {
+  const collected: T[] = [];
+  let cursor = "";
+  for (let page = 0; page < 100; page += 1) {
+    const rows = await supabaseRest<T>(table, "GET", null,
+      `${query}&order=id.asc&limit=1000${cursor ? `&id=gt.${cursor}` : ""}`);
+    if (!Array.isArray(rows)) throw new Error("Dashboard read unavailable.");
+    if (rows.length === 0) return collected;
+    for (const row of rows) {
+      if (!row || typeof row.id !== "string" || !UUID_REGEX.test(row.id) ||
+          row.business_id !== businessId || row.id <= cursor) {
+        throw new Error("Inconsistent dashboard page.");
+      }
+      cursor = row.id;
+      collected.push(row);
+    }
+  }
+  throw new Error("Dashboard read exceeds the supported page count.");
+}
+
 export default async function CrmPage() {
   await ensureCrmAccess();
 
@@ -242,36 +270,31 @@ export default async function CrmPage() {
   const paymentBounds = currentParisMonthUtcBounds();
 
   try {
-    const paymentRows = await supabaseRest<Payment>(
-      "payments",
-      "GET",
-      null,
-      `business_id=eq.${businessId}&received_at=gte.${encodeURIComponent(paymentBounds.start)}&received_at=lt.${encodeURIComponent(paymentBounds.end)}&order=received_at.desc,id.desc&select=id,business_id,job_id,amount,method,idempotency_key,received_at,created_at`,
+    const paymentRows = await readDashboardRows<Payment>(
+      "payments", businessId,
+      `business_id=eq.${businessId}&received_at=gte.${encodeURIComponent(paymentBounds.start)}&received_at=lt.${encodeURIComponent(paymentBounds.end)}&select=id,business_id,job_id,amount,method,idempotency_key,received_at,created_at`,
     );
-
-    monthlyPayments = (Array.isArray(paymentRows) ? paymentRows : paymentRows ? [paymentRows] : [])
-      .filter((payment) => parisMonthKey(payment.received_at) === parisMonth);
+    if (paymentRows.some(payment => !Number.isFinite(Number(payment.amount)) ||
+        Number(payment.amount) <= 0 || !parisMonthKey(payment.received_at) ||
+        !["CASH", "CARD", "BANK_TRANSFER", "OTHER"].includes(payment.method))) {
+      throw new Error("Invalid payment evidence.");
+    }
+    monthlyPayments = paymentRows.filter(payment => parisMonthKey(payment.received_at) === parisMonth);
   } catch {
     financeFailed = true;
   }
 
   try {
-    const subscriptionRows = await supabaseRest<DashboardSubscription>(
-      "crm_subscriptions",
-      "GET",
-      null,
+    const subscriptionRows = await readDashboardRows<DashboardSubscription>(
+      "crm_subscriptions", businessId,
       `business_id=eq.${businessId}&active=eq.true&next_due_on=gte.${parisMonth}-01&next_due_on=lt.${(() => {
         const [year, month] = parisMonth.split("-").map(Number);
         const next = new Date(Date.UTC(year, month, 1));
         return `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, "0")}-01`;
-      })()}&select=next_due_on,active`,
+      })()}&select=id,business_id,next_due_on,active`,
     );
 
-    subscriptionsDue = (Array.isArray(subscriptionRows)
-      ? subscriptionRows
-      : subscriptionRows
-        ? [subscriptionRows]
-        : []).length;
+    subscriptionsDue = subscriptionRows.length;
   } catch {
     subscriptionsFailed = true;
   }
@@ -321,10 +344,32 @@ export default async function CrmPage() {
 
   return (
     <div data-crm-route="dashboard" className="space-y-12">
-      <section className="max-w-3xl">
-        <p className="mb-4 text-xs uppercase tracking-[0.24em] text-[#d8b477]">Dashboard / Vue d&apos;ensemble</p>
-        <h1 className="text-3xl font-semibold tracking-tight text-white md:text-5xl">CRM AUTO9</h1>
-        <p className="mt-5 max-w-xl text-sm leading-7 text-white/50 md:text-base">Une vue opérationnelle globale de l&apos;activité CRM AUTO9.</p>
+      <header className="relative isolate overflow-hidden rounded-lg border border-white/10 bg-[#101419]">
+        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-cover bg-[center_45%]"
+          style={{ backgroundImage: "linear-gradient(90deg, #080a0df5, #080a0dbb 55%, #080a0d44), url('/hero-audi.jpg')" }} />
+        <div className="max-w-3xl px-6 py-12 md:px-10 md:py-16">
+          <p className="text-xs uppercase tracking-[0.24em] text-[#d8b477]">AUTO9 / Pilotage</p>
+          <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-5xl">Votre activité, en un regard</h1>
+          <p className="mt-5 max-w-xl text-sm leading-7 text-white/75 md:text-base">Demandes à suivre, prestations en cours et encaissements réels : gardez le cap sur chaque dossier.</p>
+          <div className="mt-7 flex flex-wrap gap-3">
+            <Link href="/crm/pipeline/new" className="rounded-md border border-[#d8b477] bg-[#d8b477] px-5 py-3 text-sm font-medium text-[#080a0d] hover:bg-[#ebcb97]">Créer un dossier</Link>
+            <Link href="/crm/calendar" className="rounded-md border border-white/30 bg-black/30 px-5 py-3 text-sm text-white hover:border-[#d8b477]">Consulter le planning</Link>
+          </div>
+        </div>
+      </header>
+
+      <section aria-label="Priorités commerciales" className="grid gap-4 md:grid-cols-2">
+        {[
+          ["Demandes à traiter", metrics.leadsRequiringAttention, "Nouvelles demandes, qualification et devis à suivre"],
+          ["Dossiers en cours", metrics.leadsByStatus.BOOKED + metrics.leadsByStatus.IN_PROGRESS, "Prestations réservées ou en cours de réalisation"],
+        ].map(([label, value, description]) => (
+          <Link key={label} href="/crm/pipeline" className="rounded-lg border border-white/10 bg-[#101419] p-6 transition-colors hover:border-[#d8b477]/60">
+            <p className="text-sm text-white/70">{label}</p>
+            <p className="mt-3 text-4xl font-semibold text-[#d8b477]">{value}</p>
+            <p className="mt-3 text-xs leading-5 text-white/50">{description}</p>
+            <span className="mt-5 block text-xs text-[#d8b477]">Ouvrir les dossiers <span aria-hidden="true">→</span></span>
+          </Link>
+        ))}
       </section>
 
       <section aria-labelledby="dashboard-summary" className="space-y-4">
@@ -349,7 +394,7 @@ export default async function CrmPage() {
 
       <div className="grid gap-10 xl:grid-cols-2">
         <section aria-labelledby="lead-overview" className="space-y-4">
-          <SectionHeading eyebrow="01 / Pipeline" title="Répartition des leads" />
+          <SectionHeading eyebrow="01 / Pipeline" title="Répartition des leads" headingId="lead-overview" />
           <div className="border border-white/10 bg-[#101419] p-5 md:p-7">
             <div className="divide-y divide-white/10">
               {leadStatuses.map((status) => (
@@ -363,7 +408,7 @@ export default async function CrmPage() {
         </section>
 
         <section aria-labelledby="job-overview" className="space-y-4">
-          <SectionHeading eyebrow="02 / Opérations" title="Répartition des prestations" />
+          <SectionHeading eyebrow="02 / Opérations" title="Répartition des prestations" headingId="job-overview" />
           <div className="border border-white/10 bg-[#101419] p-5 md:p-7">
             <div className="divide-y divide-white/10">
               {jobStatuses.map((status) => (
@@ -423,12 +468,17 @@ export default async function CrmPage() {
         </div>
       </section>
 
+      {(financeFailed || subscriptionsFailed) && <p role="status" className="rounded-md border border-amber-300/20 bg-amber-300/5 px-5 py-4 text-sm text-amber-100">
+        {financeFailed && "Encaissements momentanément indisponibles. Aucun total partiel n’est affiché. "}
+        {subscriptionsFailed && "Échéances d’abonnement momentanément indisponibles."}
+      </p>}
+
       <section aria-labelledby="upcoming-appointments" className="space-y-4">
         <div className="flex items-end justify-between gap-4 border-b border-white/10 pb-4">
           <div>
             <p className="text-[10px] uppercase tracking-[0.2em] text-[#d8b477]">04 / Planning</p>
             <h2 id="upcoming-appointments" className="mt-2 text-xl font-medium text-white">
-              Prochains rendez-vous
+              Prochains rendez-vous du mois
             </h2>
           </div>
           <Link href="/crm/calendar" className="text-xs text-[#d8b477] hover:text-white">
@@ -442,7 +492,7 @@ export default async function CrmPage() {
               Les prochains rendez-vous sont momentanément indisponibles.
             </p>
           ) : nextAppointments.length === 0 ? (
-            <p className="py-7 text-sm text-white/35">Aucun rendez-vous planifié.</p>
+            <p className="py-7 text-sm text-white/35">Aucun rendez-vous à venir ce mois-ci.</p>
           ) : (
             nextAppointments.map((item) => (
               <article
@@ -470,7 +520,7 @@ export default async function CrmPage() {
       </section>
 
       <section aria-labelledby="quick-links" className="space-y-4">
-        <SectionHeading eyebrow="05 / Accès rapide" title="Ouvrir un espace" />
+        <SectionHeading eyebrow="05 / Accès rapide" title="Ouvrir un espace" headingId="quick-links" />
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {[
             ["Clients", "/crm/clients", "Répertoire relationnel"],

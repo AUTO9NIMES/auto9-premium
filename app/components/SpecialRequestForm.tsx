@@ -1,5 +1,7 @@
 "use client";
 
+
+import Link from "next/link";
 import {
   ChangeEvent,
   FormEvent,
@@ -90,10 +92,6 @@ export function SpecialRequestForm() {
   const [city, setCity] = useState("");
   const [vehicle, setVehicle] = useState("");
 
-  const [detail, setDetail] = useState(
-    config.detailOptions[0]
-  );
-
   const [comment, setComment] = useState("");
 
   const [photos, setPhotos] = useState<
@@ -107,14 +105,10 @@ export function SpecialRequestForm() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    setDetail(config.detailOptions[0]);
-  }, [type, config.detailOptions]);
-
-  useEffect(() => {
+    const urls = urlsRef.current;
     return () => {
-      urlsRef.current.forEach((url) =>
-        URL.revokeObjectURL(url)
-      );
+      urls.forEach((url) => URL.revokeObjectURL(url));
+      urls.length = 0;
     };
   }, []);
 
@@ -164,6 +158,8 @@ export function SpecialRequestForm() {
 
     if (target) {
       URL.revokeObjectURL(target.url);
+      const urlIndex = urlsRef.current.indexOf(target.url);
+      if (urlIndex !== -1) urlsRef.current.splice(urlIndex, 1);
     }
 
     setPhotos((current) =>
@@ -177,6 +173,10 @@ export function SpecialRequestForm() {
     event.preventDefault();
 
     if (!ready || sending) return;
+
+    const selectedDetail = new FormData(event.currentTarget).get("detail");
+    const detail = config.detailOptions.find((option) => option === selectedDetail);
+    if (!detail) return;
 
     setSending(true);
     setError("");
@@ -251,12 +251,12 @@ export function SpecialRequestForm() {
 
         {/* RETOUR */}
 
-        <a
+        <Link
           href="/#services"
           className="text-xs font-black uppercase tracking-[0.25em] text-white/50 transition hover:text-[#7DB7FF]"
         >
           ← Retour aux prestations
-        </a>
+        </Link>
 
         {/* CARTE PRINCIPALE */}
 
@@ -362,27 +362,7 @@ export function SpecialRequestForm() {
                   {config.detailLabel}
                 </p>
 
-                <div className="flex flex-wrap gap-2">
-
-                  {config.detailOptions.map(
-                    (option) => (
-                      <button
-                        key={option}
-                        type="button"
-                        onClick={() =>
-                          setDetail(option)
-                        }
-                        className={`rounded-full border px-4 py-3 text-xs font-black transition ${
-                          detail === option
-                            ? "border-[#2F7BFF] bg-[#0057FF] text-white shadow-[0_0_22px_rgba(0,87,255,.35)]"
-                            : "border-white/15 bg-white/[0.04] text-white/60 hover:border-[#0057FF]/60 hover:bg-[#0057FF]/10 hover:text-white"
-                        }`}
-                      >
-                        {option}
-                      </button>
-                    )
-                  )}
-                </div>
+                <ServiceDetailSelection key={type} options={config.detailOptions} />
               </div>
 
               {/* PHOTOS */}
@@ -532,5 +512,33 @@ function Field({
 
       {children}
     </label>
+  );
+}
+
+// Only the detail choice resets when the URL service changes. Customer fields and
+// attachments belong to the parent form and retain their state across navigation.
+function ServiceDetailSelection({ options }: { options: string[] }) {
+  const [detail, setDetail] = useState(options[0]);
+  return (
+    <>
+      <input type="hidden" name="detail" value={detail} />
+      <div className="flex flex-wrap gap-2">
+        {options.map((option) => (
+          <button
+            key={option}
+            type="button"
+            aria-pressed={detail === option}
+            onClick={() => setDetail(option)}
+            className={`rounded-full border px-4 py-3 text-xs font-black transition ${
+              detail === option
+                ? "border-[#2F7BFF] bg-[#0057FF] text-white shadow-[0_0_22px_rgba(0,87,255,.35)]"
+                : "border-white/15 bg-white/[0.04] text-white/60 hover:border-[#0057FF]/60 hover:bg-[#0057FF]/10 hover:text-white"
+            }`}
+          >
+            {option}
+          </button>
+        ))}
+      </div>
+    </>
   );
 }

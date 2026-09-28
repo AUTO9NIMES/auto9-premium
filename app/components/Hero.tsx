@@ -1,3 +1,4 @@
+import Link from "next/link";
 export function Hero() {
   const tags = [
     "À DOMICILE",
@@ -40,12 +41,12 @@ export function Hero() {
         </div>
 
         <div className="mt-12 flex flex-col gap-5 sm:flex-row sm:items-center">
-          <a
+          <Link
             href="/devis"
             className="inline-flex min-w-[290px] items-center justify-center rounded-full border border-[#d8e2ea]/35 bg-[linear-gradient(135deg,#eef3f7_0%,#c7d3dc_35%,#aebdca_65%,#dfe7ed_100%)] px-10 py-6 text-sm font-black uppercase tracking-[0.28em] text-black shadow-[0_16px_48px_rgba(140,170,195,0.18)] transition hover:scale-[1.015] hover:brightness-105"
           >
             Devis gratuit <span className="ml-4 text-xl">→</span>
-          </a>
+          </Link>
 
           <a
             href="#reservation"

@@ -35,7 +35,7 @@ function isAuthorized(request: Request) {
 
 export async function POST(
   request: Request,
-  context: { params?: Promise<{ quoteId?: string }> | { quoteId?: string } },
+  context: { params: Promise<{ quoteId: string }> },
 ) {
   const auth = isAuthorized(request);
 
@@ -59,7 +59,7 @@ export async function POST(
     );
   }
 
-  const params = context.params ? await context.params : undefined;
+  const params = await context.params;
   const quoteId = params?.quoteId?.trim();
 
   if (!isValidUuid(quoteId)) {

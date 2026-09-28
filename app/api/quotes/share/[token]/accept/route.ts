@@ -12,9 +12,9 @@ const TOKEN_REGEX = /^[0-9a-f]{32}$/i;
 // business/quote/lead/customer/job identifiers.
 export async function POST(
   request: Request,
-  context: { params?: Promise<{ token?: string }> | { token?: string } },
+  context: { params: Promise<{ token: string }> },
 ) {
-  const params = context.params ? await context.params : undefined;
+  const params = await context.params;
   const token = params?.token?.trim().toLowerCase();
 
   const quoteUrl = token && TOKEN_REGEX.test(token)

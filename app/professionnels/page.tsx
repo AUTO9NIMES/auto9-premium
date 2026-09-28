@@ -1,5 +1,7 @@
 "use client";
 
+
+import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { Footer } from "../components/Footer";
 import { Partners } from "../components/Partners";
@@ -140,9 +142,9 @@ export default function ProfessionnelsPage() {
   return (
     <main className="min-h-screen overflow-hidden bg-[#050608] text-white">
       <div className="border-b border-white/10 px-6 py-6 md:px-12">
-        <a href="/" className="text-xs font-black uppercase tracking-[0.3em] text-white/50 transition hover:text-[#91bbfa]">
+        <Link href="/" className="text-xs font-black uppercase tracking-[0.3em] text-white/50 transition hover:text-[#91bbfa]">
           ← Retour au site
-        </a>
+        </Link>
       </div>
 
       <section className="relative px-6 pb-20 pt-10 md:px-12 md:pt-14">

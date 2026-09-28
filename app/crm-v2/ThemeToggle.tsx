@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
+import { createBrowserPreference } from "../lib/browser-preference";
 
 type Theme = "dark" | "light";
 
@@ -13,23 +14,23 @@ function applyTheme(theme: Theme) {
   root.dataset.theme = theme;
 }
 
-export default function ThemeToggle({ compact = false }: { compact?: boolean }) {
-  const [theme, setTheme] = useState<Theme>("dark");
-  const [ready, setReady] = useState(false);
+const themePreference = createBrowserPreference<Theme>(
+  STORAGE_KEY,
+  (stored) => stored === "light" ? "light" : "dark",
+  applyTheme,
+);
 
-  useEffect(() => {
-    const saved = window.localStorage.getItem(STORAGE_KEY);
-    const initial: Theme = saved === "light" ? "light" : "dark";
-    setTheme(initial);
-    applyTheme(initial);
-    setReady(true);
-  }, []);
+export default function ThemeToggle({ compact = false }: { compact?: boolean }) {
+  const savedTheme = useSyncExternalStore(
+    themePreference.subscribe,
+    themePreference.getSnapshot,
+    themePreference.getServerSnapshot,
+  );
+  const theme = savedTheme ?? "dark";
+  const ready = savedTheme !== undefined;
 
   function toggle() {
-    const next: Theme = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    window.localStorage.setItem(STORAGE_KEY, next);
-    applyTheme(next);
+    themePreference.set(theme === "dark" ? "light" : "dark");
   }
 
   return (

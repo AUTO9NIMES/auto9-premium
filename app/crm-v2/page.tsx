@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { readRequestClock } from "../lib/request-clock";
+import { parisDateKey } from "../lib/paris-business-calendar";
 import { getCalendarMonth, getCrmDashboardMetrics, type CalendarAppointmentItem, type Payment } from "../lib/crm";
 import { resolveCurrentBusinessContext } from "../lib/business";
 import { supabaseRest } from "../lib/supabase";
@@ -7,21 +9,21 @@ import { getManualRevenueEntries } from "../lib/manual-revenue";
 export const dynamic = "force-dynamic";
 
 const eur = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
-const day = new Intl.DateTimeFormat("fr-FR", { weekday: "short", day: "2-digit" });
-const hour = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" });
+const day = new Intl.DateTimeFormat("fr-FR", {
+  timeZone: "Europe/Paris",
+  weekday: "short",
+  day: "2-digit",
+});
 
-function monthKey(date = new Date()) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-}
+const hour = new Intl.DateTimeFormat("fr-FR", {
+  timeZone: "Europe/Paris",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
 
 function parisMonthKey(value: string | Date) {
-  const d = typeof value === "string" ? new Date(value) : value;
-  if (Number.isNaN(d.getTime())) return "";
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Paris",
-    year: "numeric",
-    month: "2-digit",
-  }).format(d);
+  return parisDateKey(value).slice(0, 7);
 }
 
 function MiniEvent({ item }: { item: CalendarAppointmentItem }) {
@@ -42,6 +44,19 @@ function MiniEvent({ item }: { item: CalendarAppointmentItem }) {
 
 export default async function CrmV2Dashboard() {
   const { businessId } = await resolveCurrentBusinessContext();
+  const calendarDate = new Date(await readRequestClock());
+  const currentDay = parisDateKey(calendarDate);
+  const currentMonth = currentDay.slice(0, 7);
+  const [calendarYear, calendarMonth] = currentMonth.split("-").map(Number);
+  const todayNumber = Number(currentDay.slice(8, 10));
+
+  const firstWeekday = new Date(
+    Date.UTC(calendarYear, calendarMonth - 1, 1),
+  ).getUTCDay();
+
+  const daysInMonth = new Date(
+    Date.UTC(calendarYear, calendarMonth, 0),
+  ).getUTCDate();
   let subscriptionsDue = 0;
   try {
     const subscriptionRows = await supabaseRest<Array<{ next_due_on: string; active: boolean }>>(
@@ -50,7 +65,7 @@ export default async function CrmV2Dashboard() {
       null,
       `business_id=eq.${businessId}&active=eq.true&select=next_due_on,active`,
     );
-    const current = monthKey();
+    const current = currentMonth;
     subscriptionsDue = ((subscriptionRows as Array<{ next_due_on: string; active: boolean }> | null) ?? [])
       .filter((item) => item.next_due_on?.startsWith(current)).length;
   } catch {
@@ -59,7 +74,7 @@ export default async function CrmV2Dashboard() {
 
   const [metrics, calendar, paymentsRaw] = await Promise.all([
     getCrmDashboardMetrics(),
-    getCalendarMonth({ month: monthKey() }),
+    getCalendarMonth({ month: currentMonth }),
     supabaseRest<Payment[]>(
       "payments",
       "GET",
@@ -70,7 +85,7 @@ export default async function CrmV2Dashboard() {
 
   const payments = (paymentsRaw as Payment[] | null) ?? [];
   const manualPayments = await getManualRevenueEntries(businessId, payments);
-  const currentMonth = monthKey();
+  const appointmentCutoff = await readRequestClock();
   const paymentsThisMonth = payments.filter((payment) => parisMonthKey(payment.received_at) === currentMonth);
   const manualThisMonth = manualPayments.filter((payment) => parisMonthKey(payment.receivedAt) === currentMonth);
   const cashRevenue =
@@ -88,7 +103,7 @@ export default async function CrmV2Dashboard() {
       .filter((payment) => payment.method === "CARD" || payment.method === "BANK_TRANSFER")
       .reduce((sum, payment) => sum + payment.amount, 0);
   const nextEvents = calendar.items
-    .filter((item) => new Date(item.appointment.scheduledAt).getTime() >= Date.now())
+    .filter((item) => new Date(item.appointment.scheduledAt).getTime() >= appointmentCutoff)
     .sort((a, b) => new Date(a.appointment.scheduledAt).getTime() - new Date(b.appointment.scheduledAt).getTime())
     .slice(0, 5);
 
@@ -104,8 +119,8 @@ export default async function CrmV2Dashboard() {
       <header className="flex flex-col justify-between gap-5 xl:flex-row xl:items-end">
         <div>
           <p className="text-[11px] uppercase tracking-[0.28em] text-cyan-200/55">AUTO 9 · Pilotage</p>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight md:text-5xl">Vue d'ensemble</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-white/45">Tout ce qui compte aujourd'hui : chiffre, clients, dossiers et planning.</p>
+          <h1 className="mt-3 text-3xl font-bold tracking-tight md:text-5xl">Vue d&apos;ensemble</h1>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-white/45">Tout ce qui compte aujourd&apos;hui : chiffre, clients, dossiers et planning.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link href="/crm-v2/clients?new=1" className="rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-3 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/15">+ Nouveau client</Link>
@@ -142,11 +157,11 @@ export default async function CrmV2Dashboard() {
 
           <div className="mt-6 grid grid-cols-7 gap-1">
             {["L","M","M","J","V","S","D"].map((d, i) => <div key={i} className="py-2 text-center text-[10px] text-white/25">{d}</div>)}
-            {Array.from({ length: new Date(new Date().getFullYear(), new Date().getMonth(), 1).getDay() === 0 ? 6 : new Date(new Date().getFullYear(), new Date().getMonth(), 1).getDay() - 1 }).map((_, i) => <div key={`e-${i}`} />)}
-            {Array.from({ length: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate() }, (_, i) => i + 1).map((n) => {
-              const key = `${monthKey()}-${String(n).padStart(2, "0")}`;
-              const count = calendar.items.filter((item) => item.appointment.scheduledAt.startsWith(key)).length;
-              const today = n === new Date().getDate();
+            {Array.from({ length: firstWeekday === 0 ? 6 : firstWeekday - 1 }).map((_, i) => <div key={`e-${i}`} />)}
+            {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((n) => {
+              const key = `${currentMonth}-${String(n).padStart(2, "0")}`;
+              const count = calendar.items.filter((item) => parisDateKey(item.appointment.scheduledAt) === key).length;
+              const today = n === todayNumber;
               return (
                 <Link href={`/crm-v2/calendar?day=${key}`} key={n} className={`relative min-h-16 rounded-xl border p-2 transition hover:border-cyan-300/25 ${today ? "border-cyan-300/35 bg-cyan-300/[0.07]" : "border-white/6 bg-white/[0.018]"}`}>
                   <span className={`text-xs ${today ? "font-bold text-cyan-100" : "text-white/55"}`}>{n}</span>
@@ -174,14 +189,14 @@ export default async function CrmV2Dashboard() {
         <Link href="/crm-v2/subscriptions" className="block rounded-2xl border border-amber-300/20 bg-amber-300/[0.05] p-5 transition hover:border-amber-300/35">
           <p className="text-[10px] uppercase tracking-[0.18em] text-amber-100/60">Rappel abonnements</p>
           <p className="mt-2 text-lg font-semibold text-amber-100">{subscriptionsDue} abonnement{subscriptionsDue > 1 ? "s" : ""} à planifier ce mois-ci</p>
-          <p className="mt-2 text-xs text-white/40">Ouvrir l'espace abonnements →</p>
+          <p className="mt-2 text-xs text-white/40">Ouvrir l&apos;espace abonnements →</p>
         </Link>
       )}
 
       <section className="grid gap-3 md:grid-cols-4">
         <Link href="/crm-v2/pipeline" className="rounded-2xl border border-white/8 bg-white/[0.025] p-5 transition hover:border-cyan-300/25">
           <p className="text-sm font-semibold">Pipeline checklist</p>
-          <p className="mt-2 text-xs leading-5 text-white/40">Chaque client, chaque étape, un seul coup d'œil.</p>
+          <p className="mt-2 text-xs leading-5 text-white/40">Chaque client, chaque étape, un seul coup d&apos;œil.</p>
         </Link>
         <Link href="/crm-v2/clients" className="rounded-2xl border border-white/8 bg-white/[0.025] p-5 transition hover:border-cyan-300/25">
           <p className="text-sm font-semibold">Clients</p>

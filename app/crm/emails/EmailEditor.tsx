@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 type Customer = {
   id?: string;
@@ -172,26 +172,15 @@ export default function EmailEditor({
     templateKey !== "subscription" ||
     Boolean(selectedSubscription?.booking_token);
 
-  const mailto = useMemo(
-    () =>
-      subscriptionReady
-        ? buildMailto(
-            selectedCustomer?.email,
-            renderedSubject,
-            renderedBody,
-            cta,
-            url,
-          )
-        : null,
-    [
-      selectedCustomer?.email,
-      renderedSubject,
-      renderedBody,
-      cta,
-      url,
-      subscriptionReady,
-    ],
-  );
+  const mailto = subscriptionReady
+    ? buildMailto(
+        selectedCustomer?.email,
+        renderedSubject,
+        renderedBody,
+        cta,
+        url,
+      )
+    : null;
 
   return (
     <div className="grid gap-8 2xl:grid-cols-[0.9fr_1.1fr]">

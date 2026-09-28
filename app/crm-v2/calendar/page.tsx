@@ -348,7 +348,7 @@ export default async function CrmV2Calendar({
                   + Créer un nouveau client rapidement
                 </summary>
                 <p className="mt-2 text-xs text-white/35">
-                  Si aucun client existant n'est sélectionné, le CRM créera ce client en même temps que le rendez-vous.
+                  Si aucun client existant n&apos;est sélectionné, le CRM créera ce client en même temps que le rendez-vous.
                 </p>
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
                   <input

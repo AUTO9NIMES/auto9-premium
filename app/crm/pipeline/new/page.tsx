@@ -78,10 +78,19 @@ export default async function NewManualLeadPage({ searchParams }: {
     <div data-crm-route="pipeline" className="space-y-10">
       <Link href="/crm/pipeline" className="inline-block text-xs text-[#d8b477] hover:text-white">← Retour au pipeline</Link>
       <section className="border-b border-white/10 pb-8">
-        <p className="text-[10px] uppercase tracking-[0.24em] text-[#d8b477]">Pipeline / Nouvelle demande</p>
-        <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-5xl">Nouveau lead</h1>
+        <p className="text-[10px] uppercase tracking-[0.24em] text-[#d8b477]">Dossiers / Nouvelle demande</p>
+        <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-5xl">Nouveau dossier</h1>
         <p className="mt-4 max-w-xl text-sm leading-7 text-white/50">Sélectionnez un client existant ou créez un nouveau profil pour renseigner sa demande.</p>
       </section>
+
+      <ol aria-label="Étapes de création" className="grid gap-3 sm:grid-cols-3">
+        {["Choisir le client", "Décrire la prestation", "Suivre le dossier"].map((label, index) => (
+          <li key={label} className="rounded-lg border border-white/10 bg-[#101419] px-5 py-4 text-sm text-white/70">
+            <span className="mr-3 text-[#d8b477]">0{index + 1}</span>{label}
+          </li>
+        ))}
+      </ol>
+      <p className="text-sm leading-6 text-white/50">Le rendez-vous se planifie depuis le dossier, après validation du devis. Le prix saisi ici reste indicatif.</p>
 
       {error && <p role="alert" className="border border-red-300/30 bg-red-300/5 px-4 py-3 text-sm text-red-200">{error === "invalid" ? "Vérifiez les informations saisies." : error === "access" ? "Action non autorisée." : "Création momentanément indisponible."}</p>}
       {readFailed && <p role="alert" className="border border-red-300/30 bg-red-300/5 px-4 py-3 text-sm text-red-200">Le répertoire clients est momentanément indisponible.</p>}
@@ -127,7 +136,7 @@ export default async function NewManualLeadPage({ searchParams }: {
           <div><label htmlFor="new-estimatedTime" className="block text-xs text-white/55">Durée estimée <span className="text-white/30">(optionnel)</span></label><input id="new-estimatedTime" name="estimatedTime" maxLength={100} placeholder="Ex. 3 heures" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[#d8b477]" /></div>
           <div className="md:col-span-2"><label htmlFor="new-customerComment" className="block text-xs text-white/55">Commentaire <span className="text-white/30">(optionnel)</span></label><textarea id="new-customerComment" name="customerComment" maxLength={2000} rows={4} className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[#d8b477]" /></div>
         </section>
-        <button type="submit" className="border border-[#d8b477] px-5 py-2.5 text-xs font-medium uppercase tracking-[0.14em] text-[#d8b477] hover:bg-[#d8b477] hover:text-[#080a0d]">Créer le lead</button>
+        <button type="submit" className="border border-[#d8b477] px-5 py-2.5 text-xs font-medium uppercase tracking-[0.14em] text-[#d8b477] hover:bg-[#d8b477] hover:text-[#080a0d]">Créer le dossier</button>
       </form>}
 
       {mode === "existing" && selection && <form action={createManualLeadAction} className="space-y-8 border border-white/10 bg-[#101419] p-5 md:p-7">
@@ -142,7 +151,7 @@ export default async function NewManualLeadPage({ searchParams }: {
           <div><label htmlFor="estimatedTime" className="block text-xs text-white/55">Durée estimée <span className="text-white/30">(optionnel)</span></label><input id="estimatedTime" name="estimatedTime" maxLength={100} placeholder="Ex. 3 heures" className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[#d8b477]" /></div>
           <div className="md:col-span-2"><label htmlFor="customerComment" className="block text-xs text-white/55">Commentaire <span className="text-white/30">(optionnel)</span></label><textarea id="customerComment" name="customerComment" maxLength={2000} rows={4} className="mt-2 w-full border border-white/15 bg-[#0d1014] px-3 py-2.5 text-sm text-white outline-none focus:border-[#d8b477]" /></div>
         </section>
-        <button type="submit" className="border border-[#d8b477] px-5 py-2.5 text-xs font-medium uppercase tracking-[0.14em] text-[#d8b477] hover:bg-[#d8b477] hover:text-[#080a0d]">Créer le lead</button>
+        <button type="submit" className="border border-[#d8b477] px-5 py-2.5 text-xs font-medium uppercase tracking-[0.14em] text-[#d8b477] hover:bg-[#d8b477] hover:text-[#080a0d]">Créer le dossier</button>
       </form>}
     </div>
   );

@@ -1,3 +1,4 @@
+import Link from "next/link";
 export function Footer() {
   const links = [
     { label: "Configurateur", href: "/devis" },
@@ -44,12 +45,12 @@ export function Footer() {
               Retrouvez la joie du neuf.
             </h2>
 
-            <a
+            <Link
               href="/devis"
               className="w-fit rounded-full bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] text-[#050608] shadow-[0_18px_45px_rgba(184,199,209,.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
             >
               Obtenir mon devis →
-            </a>
+            </Link>
           </div>
         </div>
 

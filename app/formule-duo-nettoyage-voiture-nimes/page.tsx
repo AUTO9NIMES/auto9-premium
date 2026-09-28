@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { Footer } from "../components/Footer";
 
@@ -74,12 +75,12 @@ export default function FormuleDuoNettoyageVoitureNimesPage() {
   return (
     <main className="min-h-screen bg-[#050608] text-white">
       <div className="border-b border-white/10 px-6 py-6 md:px-12">
-        <a
+        <Link
           href="/"
           className="text-xs font-black uppercase tracking-[0.3em] text-white/50 transition hover:text-[#B8C7D1]"
         >
           ← Retour au site
-        </a>
+        </Link>
       </div>
 
       <section className="relative overflow-hidden px-6 py-24 md:px-12">
@@ -105,12 +106,12 @@ export default function FormuleDuoNettoyageVoitureNimesPage() {
               </p>
 
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-                <a
+                <Link
                   href="/devis?service=duo"
                   className="w-fit rounded-full bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] text-[#050608] shadow-[0_18px_45px_rgba(184,199,209,.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
                 >
                   Demander mon devis →
-                </a>
+                </Link>
 
                 <a
                   href="/realisations"
@@ -247,12 +248,12 @@ export default function FormuleDuoNettoyageVoitureNimesPage() {
                 pas été nettoyée en profondeur depuis longtemps.
               </p>
 
-              <a
+              <Link
                 href="/devis?service=duo"
                 className="mt-8 inline-flex rounded-full bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] text-[#050608] shadow-[0_18px_45px_rgba(184,199,209,.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
               >
                 Configurer ma Formule Duo →
-              </a>
+              </Link>
             </div>
 
             <div className="rounded-[2.5rem] border border-white/10 bg-white/[0.03] p-8 md:p-10">
@@ -360,12 +361,12 @@ export default function FormuleDuoNettoyageVoitureNimesPage() {
                 </p>
               </div>
 
-              <a
+              <Link
                 href="/devis?service=duo"
                 className="w-fit rounded-full bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] text-[#050608] shadow-[0_18px_45px_rgba(184,199,209,.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
               >
                 Demander mon devis →
-              </a>
+              </Link>
             </div>
           </div>
         </div>

@@ -34,7 +34,7 @@ function isAuthorized(request: Request) {
 
 export async function GET(
   request: Request,
-  context: { params?: Promise<{ jobId?: string }> | { jobId?: string } },
+  context: { params: Promise<{ jobId: string }> },
 ) {
   const auth = isAuthorized(request);
 
@@ -58,7 +58,7 @@ export async function GET(
     );
   }
 
-  const params = context.params ? await context.params : undefined;
+  const params = await context.params;
   const jobId = params?.jobId?.trim();
 
   if (!isValidUuid(jobId)) {
