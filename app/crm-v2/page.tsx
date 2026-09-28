@@ -3,6 +3,7 @@ import { getCalendarMonth, getCrmDashboardMetrics, type CalendarAppointmentItem,
 import { resolveCurrentBusinessContext } from "../lib/business";
 import { supabaseRest } from "../lib/supabase";
 import { getManualRevenueEntries } from "../lib/manual-revenue";
+import { getHistoricalCalendarEntries } from "../lib/historical-calendar";
 
 export const dynamic = "force-dynamic";
 
@@ -103,7 +104,7 @@ export default async function CrmV2Dashboard() {
   const currentMonth = monthKey();
   const nextMonth = nextMonthKey(currentMonth);
 
-  const [metrics, calendar, paymentsRaw, leadsRaw, stepActivityRaw, customEventsRaw] = await Promise.all([
+  const [metrics, calendar, paymentsRaw, leadsRaw, stepActivityRaw, customEventsRaw, historicalEvents] = await Promise.all([
     getCrmDashboardMetrics(),
     getCalendarMonth({ month: currentMonth }),
     supabaseRest<Payment[]>(
@@ -130,6 +131,7 @@ export default async function CrmV2Dashboard() {
       null,
       `business_id=eq.${businessId}&event_date=gte.${currentMonth}-01&event_date=lt.${nextMonth}-01&status=neq.CANCELLED&order=event_date.asc,event_time.asc&limit=5000&select=id,event_date,event_time,status`,
     ),
+    getHistoricalCalendarEntries(businessId, currentMonth),
   ]);
 
   const payments = (paymentsRaw as Payment[] | null) ?? [];
@@ -257,7 +259,8 @@ export default async function CrmV2Dashboard() {
               const key = `${monthKey()}-${String(n).padStart(2, "0")}`;
               const canonicalCount = calendar.items.filter((item) => item.appointment.scheduledAt.startsWith(key)).length;
               const customCount = customEvents.filter((item) => item.event_date === key).length;
-              const count = canonicalCount + customCount;
+              const historicalCount = historicalEvents.filter((item) => item.eventDate === key).length;
+              const count = canonicalCount + customCount + historicalCount;
               const today = n === new Date().getDate();
               return (
                 <Link href={`/crm-v2/calendar?day=${key}`} key={n} className={`relative min-h-16 rounded-xl border p-2 transition hover:border-cyan-300/25 ${today ? "border-cyan-300/35 bg-cyan-300/[0.07]" : "border-white/6 bg-white/[0.018]"}`}>
