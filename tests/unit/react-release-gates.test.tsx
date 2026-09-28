@@ -4,7 +4,7 @@ import { createBrowserPreference } from "../../app/lib/browser-preference";
 
 const mocks = vi.hoisted(() => ({
   pathname: "/", query: new URLSearchParams(),
-  connection: vi.fn(), business: vi.fn(), rest: vi.fn(), metrics: vi.fn(), calendar: vi.fn(), manual: vi.fn(),
+  connection: vi.fn(), business: vi.fn(), rest: vi.fn(), metrics: vi.fn(), calendar: vi.fn(), manual: vi.fn(), historical: vi.fn(),
 }));
 vi.mock("server-only", () => ({}));
 vi.mock("next/server", () => ({ connection: mocks.connection }));
@@ -13,13 +13,14 @@ vi.mock("../../app/lib/business", () => ({ resolveCurrentBusinessContext: mocks.
 vi.mock("../../app/lib/supabase", () => ({ supabaseRest: mocks.rest }));
 vi.mock("../../app/lib/crm", () => ({ getCrmDashboardMetrics: mocks.metrics, getCalendarMonth: mocks.calendar }));
 vi.mock("../../app/lib/manual-revenue", () => ({ getManualRevenueEntries: mocks.manual }));
+vi.mock("../../app/lib/historical-calendar", () => ({ getHistoricalCalendarEntries: mocks.historical }));
 import GoogleAnalytics from "../../app/components/GoogleAnalytics";
 import ThemeToggle from "../../app/crm-v2/ThemeToggle";
 import { SpecialRequestForm } from "../../app/components/SpecialRequestForm";
 import Dashboard from "../../app/crm-v2/page";
 import { readRequestClock } from "../../app/lib/request-clock";
 
-beforeEach(() => { vi.clearAllMocks(); mocks.query = new URLSearchParams(); });
+beforeEach(() => { vi.clearAllMocks(); mocks.query = new URLSearchParams(); mocks.historical.mockResolvedValue([]); });
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
 function storageHarness() {

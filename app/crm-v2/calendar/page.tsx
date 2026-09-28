@@ -6,6 +6,10 @@ import {
 import { resolveCurrentBusinessContext } from "../../lib/business";
 import { supabaseRest } from "../../lib/supabase";
 import {
+  getHistoricalCalendarEntries,
+  type HistoricalCalendarEntry,
+} from "../../lib/historical-calendar";
+import {
   createCalendarEvent,
   deleteCalendarEvent,
   updateCalendarEvent,
@@ -110,6 +114,41 @@ function CustomEvent({
   );
 }
 
+function HistoricalEvent({
+  item,
+  customer,
+  vehicle,
+}: {
+  item: HistoricalCalendarEntry;
+  customer?: CustomerRow;
+  vehicle?: VehicleRow;
+}) {
+  return (
+    <Link
+      href="/crm-v2/pipeline"
+      className="block rounded-lg border border-amber-300/12 bg-amber-300/[0.04] p-2 transition hover:border-amber-300/30"
+      title="Dossier repris rétroactivement"
+    >
+      <p className="text-[10px] font-semibold text-amber-100">
+        {item.eventTime}
+      </p>
+      <p className="mt-1 truncate text-[11px] text-white/75">
+        {customer?.full_name || "Client"}
+      </p>
+      <p className="mt-1 truncate text-[9px] text-white/30">
+        {[item.serviceName, vehicle ? [vehicle.brand, vehicle.model].filter(Boolean).join(" ") : null]
+          .filter(Boolean)
+          .join(" · ")}
+      </p>
+      {typeof item.price === "number" && (
+        <p className="mt-1 text-[9px] font-semibold text-amber-100/70">
+          {new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(item.price)}
+        </p>
+      )}
+    </Link>
+  );
+}
+
 export default async function CrmV2Calendar({
   searchParams,
 }: {
@@ -148,6 +187,13 @@ export default async function CrmV2Calendar({
 
   const result = await getCalendarMonth({ month: selectedMonth });
   const { businessId } = await resolveCurrentBusinessContext();
+  let historicalEvents: HistoricalCalendarEntry[] = [];
+
+  try {
+    historicalEvents = await getHistoricalCalendarEntries(businessId, selectedMonth);
+  } catch {
+    historicalEvents = [];
+  }
 
   let customEvents: CalendarEventRow[] = [];
   let customers: CustomerRow[] = [];
@@ -218,6 +264,12 @@ export default async function CrmV2Calendar({
   for (const item of customEvents) {
     const day = Number(item.event_date.slice(-2));
     customByDay.set(day, [...(customByDay.get(day) || []), item]);
+  }
+
+  const historicalByDay = new Map<number, HistoricalCalendarEntry[]>();
+  for (const item of historicalEvents) {
+    const day = Number(item.eventDate.slice(-2));
+    historicalByDay.set(day, [...(historicalByDay.get(day) || []), item]);
   }
 
   const formEvent = editing;
@@ -510,7 +562,8 @@ export default async function CrmV2Calendar({
           {Array.from({ length: days }, (_, i) => i + 1).map((n) => {
             const appointments = appointmentsByDay.get(n) || [];
             const customs = customByDay.get(n) || [];
-            const count = appointments.length + customs.length;
+            const historical = historicalByDay.get(n) || [];
+            const count = appointments.length + customs.length + historical.length;
             const dateKey = `${selectedMonth}-${String(n).padStart(2, "0")}`;
             const today =
               new Date().getFullYear() === year &&
@@ -559,6 +612,14 @@ export default async function CrmV2Calendar({
                       selectedMonth={selectedMonth}
                     />
                   ))}
+                  {historical.slice(0, Math.max(0, 4 - appointments.slice(0, 2).length - customs.slice(0, 2).length)).map((item) => (
+                    <HistoricalEvent
+                      key={item.id}
+                      item={item}
+                      customer={customerById.get(item.customerId)}
+                      vehicle={item.vehicleId ? vehicleById.get(item.vehicleId) : undefined}
+                    />
+                  ))}
                   {count > 4 && (
                     <p className="text-[9px] text-white/25">
                       + {count - 4} autre(s)
@@ -573,7 +634,8 @@ export default async function CrmV2Calendar({
 
       <div className="rounded-2xl border border-white/8 bg-white/[0.02] px-4 py-3 text-xs leading-5 text-white/40">
         <span className="text-cyan-100">Bleu</span> : rendez-vous issus du flux commercial.{" "}
-        <span className="text-emerald-100">Vert</span> : événements créés directement dans le calendrier V2 et modifiables.
+        <span className="text-emerald-100">Vert</span> : événements créés directement dans le calendrier V2 et modifiables.{" "}
+        <span className="text-amber-100">Jaune</span> : anciens dossiers repris automatiquement de façon rétroactive.
       </div>
     </div>
   );

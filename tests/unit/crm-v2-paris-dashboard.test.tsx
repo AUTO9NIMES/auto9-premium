@@ -1,13 +1,14 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ connection: vi.fn(), business: vi.fn(), rest: vi.fn(), metrics: vi.fn(), calendar: vi.fn(), manual: vi.fn() }));
+const mocks = vi.hoisted(() => ({ connection: vi.fn(), business: vi.fn(), rest: vi.fn(), metrics: vi.fn(), calendar: vi.fn(), manual: vi.fn(), historical: vi.fn() }));
 vi.mock("server-only", () => ({}));
 vi.mock("next/server", () => ({ connection: mocks.connection }));
 vi.mock("../../app/lib/business", () => ({ resolveCurrentBusinessContext: mocks.business }));
 vi.mock("../../app/lib/supabase", () => ({ supabaseRest: mocks.rest }));
 vi.mock("../../app/lib/crm", () => ({ getCrmDashboardMetrics: mocks.metrics, getCalendarMonth: mocks.calendar }));
 vi.mock("../../app/lib/manual-revenue", () => ({ getManualRevenueEntries: mocks.manual }));
+vi.mock("../../app/lib/historical-calendar", () => ({ getHistoricalCalendarEntries: mocks.historical }));
 import Dashboard from "../../app/crm-v2/page";
 
 beforeEach(() => {
@@ -17,6 +18,7 @@ beforeEach(() => {
   mocks.metrics.mockResolvedValue({ activeLeads: 0, leadsRequiringAttention: 0, customersTotal: 0 });
   mocks.calendar.mockResolvedValue({ items: [] });
   mocks.manual.mockResolvedValue([]);
+  mocks.historical.mockResolvedValue([]);
 });
 afterEach(() => { vi.restoreAllMocks(); });
 
@@ -64,6 +66,26 @@ describe("Paris business calendar, independent of process TZ", () => {
     expect(mocks.connection).toHaveBeenCalledTimes(2);
     expect(mocks.rest).toHaveBeenCalledTimes(5);
     for (const call of mocks.rest.mock.calls) expect(call[3]).toContain("business_id=eq.server-business");
+  });
+
+  it("counts canonical, custom and historical events on the same Paris day", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-04-01T12:00:00Z"));
+    mocks.calendar.mockResolvedValue({
+      items: [event(Date.parse("2026-04-01T08:00:00Z"))],
+    });
+    mocks.rest.mockImplementation(async (resource: string) =>
+      resource === "crm_calendar_events"
+        ? [{ id: "custom-one", event_date: "2026-04-01", event_time: "15:00", status: "CONFIRMED" }]
+        : [],
+    );
+    mocks.historical.mockResolvedValue([
+      { id: "historical-one", eventDate: "2026-04-01" },
+    ]);
+
+    const html = renderToStaticMarkup(await Dashboard());
+    expect(dayCell(html, "2026-04-01")).toContain("3 RDV");
+    expect(mocks.historical).toHaveBeenCalledWith("server-business", "2026-04");
+    expect(mocks.rest).toHaveBeenCalledTimes(5);
   });
 
   it.each([
