@@ -260,46 +260,6 @@ export async function toggleV2LeadStep(formData: FormData) {
 }
 
 
-function parisLocalDateTimeToIso(value: string): string | null {
-  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(value);
-  if (!match) return null;
-
-  const [, y, mo, d, h, mi] = match;
-  const localAsUtc = Date.UTC(Number(y), Number(mo) - 1, Number(d), Number(h), Number(mi));
-  const probe = new Date(localAsUtc);
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Europe/Paris",
-    timeZoneName: "shortOffset",
-    hour: "2-digit",
-  }).formatToParts(probe);
-  const zone = parts.find((part) => part.type === "timeZoneName")?.value || "GMT+0";
-  const zoneMatch = /GMT([+-])(\d{1,2})(?::(\d{2}))?/.exec(zone);
-  const offsetMinutes = zoneMatch
-    ? (zoneMatch[1] === "+" ? 1 : -1) *
-      (Number(zoneMatch[2]) * 60 + Number(zoneMatch[3] || 0))
-    : 0;
-
-  return new Date(localAsUtc - offsetMinutes * 60_000).toISOString();
-}
-
-function parisDateTimeLocalFromIso(value: string): string | null {
-  const date = new Date(value);
-  if (!Number.isFinite(date.getTime())) return null;
-
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Paris",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(date);
-  const map = new Map(parts.map((part) => [part.type, part.value]));
-
-  return `${map.get("year")}-${map.get("month")}-${map.get("day")}T${map.get("hour")}:${map.get("minute")}`;
-}
-
 function validExpectedTimestamp(value: string): boolean {
   return Boolean(value) &&
     /(?:Z|[+-]\d{2}:\d{2})$/i.test(value) &&
@@ -316,20 +276,26 @@ export async function updateV2LeadDetails(formData: FormData) {
   const email = String(formData.get("email") || "").trim();
   const city = String(formData.get("city") || "").trim();
   const serviceName = String(formData.get("serviceName") || "").trim();
-  const dossierDateTime = String(formData.get("dossierDateTime") || "").trim();
+  const performanceDate = String(formData.get("performanceDate") || "").trim();
   const note = String(formData.get("note") || "").trim();
 
   const expectedLeadUpdatedAt = String(formData.get("expectedLeadUpdatedAt") || "").trim();
   const expectedCustomerUpdatedAt = String(formData.get("expectedCustomerUpdatedAt") || "").trim();
   const expectedCreatedAt = String(formData.get("expectedCreatedAt") || "").trim();
+  const expectedPerformanceDate = String(formData.get("expectedPerformanceDate") || "").trim();
   const expectedServiceId = String(formData.get("expectedServiceId") || "").trim();
   const expectedServiceUpdatedAt = String(formData.get("expectedServiceUpdatedAt") || "").trim();
   const expectedServiceNameValue = formData.get("expectedServiceName");
   const expectedServiceName =
     typeof expectedServiceNameValue === "string" ? expectedServiceNameValue : "";
 
-  const parsedCreatedAt = parisLocalDateTimeToIso(dossierDateTime);
-  const displayedOriginalDate = parisDateTimeLocalFromIso(expectedCreatedAt);
+  const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+  const validDate = (value: string) => {
+    if (!datePattern.test(value)) return false;
+    const date = new Date(`${value}T00:00:00.000Z`);
+    return Number.isFinite(date.getTime()) &&
+      date.toISOString().slice(0, 10) === value;
+  };
   const hasExpectedService = expectedServiceId.length > 0;
 
   if (
@@ -340,27 +306,13 @@ export async function updateV2LeadDetails(formData: FormData) {
     !validExpectedTimestamp(expectedLeadUpdatedAt) ||
     !validExpectedTimestamp(expectedCustomerUpdatedAt) ||
     !validExpectedTimestamp(expectedCreatedAt) ||
-    !parsedCreatedAt ||
-    !displayedOriginalDate ||
+    (performanceDate !== "" && !validDate(performanceDate)) ||
+    (expectedPerformanceDate !== "" && !validDate(expectedPerformanceDate)) ||
     (hasExpectedService && (
       !UUID_REGEX.test(expectedServiceId) ||
       !validExpectedTimestamp(expectedServiceUpdatedAt)
     )) ||
     (!hasExpectedService && (expectedServiceUpdatedAt || expectedServiceName))
-  ) {
-    redirect("/crm-v2/pipeline?edit_error=invalid");
-  }
-
-  // The browser edits minutes, but the database stores seconds and fractions.
-  // Preserve the exact original timestamp when the displayed date is unchanged.
-  const dossierCreatedAt = dossierDateTime === displayedOriginalDate
-    ? expectedCreatedAt
-    : parsedCreatedAt;
-
-  // Reject an impossible local time rather than silently shifting the date.
-  if (
-    dossierDateTime !== displayedOriginalDate &&
-    parisDateTimeLocalFromIso(dossierCreatedAt) !== dossierDateTime
   ) {
     redirect("/crm-v2/pipeline?edit_error=invalid");
   }
@@ -373,7 +325,7 @@ export async function updateV2LeadDetails(formData: FormData) {
 
   try {
     const response = await supabaseRest<unknown>(
-      "rpc/update_v2_dossier_atomically",
+      "rpc/update_v2_dossier_business_date",
       "POST",
       {
         p_business_id: businessId,
@@ -381,6 +333,7 @@ export async function updateV2LeadDetails(formData: FormData) {
         p_expected_lead_updated_at: expectedLeadUpdatedAt,
         p_expected_customer_updated_at: expectedCustomerUpdatedAt,
         p_expected_created_at: expectedCreatedAt,
+        p_expected_performance_date: expectedPerformanceDate || null,
         p_expected_service_id: hasExpectedService ? expectedServiceId : null,
         p_expected_service_updated_at: hasExpectedService ? expectedServiceUpdatedAt : null,
         p_expected_service_name: hasExpectedService ? expectedServiceName : null,
@@ -392,7 +345,7 @@ export async function updateV2LeadDetails(formData: FormData) {
         p_city: city || null,
         p_service_name: serviceName || null,
         p_note: note || null,
-        p_created_at: dossierCreatedAt,
+        p_performance_date: performanceDate || null,
       },
     );
 
@@ -415,7 +368,7 @@ export async function updateV2LeadDetails(formData: FormData) {
         (service === null && (
           hasExpectedService ||
           Boolean(serviceName) ||
-          dossierCreatedAt !== expectedCreatedAt
+          performanceDate !== expectedPerformanceDate
         )) ||
         (service !== null && (
           typeof service !== "object" || Array.isArray(service)

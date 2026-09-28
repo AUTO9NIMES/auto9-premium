@@ -10,12 +10,13 @@ export default function LeadEditPanel({
   initialCity,
   initialService,
   serviceLockedWithoutRow,
-  initialDateTime,
+  initialPerformanceDate,
   initialPrice,
   initialNote,
   expectedLeadUpdatedAt,
   expectedCustomerUpdatedAt,
   expectedCreatedAt,
+  expectedPerformanceDate,
   expectedServiceId,
   expectedServiceUpdatedAt,
   expectedServiceName,
@@ -32,12 +33,13 @@ export default function LeadEditPanel({
   initialCity: string;
   initialService: string;
   serviceLockedWithoutRow: boolean;
-  initialDateTime: string;
+  initialPerformanceDate: string;
   initialPrice: string;
   initialNote: string;
   expectedLeadUpdatedAt: string;
   expectedCustomerUpdatedAt: string;
   expectedCreatedAt: string;
+  expectedPerformanceDate: string;
   expectedServiceId: string;
   expectedServiceUpdatedAt: string;
   expectedServiceName: string;
@@ -67,7 +69,7 @@ export default function LeadEditPanel({
         <div>
           <p className="text-sm font-semibold text-white">Modifier la demande</p>
           <p className="mt-1 text-[10px] leading-4 text-white/35">
-            Modifie les coordonnées, la prestation et la date réelle du dossier.
+            Modifie les coordonnées, la prestation et la date métier du dossier.
           </p>
         </div>
         <button
@@ -84,6 +86,7 @@ export default function LeadEditPanel({
         <input type="hidden" name="expectedLeadUpdatedAt" value={expectedLeadUpdatedAt} />
         <input type="hidden" name="expectedCustomerUpdatedAt" value={expectedCustomerUpdatedAt} />
         <input type="hidden" name="expectedCreatedAt" value={expectedCreatedAt} />
+        <input type="hidden" name="expectedPerformanceDate" value={expectedPerformanceDate} />
         <input type="hidden" name="expectedServiceId" value={expectedServiceId} />
         <input type="hidden" name="expectedServiceUpdatedAt" value={expectedServiceUpdatedAt} />
         <input type="hidden" name="expectedServiceName" value={expectedServiceName} />
@@ -127,12 +130,11 @@ export default function LeadEditPanel({
         </label>
 
         <label className="text-[10px] uppercase tracking-[0.12em] text-white/35">
-          Date du dossier / prestation
+          Date de prestation (facultative)
           <input
-            name="dossierDateTime"
-            type="datetime-local"
-            required
-            defaultValue={initialDateTime}
+            name="performanceDate"
+            type="date"
+            defaultValue={initialPerformanceDate}
             className="mt-1.5 w-full rounded-xl border border-white/10 bg-[#081019] px-3 py-2.5 text-sm normal-case tracking-normal text-white outline-none"
           />
         </label>

@@ -143,6 +143,7 @@ export type Lead = {
   utm_source?: string | null;
   utm_campaign?: string | null;
   notes?: string | null;
+  performance_date?: string | null;
   created_at?: string;
   updated_at?: string;
 };
@@ -989,6 +990,78 @@ export async function createManualLeadWithCustomer(input: {
   return {
     leadId: result.lead_id,
     customerId: result.customer_id,
+    noOp: result.no_op,
+  };
+}
+
+export type ManualDossierHybridInput = {
+  idempotencyKey: string;
+  serviceName: string;
+  customerId?: string | null;
+  vehicleId?: string | null;
+  newCustomerFullName?: string | null;
+  newCustomerFirstName?: string | null;
+  newCustomerLastName?: string | null;
+  newCustomerEmail?: string | null;
+  newCustomerPhone?: string | null;
+  newCustomerCity?: string | null;
+  basePrice?: number | null;
+  estimatedTime?: string | null;
+  customerComment?: string | null;
+  performanceDate?: string | null;
+  performanceTime?: string | null;
+};
+
+export type ManualDossierHybridResult = ManualLeadResult & {
+  customerId: string;
+  eventId: string | null;
+};
+
+export async function createManualDossierHybrid(
+  input: ManualDossierHybridInput,
+): Promise<ManualDossierHybridResult> {
+  if (!hasSupabaseWriteConfig()) {
+    throw new Error("Supabase persistence is not configured.");
+  }
+
+  const businessId = await getCurrentBusinessId();
+  const result = await supabaseRest<unknown>(
+    "rpc/create_manual_dossier_hybrid",
+    "POST",
+    {
+      p_business_id: businessId,
+      p_idempotency_key: input.idempotencyKey.trim(),
+      p_service_name: input.serviceName,
+      p_customer_id: input.customerId?.trim() || null,
+      p_vehicle_id: input.vehicleId?.trim() || null,
+      p_new_customer_full_name: input.newCustomerFullName ?? null,
+      p_new_customer_first_name: input.newCustomerFirstName ?? null,
+      p_new_customer_last_name: input.newCustomerLastName ?? null,
+      p_new_customer_email: normalizeEmail(input.newCustomerEmail),
+      p_new_customer_phone: normalizePhone(input.newCustomerPhone),
+      p_new_customer_city: input.newCustomerCity ?? null,
+      p_base_price: input.basePrice ?? null,
+      p_estimated_time: input.estimatedTime ?? null,
+      p_customer_comment: input.customerComment ?? null,
+      p_performance_date: input.performanceDate ?? null,
+      p_performance_time: input.performanceTime ?? null,
+    },
+  );
+
+  if (
+    !isRecord(result) ||
+    typeof result.lead_id !== "string" ||
+    typeof result.customer_id !== "string" ||
+    (result.event_id !== null && typeof result.event_id !== "string") ||
+    typeof result.no_op !== "boolean"
+  ) {
+    throw new Error("Supabase returned an invalid hybrid dossier result.");
+  }
+
+  return {
+    leadId: result.lead_id,
+    customerId: result.customer_id,
+    eventId: result.event_id,
     noOp: result.no_op,
   };
 }

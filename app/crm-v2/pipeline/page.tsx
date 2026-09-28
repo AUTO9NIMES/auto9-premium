@@ -95,22 +95,7 @@ function serviceName(item: LeadListItem, serviceOverride?: string | null) {
     : item.latestJob?.title || "Prestation AUTO 9";
 }
 
-function toParisDateTimeLocal(value?: string | null) {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Paris",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(date);
-  const map = new Map(parts.map((part) => [part.type, part.value]));
-  return `${map.get("year")}-${map.get("month")}-${map.get("day")}T${map.get("hour")}:${map.get("minute")}`;
-}
+
 
 function money(value?: number | null) {
   if (typeof value !== "number") return null;
@@ -351,10 +336,11 @@ function LeadProgress({
                 expectedLeadUpdatedAt={item.lead.updated_at ?? ""}
                 expectedCustomerUpdatedAt={item.customer.updated_at ?? ""}
                 expectedCreatedAt={item.lead.created_at ?? ""}
+                expectedPerformanceDate={item.lead.performance_date ?? ""}
                 expectedServiceId={serviceSnapshot?.id ?? ""}
                 expectedServiceUpdatedAt={serviceSnapshot?.updatedAt ?? ""}
                 expectedServiceName={serviceSnapshot?.name ?? ""}
-                initialDateTime={toParisDateTimeLocal(item.lead.created_at)}
+                initialPerformanceDate={item.lead.performance_date ?? ""}
                 initialPrice={String(item.latestQuote?.total_price ?? item.latestJob?.total_amount ?? servicePrice ?? "")}
                 initialNote={item.lead.notes || ""}
                 action={updateV2LeadDetails}

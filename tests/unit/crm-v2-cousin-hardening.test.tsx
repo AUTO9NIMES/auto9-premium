@@ -335,7 +335,8 @@ describe("customer profile omission contract and isolated save", () => {
     email: "jean@example.test",
     city: "Nîmes",
     serviceName: "Nettoyage intérieur",
-    dossierDateTime: "2026-09-24T12:00",
+    performanceDate: "2026-09-24",
+    expectedPerformanceDate: "2026-09-24",
     note: "Appeler avant déplacement",
     expectedLeadUpdatedAt: leadUpdatedAt,
     expectedCustomerUpdatedAt: customerUpdatedAt,
@@ -369,7 +370,7 @@ describe("customer profile omission contract and isolated save", () => {
       }))).rejects.toThrow("edit_updated=1");
 
       expect(mocks.supabaseRest).toHaveBeenCalledExactlyOnceWith(
-        "rpc/update_v2_dossier_atomically",
+        "rpc/update_v2_dossier_business_date",
         "POST",
         {
           p_business_id: businessId,
@@ -377,6 +378,7 @@ describe("customer profile omission contract and isolated save", () => {
           p_expected_lead_updated_at: leadUpdatedAt,
           p_expected_customer_updated_at: customerUpdatedAt,
           p_expected_created_at: createdAt,
+          p_expected_performance_date: "2026-09-24",
           p_expected_service_id: serviceId,
           p_expected_service_updated_at: serviceUpdatedAt,
           p_expected_service_name: "Nettoyage intérieur",
@@ -388,7 +390,7 @@ describe("customer profile omission contract and isolated save", () => {
           p_city: "Nîmes",
           p_service_name: "Nettoyage intérieur",
           p_note: "Appeler avant déplacement",
-          p_created_at: createdAt,
+          p_performance_date: "2026-09-24",
         },
       );
       expect(mocks.revalidatePath).toHaveBeenCalledWith(`/crm/clients/${customerId}`);
@@ -414,7 +416,7 @@ describe("customer profile omission contract and isolated save", () => {
       .rejects.toThrow("/crm-v2/pipeline?edit_updated=1");
 
     expect(mocks.supabaseRest).toHaveBeenCalledExactlyOnceWith(
-      "rpc/update_v2_dossier_atomically", "POST",
+      "rpc/update_v2_dossier_business_date", "POST",
       expect.objectContaining({ p_expected_service_id: expectedId }),
     );
     expect(mocks.revalidatePath).toHaveBeenCalledWith("/crm-v2/pipeline");
@@ -443,7 +445,7 @@ describe("customer profile omission contract and isolated save", () => {
       .rejects.toThrow("/crm-v2/pipeline?edit_error=unavailable");
 
     expect(mocks.supabaseRest).toHaveBeenCalledExactlyOnceWith(
-      "rpc/update_v2_dossier_atomically", "POST",
+      "rpc/update_v2_dossier_business_date", "POST",
       expect.objectContaining({ p_expected_service_id: canonicalServiceId }),
     );
     expect(mocks.revalidatePath).not.toHaveBeenCalled();
@@ -489,7 +491,7 @@ describe("customer profile omission contract and isolated save", () => {
     }))).rejects.toThrow("edit_updated=1");
 
     expect(mocks.supabaseRest).toHaveBeenCalledExactlyOnceWith(
-      "rpc/update_v2_dossier_atomically", "POST",
+      "rpc/update_v2_dossier_business_date", "POST",
       expect.objectContaining({
         p_expected_service_id: null,
         p_expected_service_updated_at: null,
@@ -514,13 +516,13 @@ describe("customer profile omission contract and isolated save", () => {
       }))).rejects.toThrow("edit_updated=1");
 
       expect(mocks.supabaseRest).toHaveBeenCalledExactlyOnceWith(
-        "rpc/update_v2_dossier_atomically", "POST",
+        "rpc/update_v2_dossier_business_date", "POST",
         expect.objectContaining({
           p_expected_service_id: null,
           p_expected_service_updated_at: null,
           p_expected_service_name: null,
           p_service_name: null,
-          p_created_at: createdAt,
+          p_performance_date: "2026-09-24",
         }),
       );
       expect(mocks.revalidatePath).toHaveBeenCalledWith(
@@ -550,7 +552,7 @@ describe("customer profile omission contract and isolated save", () => {
         expectedServiceUpdatedAt: "",
         expectedServiceName: "",
         serviceName: "",
-        dossierDateTime: "2026-09-25T14:30",
+        performanceDate: "2026-09-25",
       },
     },
   ])("rejects a null service response for $label", async ({ overrides }) => {
@@ -570,15 +572,18 @@ describe("customer profile omission contract and isolated save", () => {
     expect(mocks.revalidatePath).not.toHaveBeenCalled();
   });
 
-  it("passes an intentionally changed Paris dossier date to the RPC", async () => {
+  it("passes an intentionally changed business date without rewriting created_at", async () => {
     mocks.supabaseRest.mockResolvedValue(successfulResult());
 
     await expect(updateV2LeadDetails(validEdit({
-      dossierDateTime: "2026-09-25T14:30",
+      performanceDate: "2026-09-25",
     }))).rejects.toThrow("edit_updated=1");
 
-    expect(mocks.supabaseRest.mock.calls[0][2].p_created_at)
-      .toBe("2026-09-25T12:30:00.000Z");
+    const payload = mocks.supabaseRest.mock.calls[0][2];
+    expect(payload.p_performance_date).toBe("2026-09-25");
+    expect(payload.p_expected_performance_date).toBe("2026-09-24");
+    expect(payload.p_expected_created_at).toBe(createdAt);
+    expect(payload).not.toHaveProperty("p_created_at");
   });
 
   it.each(["invalid", "not_found", "conflict", "blocked"] as const)(
@@ -590,7 +595,7 @@ describe("customer profile omission contract and isolated save", () => {
         .rejects.toThrow(`edit_error=${status}`);
 
       expect(mocks.supabaseRest).toHaveBeenCalledExactlyOnceWith(
-        "rpc/update_v2_dossier_atomically", "POST", expect.anything(),
+        "rpc/update_v2_dossier_business_date", "POST", expect.anything(),
       );
       expect(mocks.revalidatePath).not.toHaveBeenCalled();
     },
