@@ -221,8 +221,8 @@ const servicePlaceLabel: Record<ServicePlace, string> = {
 };
 
 const stepLabels = [
-  "Véhicule",
   "Prestation",
+  "Véhicule",
   "Suppléments",
   "Photos",
   "Créneau",
@@ -781,12 +781,94 @@ export function QuoteConfigurator() {
             {step === 1 && (
               <AssistantStep
                 eyebrow="Étape 1 sur 6"
+                title="Quelle prestation recherchez-vous ?"
+                subtitle="Commencez par choisir le niveau de soin souhaité pour votre véhicule."
+              >
+                <div className="grid gap-3 lg:grid-cols-3">
+                  {services.map((service, index) => {
+                    const active = selectedService === service.id;
+                    const startingPrice = Math.min(
+                      ...vehicles.map((vehicle) => vehicle.prices[service.id]),
+                    );
+
+                    return (
+                      <div
+                        key={service.id}
+                        className={`auto9-card-enter group overflow-hidden rounded-2xl border transition duration-300 hover:-translate-y-1 ${
+                          active
+                            ? "border-[#0057FF] bg-[#0057FF]/10 shadow-[0_0_38px_rgba(0,87,255,.16)]"
+                            : "border-white/10 bg-black/25 hover:border-[#0057FF]/40 hover:bg-[#0057FF]/5"
+                        }`}
+                        style={{
+                          animationDelay: `${index * 80}ms`,
+                        }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => handleServiceChange(service.id)}
+                          className="relative w-full p-4 text-left lg:p-6"
+                        >
+                          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(0,87,255,.13),transparent_50%)] opacity-0 transition duration-500 group-hover:opacity-100" />
+
+                          <div className="relative flex items-start justify-between gap-3">
+                            <div>
+                              <span className="rounded-full border border-white/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-[#7DB7FF] lg:text-xs">
+                                {service.tag}
+                              </span>
+
+                              <h3 className="mt-3 text-xl font-black uppercase tracking-[-0.04em] lg:text-3xl">
+                                {service.name}
+                              </h3>
+                            </div>
+
+                            <div className="relative isolate rounded-xl border border-[#2F7BFF]/30 bg-[#0057FF]/10 px-3 py-2 shadow-[0_0_18px_rgba(0,87,255,.22)]">
+                              <span className="pointer-events-none absolute inset-1 -z-10 rounded-lg bg-[#0057FF]/20 blur-lg" />
+
+                              <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#7DB7FF]">
+                                Dès
+                              </p>
+                              <p className="text-2xl font-black text-white drop-shadow-[0_0_10px_rgba(125,183,255,.90)] lg:text-4xl">
+                                {startingPrice}€
+                              </p>
+                            </div>
+                          </div>
+
+                          <p className="relative mt-3 text-sm leading-relaxed text-white/55 lg:text-lg">
+                            {service.description}
+                          </p>
+                        </button>
+
+                        <details className="border-t border-white/10 px-4 py-3 text-xs text-white/55 lg:px-6 lg:py-4 lg:text-base">
+                          <summary className="cursor-pointer select-none font-black uppercase tracking-[0.12em] text-white/70 transition hover:text-[#7DB7FF]">
+                            Voir ce qui est inclus
+                          </summary>
+
+                          <div className="mt-3 space-y-2">
+                            {service.operations.map((operation) => (
+                              <p key={operation}>
+                                <span className="text-[#7DB7FF]">✓</span>{" "}
+                                {operation}
+                              </p>
+                            ))}
+                          </div>
+                        </details>
+                      </div>
+                    );
+                  })}
+                </div>
+              </AssistantStep>
+            )}
+
+            {step === 2 && (
+              <AssistantStep
+                eyebrow="Étape 2 sur 6"
                 title="Quel véhicule souhaitez-vous nous confier ?"
-                subtitle="Choisissez le gabarit le plus proche de votre véhicule."
+                subtitle={`${currentService.name} sélectionnée — choisissez le gabarit le plus proche de votre véhicule.`}
               >
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   {vehicles.map((vehicle, index) => {
                     const active = selectedVehicle === vehicle.id;
+                    const price = vehicle.prices[selectedService];
 
                     return (
                       <button
@@ -794,7 +876,6 @@ export function QuoteConfigurator() {
                         type="button"
                         onClick={() => {
                           setSelectedVehicle(vehicle.id);
-
                         }}
                         className={`auto9-card-enter group relative overflow-hidden rounded-2xl border p-3 text-left transition duration-300 hover:-translate-y-1 lg:p-6 ${
                           active
@@ -832,87 +913,11 @@ export function QuoteConfigurator() {
                             </div>
 
                             <p className="mt-1 text-xs text-white/45 lg:text-lg">
-                              Dès {vehicle.prices.interieur}€
+                              {price}€ · {currentService.name}
                             </p>
                           </div>
                         </div>
                       </button>
-                    );
-                  })}
-                </div>
-              </AssistantStep>
-            )}
-
-            {step === 2 && (
-              <AssistantStep
-                eyebrow="Étape 2 sur 6"
-                title="Quelle prestation recherchez-vous ?"
-                subtitle={`${currentVehicle.name} sélectionnée — choisissez le niveau de soin.`}
-              >
-                <div className="grid gap-3 lg:grid-cols-3">
-                  {services.map((service, index) => {
-                    const active = selectedService === service.id;
-                    const price = currentVehicle.prices[service.id];
-
-                    return (
-                      <div
-                        key={service.id}
-                        className={`auto9-card-enter group overflow-hidden rounded-2xl border transition duration-300 hover:-translate-y-1 ${
-                          active
-                            ? "border-[#0057FF] bg-[#0057FF]/10 shadow-[0_0_38px_rgba(0,87,255,.16)]"
-                            : "border-white/10 bg-black/25 hover:border-[#0057FF]/40 hover:bg-[#0057FF]/5"
-                        }`}
-                        style={{
-                          animationDelay: `${index * 80}ms`,
-                        }}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => handleServiceChange(service.id)}
-                          className="relative w-full p-4 text-left lg:p-6"
-                        >
-                          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(0,87,255,.13),transparent_50%)] opacity-0 transition duration-500 group-hover:opacity-100" />
-
-                          <div className="relative flex items-start justify-between gap-3">
-                            <div>
-                              <span className="rounded-full border border-white/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-[#7DB7FF] lg:text-xs">
-                                {service.tag}
-                              </span>
-
-                              <h3 className="mt-3 text-xl font-black uppercase tracking-[-0.04em] lg:text-3xl">
-                                {service.name}
-                              </h3>
-                            </div>
-
-                            <div className="relative isolate rounded-xl border border-[#2F7BFF]/30 bg-[#0057FF]/10 px-3 py-2 shadow-[0_0_18px_rgba(0,87,255,.22)]">
-                              <span className="pointer-events-none absolute inset-1 -z-10 rounded-lg bg-[#0057FF]/20 blur-lg" />
-
-                              <p className="text-2xl font-black text-white drop-shadow-[0_0_10px_rgba(125,183,255,.90)] lg:text-4xl">
-                                {price}€
-                              </p>
-                            </div>
-                          </div>
-
-                          <p className="relative mt-3 text-sm leading-relaxed text-white/55 lg:text-lg">
-                            {service.description}
-                          </p>
-                        </button>
-
-                        <details className="border-t border-white/10 px-4 py-3 text-xs text-white/55 lg:px-6 lg:py-4 lg:text-base">
-                          <summary className="cursor-pointer select-none font-black uppercase tracking-[0.12em] text-white/70 transition hover:text-[#7DB7FF]">
-                            Voir ce qui est inclus
-                          </summary>
-
-                          <div className="mt-3 space-y-2">
-                            {service.operations.map((operation) => (
-                              <p key={operation}>
-                                <span className="text-[#7DB7FF]">✓</span>{" "}
-                                {operation}
-                              </p>
-                            ))}
-                          </div>
-                        </details>
-                      </div>
                     );
                   })}
                 </div>
