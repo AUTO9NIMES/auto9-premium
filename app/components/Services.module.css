@@ -729,3 +729,229 @@
     transition: none;
   }
 }
+
+
+/* Fixed services layout: replaces the former carousel while preserving card visuals. */
+.section {
+  min-height: auto;
+  padding-bottom: 76px;
+}
+
+.heading {
+  margin-bottom: 34px;
+}
+
+.fixedStage {
+  position: relative;
+  z-index: 2;
+  width: min(1400px, calc(100vw - 36px));
+  margin: 0 auto;
+}
+
+.primaryGrid,
+.secondaryGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+  align-items: stretch;
+}
+
+.fixedCard {
+  position: relative;
+  top: auto;
+  left: auto;
+  width: 100%;
+  height: 628px;
+  transform: none !important;
+  opacity: 1 !important;
+  filter: none !important;
+  cursor: default;
+  will-change: auto;
+}
+
+.fixedCard.active {
+  border-color: rgba(135, 203, 255, .27);
+  box-shadow:
+    0 30px 85px rgba(0,0,0,.58),
+    inset 0 1px 0 rgba(255,255,255,.025);
+}
+
+.fixedCard.active::after {
+  display: none;
+}
+
+.fixedCard.popular {
+  border-color: #53baff;
+  transform: translateY(-8px) !important;
+  box-shadow:
+    0 34px 96px rgba(0,0,0,.66),
+    0 0 0 1px rgba(93,190,255,.34),
+    0 0 46px rgba(0,138,255,.28),
+    inset 0 0 44px rgba(24,145,255,.06);
+}
+
+.fixedCard.popular::after {
+  display: block;
+}
+
+.popularBadge {
+  position: absolute;
+  z-index: 12;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 7px 13px;
+  border: 1px solid rgba(94, 196, 255, .7);
+  border-radius: 999px;
+  background: rgba(6, 37, 62, .88);
+  color: #a9dcff;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow:
+    0 0 24px rgba(20, 151, 255, .25),
+    inset 0 0 18px rgba(40, 158, 255, .10);
+  backdrop-filter: blur(10px);
+}
+
+.popular .badge {
+  top: 52px;
+}
+
+.secondaryBlock {
+  margin-top: 66px;
+}
+
+.secondaryEyebrow {
+  margin: 0 0 7px;
+  color: #76a9dc;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .35em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.secondaryTitle {
+  margin: 0 0 28px;
+  color: #fff;
+  font-size: clamp(25px, 3vw, 38px);
+  font-weight: 850;
+  letter-spacing: -.035em;
+  text-align: center;
+}
+
+.secondaryGrid .fixedCard {
+  height: 590px;
+}
+
+@media (max-width: 1180px) and (min-width: 901px) {
+  .fixedStage {
+    width: min(1120px, calc(100vw - 28px));
+  }
+
+  .primaryGrid,
+  .secondaryGrid {
+    gap: 14px;
+  }
+
+  .fixedCard {
+    height: 590px;
+  }
+
+  .fixedCard .mediaTitle h3 {
+    font-size: 36px;
+  }
+
+  .fixedCard[data-service="duo"] .mediaTitle h3,
+  .fixedCard[data-service="jantes"] .mediaTitle h3 {
+    font-size: 31px;
+  }
+
+  .fixedCard .priceValue {
+    font-size: 48px;
+  }
+
+  .fixedCard .feature {
+    grid-template-columns: 20px minmax(0, 1fr);
+    gap: 5px;
+    padding: 6px;
+  }
+
+  .fixedCard .featureIcon,
+  .fixedCard .featureIcon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .fixedCard .feature > span:last-child {
+    font-size: 8px;
+  }
+}
+
+@media (max-width: 900px) {
+  .section {
+    min-height: auto;
+    padding: 38px 14px 54px;
+  }
+
+  .heading {
+    margin-bottom: 25px;
+    padding: 0 4px;
+  }
+
+  .fixedStage {
+    width: 100%;
+  }
+
+  .primaryGrid,
+  .secondaryGrid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .primaryGrid .fixedCard[data-service="duo"] { order: 1; }
+  .primaryGrid .fixedCard[data-service="interieur"] { order: 2; }
+  .primaryGrid .fixedCard[data-service="exterieur"] { order: 3; }
+
+  .fixedCard,
+  .secondaryGrid .fixedCard {
+    width: min(100%, 370px);
+    height: 535px;
+    margin: 0 auto;
+  }
+
+  .fixedCard.popular {
+    transform: none !important;
+    margin-top: 4px;
+  }
+
+  .popularBadge {
+    top: 11px;
+    padding: 6px 11px;
+    font-size: 8px;
+    letter-spacing: .13em;
+  }
+
+  .popular .badge {
+    top: 45px;
+  }
+
+  .secondaryBlock {
+    margin-top: 50px;
+  }
+
+  .secondaryTitle {
+    margin-bottom: 22px;
+  }
+}
+
+@media (max-width: 480px) {
+  .fixedCard,
+  .secondaryGrid .fixedCard {
+    width: min(100%, 345px);
+    height: 510px;
+  }
+}

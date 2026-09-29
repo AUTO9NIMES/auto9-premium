@@ -126,13 +126,6 @@ const services = [
   features: ReadonlyArray<{ label: string; icon: IconName }>;
 }>;
 
-function wrappedDistance(index: number, active: number, length: number) {
-  let distance = index - active;
-  if (distance > length / 2) distance -= length;
-  if (distance < -length / 2) distance += length;
-  return distance;
-}
-
 function FeatureIcon({ name }: { name: IconName }) {
   const common = {
     viewBox: "0 0 24 24",
@@ -176,14 +169,22 @@ function FeatureIcon({ name }: { name: IconName }) {
 
 export function Services() {
   const router = useRouter();
-  const [active, setActive] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const [nearby, setNearby] = useState(false);
   const [visible, setVisible] = useState(false);
-  const [playing, setPlaying] = useState<number | null>(null);
+  const [playing, setPlaying] = useState<string[]>([]);
   const stage = useRef<HTMLDivElement>(null);
-  const videos = useRef<(HTMLVideoElement | null)[]>([]);
-  const pointerStart = useRef<number | null>(null);
+  const videos = useRef<Record<string, HTMLVideoElement | null>>({});
+
+  const primaryServices = [
+    services.find((service) => service.id === "exterieur")!,
+    services.find((service) => service.id === "duo")!,
+    services.find((service) => service.id === "interieur")!,
+  ];
+
+  const complementaryServices = services.filter(
+    (service) => !["duo", "interieur", "exterieur"].includes(service.id),
+  );
 
   useEffect(() => {
     const update = () => setIsMobile(window.innerWidth <= 900);
@@ -199,235 +200,197 @@ export function Services() {
   useEffect(() => {
     const element = stage.current;
     if (!element) return;
-    const warmup = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) {
-        setNearby(true);
-        warmup.disconnect();
-      }
-    }, { rootMargin: "400px 0px" });
-    const playback = new IntersectionObserver(([entry]) => {
-      setVisible(entry.isIntersecting && entry.intersectionRatio >= 0.15);
-    }, { threshold: [0, 0.15] });
+
+    const warmup = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setNearby(true);
+          warmup.disconnect();
+        }
+      },
+      { rootMargin: "400px 0px" },
+    );
+
+    const playback = new IntersectionObserver(
+      ([entry]) => {
+        setVisible(entry.isIntersecting && entry.intersectionRatio >= 0.08);
+      },
+      { threshold: [0, 0.08] },
+    );
+
     warmup.observe(element);
     playback.observe(element);
-    return () => { warmup.disconnect(); playback.disconnect(); };
+
+    return () => {
+      warmup.disconnect();
+      playback.disconnect();
+    };
   }, []);
 
   useEffect(() => {
-    const video = videos.current[active];
-    if (!video) return;
     const syncPlayback = () => {
-      videos.current.forEach((other, index) => {
-        if (index !== active) other?.pause();
-      });
-      if (!nearby || !visible || document.hidden) {
-        video.pause();
-        return;
-      }
-      video.muted = true;
-      video.defaultMuted = true;
-      video.playsInline = true;
-      // Retry when ready/visible or following a gesture; keep the poster on refusal.
-      void video.play().catch(() => undefined);
-    };
-    syncPlayback();
-    video.addEventListener("canplay", syncPlayback);
-    document.addEventListener("visibilitychange", syncPlayback);
-    document.addEventListener("pointerup", syncPlayback, { passive: true });
-    window.addEventListener("pageshow", syncPlayback);
-    return () => {
-      video.removeEventListener("canplay", syncPlayback);
-      document.removeEventListener("visibilitychange", syncPlayback);
-      document.removeEventListener("pointerup", syncPlayback);
-      window.removeEventListener("pageshow", syncPlayback);
-      video.pause();
-    };
-  }, [active, nearby, visible]);
+      Object.entries(videos.current).forEach(([id, video]) => {
+        if (!video) return;
 
-  const move = (delta: number) => {
-    setActive((current) => (current + delta + services.length) % services.length);
-  };
+        if (!nearby || !visible || document.hidden) {
+          video.pause();
+          return;
+        }
+
+        video.muted = true;
+        video.defaultMuted = true;
+        video.playsInline = true;
+
+        void video.play().catch(() => undefined);
+      });
+    };
+
+    syncPlayback();
+    document.addEventListener("visibilitychange", syncPlayback);
+    window.addEventListener("pageshow", syncPlayback);
+
+    return () => {
+      document.removeEventListener("visibilitychange", syncPlayback);
+      window.removeEventListener("pageshow", syncPlayback);
+      Object.values(videos.current).forEach((video) => video?.pause());
+    };
+  }, [nearby, visible]);
 
   const openService = (href: string) => {
     startTransition(() => router.push(href));
   };
 
-  const playActiveVideo = (index: number) => {
-    if (index !== active) {
-      setActive(index);
-      return;
-    }
-    const video = videos.current[index];
+  const playVideo = (id: string) => {
+    const video = videos.current[id];
     if (!video) return;
     video.muted = true;
     void video.play().catch(() => undefined);
   };
+
+  const renderCard = (
+    service: (typeof services)[number],
+    priority = false,
+  ) => (
+    <article
+      key={service.id}
+      data-service={service.id}
+      className={`${styles.card} ${styles.active} ${styles.fixedCard} ${priority ? styles.popular : ""}`}
+    >
+      {priority && (
+        <div className={styles.popularBadge}>Offre la plus populaire</div>
+      )}
+
+      <div className={styles.media}>
+        <video
+          ref={(node) => {
+            videos.current[service.id] = node;
+          }}
+          className={styles.video}
+          src={
+            nearby
+              ? isMobile
+                ? `/media/services-mobile-v1/${service.id}.mp4`
+                : service.video
+              : undefined
+          }
+          poster={service.poster}
+          autoPlay={visible}
+          muted
+          loop
+          playsInline
+          preload={nearby ? "metadata" : "none"}
+          onCanPlay={(event) => {
+            if (!visible || document.hidden) return;
+            event.currentTarget.muted = true;
+            void event.currentTarget.play().catch(() => undefined);
+          }}
+          onPlaying={() =>
+            setPlaying((current) =>
+              current.includes(service.id) ? current : [...current, service.id],
+            )
+          }
+          onPause={() =>
+            setPlaying((current) => current.filter((id) => id !== service.id))
+          }
+        />
+
+        <div className={styles.mediaShade} />
+        <div className={styles.badge}>{service.eyebrow}</div>
+
+        {!playing.includes(service.id) && (
+          <button
+            type="button"
+            className={styles.playButton}
+            aria-label={`Lire la vidéo ${service.name}`}
+            onClick={(event) => {
+              event.stopPropagation();
+              playVideo(service.id);
+            }}
+          >
+            <span aria-hidden="true">▶</span>
+          </button>
+        )}
+
+        <div className={styles.duration}>{service.duration}</div>
+
+        <div className={styles.mediaTitle}>
+          <h3>{service.name}</h3>
+        </div>
+      </div>
+
+      <div className={styles.cardContent}>
+        <div className={styles.priceBlock}>
+          <span className={styles.priceLabel}>{service.priceLabel}</span>
+          <div className={styles.priceRow}>
+            <strong className={styles.priceValue}>{service.price}</strong>
+            <span className={styles.priceLine} aria-hidden="true" />
+          </div>
+        </div>
+
+        <div className={styles.features}>
+          {service.features.map((feature) => (
+            <div className={styles.feature} key={feature.label}>
+              <span className={styles.featureIcon}>
+                <FeatureIcon name={feature.icon} />
+              </span>
+              <span>{feature.label}</span>
+            </div>
+          ))}
+        </div>
+
+        <button
+          type="button"
+          className={styles.action}
+          onClick={() => openService(service.href)}
+        >
+          Découvrir <span aria-hidden="true">→</span>
+        </button>
+      </div>
+    </article>
+  );
 
   return (
     <section id="services" className={styles.section} aria-labelledby="services-title">
       <div className={styles.heading} data-motion-reveal>
         <p className={styles.eyebrow}>AUTO 9</p>
         <h2 id="services-title">Nos prestations</h2>
-        <p>Faites glisser pour découvrir nos services.</p>
+        <p>Choisissez la formule adaptée à votre véhicule.</p>
       </div>
 
-      <div
-        ref={stage}
-        className={styles.stage}
-        onPointerDown={(event) => {
-          if ((event.target as HTMLElement).closest("button")) return;
-          pointerStart.current = event.clientX;
-          event.currentTarget.setPointerCapture?.(event.pointerId);
-        }}
-        onPointerUp={(event) => {
-          if ((event.target as HTMLElement).closest("button")) return;
-          if (pointerStart.current === null) return;
-          const delta = event.clientX - pointerStart.current;
-          pointerStart.current = null;
-          if (Math.abs(delta) > 42) move(delta < 0 ? 1 : -1);
-        }}
-        onPointerCancel={() => {
-          pointerStart.current = null;
-        }}
-      >
-        <button
-          type="button"
-          className={`${styles.arrow} ${styles.prev}`}
-          onPointerDown={(event) => event.stopPropagation()}
-          onPointerUp={(event) => event.stopPropagation()}
-          onClick={(event) => { event.stopPropagation(); move(-1); }}
-          aria-label="Prestation précédente"
-        >‹</button>
-
-        <div className={styles.deck}>
-          {services.map((service, index) => {
-            const distance = wrappedDistance(index, active, services.length);
-            const abs = Math.abs(distance);
-            const x = distance === 0 ? 0 : distance * (isMobile ? 116 : abs === 1 ? 330 : 545);
-            const z = distance === 0 ? 90 : abs === 1 ? -55 : -150;
-            const rotate = distance * (isMobile ? -12 : -18);
-            const scale = distance === 0 ? 1 : abs === 1 ? (isMobile ? 0.84 : 0.81) : 0.69;
-            const opacity = distance === 0 ? 1 : abs === 1 ? (isMobile ? 0.55 : 0.7) : isMobile ? 0.06 : 0.3;
-
-            return (
-              <article
-                key={service.id}
-                data-service={service.id}
-                className={`${styles.card} ${distance === 0 ? styles.active : ""}`}
-                style={{
-                  transform: `translate(-50%, -50%) translateX(${x}px) translateZ(${z}px) rotateY(${rotate}deg) scale(${scale})`,
-                  opacity,
-                  zIndex: 100 - abs,
-                  pointerEvents: abs <= 2 ? "auto" : "none",
-                }}
-                onClick={() => {
-                  if (index !== active) setActive(index);
-                }}
-              >
-                <div className={styles.media}>
-                  <video
-                    ref={(node) => {
-                      videos.current[index] = node;
-                    }}
-                    className={styles.video}
-                    src={nearby && abs <= 1 ? (isMobile ? `/media/services-mobile-v1/${service.id}.mp4` : service.video) : undefined}
-                    poster={service.poster}
-                    autoPlay={index === active && visible}
-                    muted
-                    loop
-                    playsInline
-                    preload={nearby && index === active ? "auto" : nearby && abs === 1 ? "metadata" : "none"}
-                    onPlaying={(event) => {
-                      if (index !== active || !visible || document.hidden) {
-                        event.currentTarget.pause();
-                        return;
-                      }
-                      setPlaying(index);
-                    }}
-                    onPause={() => setPlaying((current) => current === index ? null : current)}
-                  />
-                  <div className={styles.mediaShade} />
-
-                  <div className={styles.badge}>{service.eyebrow}</div>
-
-                  {playing !== index && <button
-                    type="button"
-                    className={styles.playButton}
-                    aria-label={`Lire la vidéo ${service.name}`}
-                    onPointerDown={(event) => event.stopPropagation()}
-                    onPointerUp={(event) => event.stopPropagation()}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      playActiveVideo(index);
-                    }}
-                  >
-                    <span aria-hidden="true">▶</span>
-                  </button>}
-
-                  <div className={styles.duration}>{service.duration}</div>
-
-                  <div className={styles.mediaTitle}>
-                    <h3>{service.name}</h3>
-                  </div>
-                </div>
-
-                <div className={styles.cardContent}>
-                  <div className={styles.priceBlock}>
-                    <span className={styles.priceLabel}>{service.priceLabel}</span>
-                    <div className={styles.priceRow}>
-                      <strong className={styles.priceValue}>{service.price}</strong>
-                      <span className={styles.priceLine} aria-hidden="true" />
-                    </div>
-                  </div>
-
-                  <div className={styles.features}>
-                    {service.features.map((feature) => (
-                      <div className={styles.feature} key={feature.label}>
-                        <span className={styles.featureIcon}><FeatureIcon name={feature.icon} /></span>
-                        <span>{feature.label}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <button
-                    type="button"
-                    className={styles.action}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      openService(service.href);
-                    }}
-                  >
-                    Découvrir <span aria-hidden="true">→</span>
-                  </button>
-                </div>
-              </article>
-            );
-          })}
+      <div ref={stage} className={styles.fixedStage}>
+        <div className={styles.primaryGrid}>
+          {primaryServices.map((service) =>
+            renderCard(service, service.id === "duo"),
+          )}
         </div>
 
-        <button
-          type="button"
-          className={`${styles.arrow} ${styles.next}`}
-          onPointerDown={(event) => event.stopPropagation()}
-          onPointerUp={(event) => event.stopPropagation()}
-          onClick={(event) => { event.stopPropagation(); move(1); }}
-          aria-label="Prestation suivante"
-        >›</button>
-      </div>
+        <div className={styles.secondaryBlock}>
+          <p className={styles.secondaryEyebrow}>Pour aller plus loin</p>
+          <h3 className={styles.secondaryTitle}>Prestations complémentaires</h3>
 
-      <div className={styles.controls}>
-        <div className={styles.hint}><span>←</span><span className={styles.dragIcon}>☝</span><span>Glissez ou utilisez les flèches</span><span>→</span></div>
-        <div className={styles.dots} aria-label="Navigation des prestations">
-          {services.map((service, index) => (
-            <button
-              key={service.id}
-              type="button"
-              className={`${styles.dot} ${index === active ? styles.dotActive : ""}`}
-              onClick={() => setActive(index)}
-              aria-label={`Voir ${service.name}`}
-              aria-pressed={index === active}
-            />
-          ))}
+          <div className={styles.secondaryGrid}>
+            {complementaryServices.map((service) => renderCard(service))}
+          </div>
         </div>
       </div>
     </section>
