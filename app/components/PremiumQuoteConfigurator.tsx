@@ -161,6 +161,10 @@ export function PremiumQuoteConfigurator() {
     setMainPhotoIndex(0);
   }
 
+  if (initialPresta === "phares") {
+    return <HeadlightBooking />;
+  }
+
   return (
     <section className="relative overflow-hidden px-6 py-16 md:px-12 md:py-24">
       <div className="absolute left-1/2 top-20 h-96 w-96 -translate-x-1/2 rounded-full bg-[#3F7D9F]/10 blur-[120px]" />
@@ -550,6 +554,201 @@ export function PremiumQuoteConfigurator() {
         </div>
       </div>
     </section>
+  );
+}
+
+function HeadlightBooking() {
+  const [optics, setOptics] = useState<1 | 2>(2);
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [city, setCity] = useState("Nîmes");
+  const [vehicle, setVehicle] = useState("");
+
+  const price = optics === 2 ? 69 : 40;
+
+  const message = [
+    "Bonjour AUTO 9, je souhaite réserver une rénovation d’optiques.",
+    "",
+    `Nombre d’optiques : ${optics}`,
+    `Tarif : ${price}€`,
+    name.trim() ? `Nom : ${name.trim()}` : "",
+    phone.trim() ? `Téléphone : ${phone.trim()}` : "",
+    city.trim() ? `Ville : ${city.trim()}` : "",
+    vehicle.trim() ? `Véhicule : ${vehicle.trim()}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const whatsappLink = `${site.whatsapp}?text=${encodeURIComponent(message)}`;
+
+  return (
+    <section className="relative overflow-hidden px-4 py-10 sm:px-6 md:px-12 md:py-16">
+      <div className="absolute left-1/2 top-16 h-80 w-80 -translate-x-1/2 rounded-full bg-[#0057FF]/10 blur-[120px]" />
+
+      <div className="relative mx-auto max-w-3xl">
+        <p className="text-xs font-black uppercase tracking-[0.42em] text-[#4D8DFF]">
+          Réservation
+        </p>
+
+        <h1 className="mt-4 text-4xl font-black uppercase tracking-[-0.06em] sm:text-5xl md:text-6xl">
+          Rénovation <span className="text-[#4D8DFF]">optiques</span>
+        </h1>
+
+        <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/58">
+          Redonnez de la clarté à vos phares. Choisissez 1 ou 2 optiques,
+          puis envoyez votre demande en quelques secondes.
+        </p>
+
+        <div className="mt-8 grid grid-cols-2 gap-3">
+          <div className="relative overflow-hidden rounded-[1.5rem] border border-white/10 bg-black">
+            <img
+              src="/phares/renault-avant.jpg"
+              alt="Phare avant rénovation AUTO 9"
+              className="aspect-[4/5] h-full w-full object-cover"
+            />
+            <span className="absolute left-3 top-3 rounded-full border border-white/15 bg-black/70 px-4 py-2 text-[10px] font-black uppercase tracking-[0.22em] text-white">
+              Avant
+            </span>
+          </div>
+
+          <div className="relative overflow-hidden rounded-[1.5rem] border border-[#0057FF]/35 bg-black shadow-[0_0_35px_rgba(0,87,255,.15)]">
+            <img
+              src="/phares/renault-apres.jpg"
+              alt="Phare après rénovation AUTO 9"
+              className="aspect-[4/5] h-full w-full object-cover"
+            />
+            <span className="absolute left-3 top-3 rounded-full bg-[#0057FF] px-4 py-2 text-[10px] font-black uppercase tracking-[0.22em] text-white shadow-[0_0_20px_rgba(0,87,255,.45)]">
+              Après
+            </span>
+          </div>
+        </div>
+
+        <div className="mt-5 rounded-[1.5rem] border border-[#2F7BFF]/35 bg-[#0057FF]/10 p-5 shadow-[0_0_38px_rgba(0,87,255,.12)]">
+          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#8CB8FF]">
+            Votre tarif
+          </p>
+          <div className="mt-2 flex items-end justify-between gap-4">
+            <div>
+              <p className="text-sm font-black uppercase tracking-[0.14em] text-white/80">
+                {optics === 2 ? "Rénovation des 2 optiques" : "Rénovation d’1 optique"}
+              </p>
+              <p className="mt-1 text-xs text-white/45">
+                Ponçage, polissage et finition
+              </p>
+            </div>
+            <p className="text-5xl font-black tracking-[-0.07em] text-[#4D8DFF]">
+              {price}€
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-7">
+          <p className="text-xs font-black uppercase tracking-[0.3em] text-white/55">
+            Nombre d’optiques à rénover
+          </p>
+
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setOptics(1)}
+              className={`rounded-[1.35rem] border px-4 py-5 text-center transition ${optics === 1
+                ? "border-[#2F7BFF] bg-[#0057FF] shadow-[0_0_28px_rgba(0,87,255,.25)]"
+                : "border-white/12 bg-white/[0.03] hover:border-white/25"
+              }`}
+            >
+              <span className="block text-base font-black">1 optique</span>
+              <span className="mt-1 block text-sm text-white/65">40€</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setOptics(2)}
+              className={`rounded-[1.35rem] border px-4 py-5 text-center transition ${optics === 2
+                ? "border-[#2F7BFF] bg-[#0057FF] shadow-[0_0_28px_rgba(0,87,255,.25)]"
+                : "border-white/12 bg-white/[0.03] hover:border-white/25"
+              }`}
+            >
+              <span className="block text-base font-black">2 optiques</span>
+              <span className="mt-1 block text-sm text-white/75">69€</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-8 space-y-5">
+          <Field
+            label="Nom *"
+            value={name}
+            onChange={setName}
+            placeholder="Votre nom"
+          />
+          <Field
+            label="Téléphone *"
+            value={phone}
+            onChange={setPhone}
+            placeholder="06..."
+            inputMode="tel"
+          />
+          <Field
+            label="Ville"
+            value={city}
+            onChange={setCity}
+            placeholder="Nîmes..."
+          />
+          <Field
+            label="Véhicule *"
+            value={vehicle}
+            onChange={setVehicle}
+            placeholder="Ex. Audi A3"
+          />
+        </div>
+
+        <a
+          href={whatsappLink}
+          target="_blank"
+          rel="noreferrer"
+          className={`mt-8 flex w-full items-center justify-center rounded-full px-6 py-5 text-center text-sm font-black uppercase tracking-[0.2em] transition ${name.trim() && phone.trim() && vehicle.trim()
+            ? "bg-[#0057FF] text-white shadow-[0_18px_45px_rgba(0,87,255,.28)] hover:scale-[1.01]"
+            : "pointer-events-none bg-white/10 text-white/30"
+          }`}
+        >
+          Envoyer ma demande · {price}€ →
+        </a>
+
+        <p className="mt-4 text-center text-xs leading-relaxed text-white/35">
+          Le tarif affiché correspond au nombre d’optiques sélectionné.
+          AUTO 9 vous confirme ensuite le créneau.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function Field({
+  label,
+  value,
+  onChange,
+  placeholder,
+  inputMode,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  inputMode?: "text" | "tel";
+}) {
+  return (
+    <label className="block">
+      <span className="text-xs font-black uppercase tracking-[0.3em] text-white/55">
+        {label}
+      </span>
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        inputMode={inputMode}
+        className="mt-3 w-full rounded-[1.35rem] border border-white/12 bg-white/[0.04] px-5 py-5 text-base text-white outline-none transition placeholder:text-white/25 focus:border-[#2F7BFF]/70 focus:bg-[#0057FF]/5"
+      />
+    </label>
   );
 }
 
