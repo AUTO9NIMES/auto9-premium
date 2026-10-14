@@ -171,7 +171,14 @@ export function Services() {
   const router = useRouter();
   const [isMobile, setIsMobile] = useState(false);
   const [nearby, setNearby] = useState(false);
-  const [visible, setVisible] = useState(false);
+  const [canHover, setCanHover] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(true);
+  const [hovered, setHovered] = useState<string | null>(null);
+  const [focused, setFocused] = useState<string | null>(null);
+  const [centered, setCentered] = useState<string | null>(null);
+  const cards = useRef<Record<string, HTMLElement | null>>({});
+  const requested = !reducedMotion ? (canHover ? hovered ?? focused : centered) : null;
+  const requestedRef = useRef<string | null>(null);
   const [playing, setPlaying] = useState<string[]>([]);
   const stage = useRef<HTMLDivElement>(null);
   const videos = useRef<Record<string, HTMLVideoElement | null>>({});
@@ -187,10 +194,22 @@ export function Services() {
   );
 
   useEffect(() => {
-    const update = () => setIsMobile(window.innerWidth <= 900);
+    const hover = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => {
+      setIsMobile(window.innerWidth <= 900);
+      setCanHover(hover.matches);
+      setReducedMotion(motion.matches);
+    };
+    hover.addEventListener("change", update);
+    motion.addEventListener("change", update);
     update();
     window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
+    return () => {
+      window.removeEventListener("resize", update);
+      hover.removeEventListener("change", update);
+      motion.removeEventListener("change", update);
+    };
   }, []);
 
   useEffect(() => {
@@ -211,60 +230,76 @@ export function Services() {
       { rootMargin: "400px 0px" },
     );
 
-    const playback = new IntersectionObserver(
-      ([entry]) => {
-        setVisible(entry.isIntersecting && entry.intersectionRatio >= 0.08);
-      },
-      { threshold: [0, 0.08] },
-    );
-
     warmup.observe(element);
-    playback.observe(element);
-
-    return () => {
-      warmup.disconnect();
-      playback.disconnect();
-    };
+    return () => warmup.disconnect();
   }, []);
 
   useEffect(() => {
+    if (canHover || reducedMotion) return;
+    let frame = 0;
+    const measure = () => {
+      frame = 0;
+      const height = window.innerHeight;
+      let winner: string | null = null;
+      let closest = Infinity;
+      Object.entries(cards.current).forEach(([id, card]) => {
+        if (!card) return;
+        const rect = card.getBoundingClientRect();
+        const distance = Math.abs(rect.top + rect.height / 2 - height / 2);
+        const visibleHeight = Math.min(rect.bottom, height) - Math.max(rect.top, 0);
+        if (rect.right > 0 && rect.left < window.innerWidth &&
+            visibleHeight >= Math.min(rect.height, height) * 0.5 &&
+            distance < height * 0.3 && distance < closest) {
+          winner = id;
+          closest = distance;
+        }
+      });
+      setCentered(winner);
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(measure);
+    };
+    measure();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    const resize = new ResizeObserver(schedule);
+    if (stage.current) resize.observe(stage.current);
+    return () => {
+      cancelAnimationFrame(frame);
+      resize.disconnect();
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+    };
+  }, [canHover, reducedMotion]);
+
+  useEffect(() => {
+    requestedRef.current = requested;
     const syncPlayback = () => {
       Object.entries(videos.current).forEach(([id, video]) => {
         if (!video) return;
-
-        if (!nearby || !visible || document.hidden) {
+        if (!nearby || id !== requested || document.hidden) {
           video.pause();
           return;
         }
-
         video.muted = true;
         video.defaultMuted = true;
         video.playsInline = true;
-
         void video.play().catch(() => undefined);
       });
     };
-
     syncPlayback();
     document.addEventListener("visibilitychange", syncPlayback);
     window.addEventListener("pageshow", syncPlayback);
-
     return () => {
+      requestedRef.current = null;
       document.removeEventListener("visibilitychange", syncPlayback);
       window.removeEventListener("pageshow", syncPlayback);
       Object.values(videos.current).forEach((video) => video?.pause());
     };
-  }, [nearby, visible]);
+  }, [nearby, requested, isMobile]);
 
   const openService = (href: string) => {
     startTransition(() => router.push(href));
-  };
-
-  const playVideo = (id: string) => {
-    const video = videos.current[id];
-    if (!video) return;
-    video.muted = true;
-    void video.play().catch(() => undefined);
   };
 
   const renderCard = (
@@ -274,6 +309,15 @@ export function Services() {
     <article
       key={service.id}
       data-service={service.id}
+      ref={(node) => { cards.current[service.id] = node; }}
+      onPointerEnter={(event) => {
+        if (event.pointerType !== "touch") setHovered(service.id);
+      }}
+      onPointerLeave={() => setHovered((id) => id === service.id ? null : id)}
+      onFocus={() => setFocused(service.id)}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(null);
+      }}
       className={`${styles.card} ${styles.active} ${styles.fixedCard} ${priority ? styles.popular : ""}`}
     >
       {priority && (
@@ -294,42 +338,43 @@ export function Services() {
               : undefined
           }
           poster={service.poster}
-          autoPlay={visible}
           muted
           loop
           playsInline
           preload={nearby ? "metadata" : "none"}
           onCanPlay={(event) => {
-            if (!visible || document.hidden) return;
+            if (requestedRef.current !== service.id || document.hidden) return;
             event.currentTarget.muted = true;
             void event.currentTarget.play().catch(() => undefined);
           }}
-          onPlaying={() =>
-            setPlaying((current) =>
-              current.includes(service.id) ? current : [...current, service.id],
-            )
-          }
+          onPlaying={(event) => {
+            if (requestedRef.current !== service.id || document.hidden) {
+              event.currentTarget.pause();
+              return;
+            }
+            setPlaying([service.id]);
+          }}
           onPause={() =>
             setPlaying((current) => current.filter((id) => id !== service.id))
           }
         />
 
+        {/* Keep a real poster above the paused video: native posters disappear after playback. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={service.poster}
+          alt=""
+          aria-hidden="true"
+          className={styles.video}
+          loading="lazy"
+          style={{
+            pointerEvents: "none",
+            opacity: requested === service.id && playing.includes(service.id) ? 0 : 1,
+            transition: reducedMotion ? "none" : "opacity 220ms ease",
+          }}
+        />
         <div className={styles.mediaShade} />
         <div className={styles.badge}>{service.eyebrow}</div>
-
-        {!playing.includes(service.id) && (
-          <button
-            type="button"
-            className={styles.playButton}
-            aria-label={`Lire la vidéo ${service.name}`}
-            onClick={(event) => {
-              event.stopPropagation();
-              playVideo(service.id);
-            }}
-          >
-            <span aria-hidden="true">▶</span>
-          </button>
-        )}
 
         <div className={styles.duration}>{service.duration}</div>
 
