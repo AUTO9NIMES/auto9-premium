@@ -28,7 +28,6 @@ export default function LeadEditPanel({
   canEditServicePrice,
   serviceId,
   expectedServicePrice,
-  expectedServiceUpdatedAt,
   servicePriceAction,
 }: {
   leadId: string;
@@ -56,7 +55,6 @@ export default function LeadEditPanel({
   canEditServicePrice: boolean;
   serviceId: string | null;
   expectedServicePrice: number | null;
-  expectedServiceUpdatedAt: string;
   servicePriceAction: (formData: FormData) => void | Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
