@@ -523,22 +523,22 @@ export async function updateV2ServicePrice(formData: FormData) {
 
   try {
     const [leads, services, linkedJobs, paidSteps] = await Promise.all([
-      supabaseRest<Array<{ id: string; lifecycle_status: string; customer_id: string }>>(
+      supabaseRest<{ id: string; lifecycle_status: string; customer_id: string }>(
         "leads", "GET", null,
         "business_id=eq." + businessId + "&id=eq." + leadId +
           "&select=id,lifecycle_status,customer_id&limit=1",
       ),
-      supabaseRest<Array<{ id: string; lead_id: string; base_price: number | null; updated_at: string }>>(
+      supabaseRest<{ id: string; lead_id: string; base_price: number | null; updated_at: string }>(
         "lead_services", "GET", null,
         "business_id=eq." + businessId + "&lead_id=eq." + leadId +
           "&id=eq." + serviceId + "&select=id,lead_id,base_price,updated_at&limit=1",
       ),
-      supabaseRest<Array<{ id: string }>>(
+      supabaseRest<{ id: string }>(
         "jobs", "GET", null,
         "business_id=eq." + businessId + "&lead_id=eq." + leadId +
           "&select=id&limit=1",
       ),
-      supabaseRest<Array<{ id: string }>>(
+      supabaseRest<{ id: string }>(
         "activity_log", "GET", null,
         "business_id=eq." + businessId + "&lead_id=eq." + leadId +
           "&event_type=eq.crm_v2.step.completed&event_data->>step_key=eq.PAID&select=id&limit=1",
