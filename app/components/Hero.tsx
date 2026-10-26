@@ -10,13 +10,14 @@ export function Hero() {
 
   return (
     <div className="relative z-10 flex min-h-[calc(100vh-140px)] items-center px-6 pb-16 pt-8 md:px-12 md:pb-20">
-      <div className="mx-auto flex w-full max-w-[1700px] items-center justify-between gap-8 xl:gap-12" data-motion-intro>
-        <div className="min-w-0 flex-1 xl:max-w-[940px]">
+      <div className="mx-auto w-full max-w-[1700px]" data-motion-intro>
+        <div className="min-w-0">
           <p className="text-xs font-black uppercase tracking-[0.6em] text-[#9fbdd1] md:text-sm">
             Detailing premium à domicile · Nîmes
           </p>
 
-          <h1 className="mt-8 max-w-5xl text-6xl font-black uppercase leading-[0.88] tracking-[-0.07em] text-white md:text-[clamp(4.5rem,6.7vw,8.5rem)]">
+          <div className="mt-8 grid items-center gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,29%)] lg:gap-8 xl:gap-12">
+            <h1 className="min-w-0 text-6xl font-black uppercase leading-[0.88] tracking-[-0.07em] text-white md:text-[clamp(3.45rem,5.75vw,8.5rem)]">
             Retrouvez
             <br />
             la joie du
@@ -25,6 +26,19 @@ export function Hero() {
               neuf.
             </span>
           </h1>
+            {/* Keep the brand aligned with the headline, not with the entire tall hero. */}
+            <div aria-hidden="true" className="pointer-events-none hidden min-w-0 items-center justify-center lg:flex">
+              <img
+                src="/logo-auto9-metal.avif"
+                alt=""
+                width={420}
+                height={288}
+                className="block h-auto w-full max-w-[300px] object-contain xl:max-w-[340px]"
+                decoding="async"
+                fetchPriority="high"
+              />
+            </div>
+          </div>
 
           <p className="mt-9 max-w-3xl text-xl leading-relaxed text-white/68 md:text-2xl">
             Nettoyage automobile premium à domicile. Intervention à Nîmes et
@@ -59,19 +73,7 @@ export function Hero() {
           </div>
         </div>
 
-        {/* The authentic metallic AUTO 9 logo reinforces brand recognition without
-            competing with the headline. Smaller screens keep their existing hero. */}
-        <div className="pointer-events-none hidden w-[min(25vw,350px)] shrink-0 self-center lg:block xl:w-[min(28vw,440px)]" aria-hidden="true">
-          <img
-            src="/logo-auto9-metal.avif"
-            alt=""
-            width={420}
-            height={288}
-            className="h-auto w-full object-contain opacity-95 drop-shadow-[0_16px_28px_rgba(34,76,109,0.18)]"
-            decoding="async"
-            fetchPriority="high"
-          />
-        </div>
+
       </div>
     </div>
   );
