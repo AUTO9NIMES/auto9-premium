@@ -16,6 +16,7 @@ import {
   updateV2LeadDetails,
   updateV2DraftPrice,
   updateV2ServicePrice,
+  updateV2JobPrice,
 } from "./actions";
 import LeadDangerActions from "./LeadDangerActions";
 import LeadEditPanel from "./LeadEditPanel";
@@ -357,6 +358,15 @@ function LeadProgress({
                 serviceId={serviceSnapshot?.id ?? null}
                 expectedServicePrice={servicePrice ?? null}
                 servicePriceAction={updateV2ServicePrice}
+                canEditJobPrice={Boolean(
+                  item.latestJob?.id && !closed && !states[6].done &&
+                  !["PAID", "CANCELLED"].includes(item.latestJob.status) &&
+                  item.latestJob.updated_at
+                )}
+                jobId={item.latestJob?.id ?? null}
+                expectedJobPrice={item.latestJob?.total_amount ?? null}
+                expectedJobUpdatedAt={item.latestJob?.updated_at ?? ""}
+                jobPriceAction={updateV2JobPrice}
               />
             )}
             <LeadDangerActions
@@ -703,7 +713,7 @@ export default async function CrmV2Pipeline({
             : priceError === "invalid_lifecycle"
               ? "Ce devis est verrouillé : son état ou une prestation liée ne permet plus de modifier le montant."
               : priceError === "blocked"
-                ? "Le montant est verrouillé après encaissement ou création d’une prestation liée."
+                ? "Le montant est verrouillé après encaissement ou annulation."
                 : priceError === "not_found"
                 ? "Ce devis ou cette prestation est introuvable. Recharge la page."
                 : priceError === "invalid_amount"
