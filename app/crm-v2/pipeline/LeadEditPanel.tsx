@@ -25,6 +25,11 @@ export default function LeadEditPanel({
   expectedPrice,
   canEditPrice,
   priceAction,
+  canEditServicePrice,
+  serviceId,
+  expectedServicePrice,
+  expectedServiceUpdatedAt,
+  servicePriceAction,
 }: {
   leadId: string;
   initialFullName: string;
@@ -48,6 +53,11 @@ export default function LeadEditPanel({
   expectedPrice: number | null;
   canEditPrice: boolean;
   priceAction: (formData: FormData) => void | Promise<void>;
+  canEditServicePrice: boolean;
+  serviceId: string | null;
+  expectedServicePrice: number | null;
+  expectedServiceUpdatedAt: string;
+  servicePriceAction: (formData: FormData) => void | Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -186,6 +196,16 @@ export default function LeadEditPanel({
           action={priceAction}
         />
       )}
+      {!canEditPrice && canEditServicePrice && serviceId && (
+        <ServicePriceForm
+          leadId={leadId}
+          serviceId={serviceId}
+          expectedServicePrice={expectedServicePrice}
+          expectedServiceUpdatedAt={expectedServiceUpdatedAt}
+          initialPrice={initialPrice}
+          action={servicePriceAction}
+        />
+      )}
     </div>
   );
 }
@@ -246,6 +266,56 @@ function DraftPriceForm({
       </label>
       <button className="rounded-xl border border-cyan-300/25 bg-cyan-300/10 px-4 py-3 text-xs font-semibold text-cyan-100">
         Enregistrer le montant du brouillon
+      </button>
+    </form>
+  );
+}
+
+
+function ServicePriceForm({
+  leadId,
+  serviceId,
+  expectedServicePrice,
+  expectedServiceUpdatedAt,
+  initialPrice,
+  action,
+}: {
+  leadId: string;
+  serviceId: string;
+  expectedServicePrice: number | null;
+  expectedServiceUpdatedAt: string;
+  initialPrice: string;
+  action: (formData: FormData) => void | Promise<void>;
+}) {
+  return (
+    <form action={action} className="mt-4 space-y-3 border-t border-white/10 pt-4">
+      <input type="hidden" name="leadId" value={leadId} />
+      <input type="hidden" name="serviceId" value={serviceId} />
+      <input type="hidden" name="expectedServiceUpdatedAt" value={expectedServiceUpdatedAt} />
+      <input
+        type="hidden"
+        name="expectedServicePrice"
+        value={expectedServicePrice === null ? "null" : String(expectedServicePrice)}
+      />
+      <label className="block text-[10px] uppercase tracking-[0.12em] text-white/55">
+        Montant de la prestation (€)
+        <input
+          name="servicePrice"
+          type="number"
+          required
+          min="0.01"
+          max="10000000"
+          step="0.01"
+          defaultValue={initialPrice}
+          className="mt-1.5 w-full rounded-xl border border-cyan-300/20 bg-[#081019] px-3 py-2.5 text-sm normal-case tracking-normal text-white outline-none focus:border-cyan-300/55"
+        />
+      </label>
+      <p className="text-[11px] leading-5 text-white/45">
+        Modifiable avant encaissement. Les éventuels devis déjà envoyés restent dans
+        leur historique : seul le montant opérationnel du dossier est corrigé.
+      </p>
+      <button className="rounded-xl border border-cyan-300/25 bg-cyan-300/10 px-4 py-3 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/20">
+        Enregistrer le nouveau montant
       </button>
     </form>
   );
