@@ -61,7 +61,7 @@ export function Hero() {
 
         {/* The authentic metallic AUTO 9 logo reinforces brand recognition without
             competing with the headline. Smaller screens keep their existing hero. */}
-        <div className="pointer-events-none hidden w-[min(28vw,440px)] shrink-0 self-center xl:block" aria-hidden="true">
+        <div className="pointer-events-none hidden w-[min(25vw,350px)] shrink-0 self-center lg:block xl:w-[min(28vw,440px)]" aria-hidden="true">
           <img
             src="/logo-auto9-metal.avif"
             alt=""
