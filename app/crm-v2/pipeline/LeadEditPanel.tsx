@@ -29,6 +29,11 @@ export default function LeadEditPanel({
   serviceId,
   expectedServicePrice,
   servicePriceAction,
+  canEditJobPrice,
+  jobId,
+  expectedJobPrice,
+  expectedJobUpdatedAt,
+  jobPriceAction,
 }: {
   leadId: string;
   initialFullName: string;
@@ -56,6 +61,11 @@ export default function LeadEditPanel({
   serviceId: string | null;
   expectedServicePrice: number | null;
   servicePriceAction: (formData: FormData) => void | Promise<void>;
+  canEditJobPrice: boolean;
+  jobId: string | null;
+  expectedJobPrice: number | null;
+  expectedJobUpdatedAt: string;
+  jobPriceAction: (formData: FormData) => void | Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -186,15 +196,17 @@ export default function LeadEditPanel({
         </button>
       </form>
 
-      {canEditPrice && quoteId && (
-        <DraftPriceForm
-          quoteId={quoteId}
-          expectedPrice={expectedPrice}
+      {canEditJobPrice && jobId && (
+        <JobPriceForm
+          leadId={leadId}
+          jobId={jobId}
+          expectedJobPrice={expectedJobPrice}
+          expectedJobUpdatedAt={expectedJobUpdatedAt}
           initialPrice={initialPrice}
-          action={priceAction}
+          action={jobPriceAction}
         />
       )}
-      {!canEditPrice && canEditServicePrice && serviceId && (
+      {!canEditJobPrice && canEditServicePrice && serviceId && (
         <ServicePriceForm
           leadId={leadId}
           serviceId={serviceId}
@@ -203,6 +215,19 @@ export default function LeadEditPanel({
           initialPrice={initialPrice}
           action={servicePriceAction}
         />
+      )}
+      {!canEditJobPrice && !canEditServicePrice && canEditPrice && quoteId && (
+        <DraftPriceForm
+          quoteId={quoteId}
+          expectedPrice={expectedPrice}
+          initialPrice={initialPrice}
+          action={priceAction}
+        />
+      )}
+      {!canEditJobPrice && !canEditServicePrice && !canEditPrice && initialPrice && (
+        <p className="mt-4 border-t border-white/10 pt-4 text-xs text-amber-100/60">
+          Montant protégé : paiement enregistré, prestation clôturée ou devis déjà engagé.
+        </p>
       )}
     </div>
   );
@@ -311,6 +336,56 @@ function ServicePriceForm({
       <p className="text-[11px] leading-5 text-white/45">
         Modifiable avant encaissement. Les éventuels devis déjà envoyés restent dans
         leur historique : seul le montant opérationnel du dossier est corrigé.
+      </p>
+      <button className="rounded-xl border border-cyan-300/25 bg-cyan-300/10 px-4 py-3 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/20">
+        Enregistrer le nouveau montant
+      </button>
+    </form>
+  );
+}
+
+
+function JobPriceForm({
+  leadId,
+  jobId,
+  expectedJobPrice,
+  expectedJobUpdatedAt,
+  initialPrice,
+  action,
+}: {
+  leadId: string;
+  jobId: string;
+  expectedJobPrice: number | null;
+  expectedJobUpdatedAt: string;
+  initialPrice: string;
+  action: (formData: FormData) => void | Promise<void>;
+}) {
+  return (
+    <form action={action} className="mt-4 space-y-3 border-t border-white/10 pt-4">
+      <input type="hidden" name="leadId" value={leadId} />
+      <input type="hidden" name="jobId" value={jobId} />
+      <input type="hidden" name="expectedJobUpdatedAt" value={expectedJobUpdatedAt} />
+      <input
+        type="hidden"
+        name="expectedJobPrice"
+        value={expectedJobPrice === null ? "null" : String(expectedJobPrice)}
+      />
+      <label className="block text-[10px] uppercase tracking-[0.12em] text-white/55">
+        Montant de la prestation (€)
+        <input
+          name="jobPrice"
+          type="number"
+          required
+          min="0.01"
+          max="10000000"
+          step="0.01"
+          defaultValue={initialPrice}
+          className="mt-1.5 w-full rounded-xl border border-cyan-300/20 bg-[#081019] px-3 py-2.5 text-sm normal-case tracking-normal text-white outline-none focus:border-cyan-300/55"
+        />
+      </label>
+      <p className="text-[11px] leading-5 text-white/45">
+        Le montant final de la prestation peut être corrigé avant paiement.
+        Le devis initial et l'historique restent inchangés.
       </p>
       <button className="rounded-xl border border-cyan-300/25 bg-cyan-300/10 px-4 py-3 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/20">
         Enregistrer le nouveau montant
