@@ -356,7 +356,6 @@ function LeadProgress({
                 canEditServicePrice={Boolean(serviceSnapshot && !item.latestJob && !closed && !states[6].done)}
                 serviceId={serviceSnapshot?.id ?? null}
                 expectedServicePrice={servicePrice ?? null}
-                expectedServiceUpdatedAt={serviceSnapshot?.updatedAt ?? ""}
                 servicePriceAction={updateV2ServicePrice}
               />
             )}
