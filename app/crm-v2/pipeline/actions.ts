@@ -626,3 +626,116 @@ export async function updateV2ServicePrice(formData: FormData) {
   revalidatePath("/crm/pipeline");
   redirect("/crm-v2/pipeline?price_updated=1");
 }
+
+
+/**
+ * Correct a canonical job's final amount prior to payment.
+ * Does not alter the historical quote or any recorded payment.
+ */
+export async function updateV2JobPrice(formData: FormData) {
+  await requireCrmAccess();
+  const leadId = String(formData.get("leadId") || "").trim();
+  const jobId = String(formData.get("jobId") || "").trim();
+  const expectedUpdatedAt = String(formData.get("expectedJobUpdatedAt") || "").trim();
+  const expectedRaw = String(formData.get("expectedJobPrice") || "").trim();
+  const rawPrice = String(formData.get("jobPrice") || "").trim().replace(",", ".");
+  const nextPrice = Number(rawPrice);
+  const expectedPrice = expectedRaw === "null" ? null : Number(expectedRaw);
+  const decimal = /^\d+(?:\.\d{1,2})?$/;
+
+  if (
+    !UUID_REGEX.test(leadId) || !UUID_REGEX.test(jobId) ||
+    !validExpectedTimestamp(expectedUpdatedAt) ||
+    !decimal.test(rawPrice) || !Number.isFinite(nextPrice) ||
+    nextPrice <= 0 || nextPrice > 10000000 ||
+    (expectedRaw !== "null" && (!decimal.test(expectedRaw) ||
+      !Number.isFinite(expectedPrice) || expectedPrice === null ||
+      expectedPrice < 0 || expectedPrice > 10000000))
+  ) {
+    redirect("/crm-v2/pipeline?price_error=invalid_amount");
+  }
+
+  const { businessId } = await resolveCurrentBusinessContext();
+  try {
+    const [jobs, payments, paidSteps, leads] = await Promise.all([
+      supabaseRest<{ id: string; lead_id: string; customer_id: string;
+        status: string; total_amount: number | null; updated_at: string }>(
+        "jobs", "GET", null, "business_id=eq." + businessId +
+        "&lead_id=eq." + leadId + "&id=eq." + jobId +
+        "&select=id,lead_id,customer_id,status,total_amount,updated_at&limit=1",
+      ),
+      supabaseRest<{ id: string }>(
+        "payments", "GET", null, "business_id=eq." + businessId +
+        "&job_id=eq." + jobId + "&select=id&limit=1",
+      ),
+      supabaseRest<{ id: string }>(
+        "activity_log", "GET", null, "business_id=eq." + businessId +
+        "&lead_id=eq." + leadId +
+        "&event_type=eq.crm_v2.step.completed&event_data->>step_key=eq.PAID&select=id&limit=1",
+      ),
+      supabaseRest<{ id: string; lifecycle_status: string }>(
+        "leads", "GET", null, "business_id=eq." + businessId +
+        "&id=eq." + leadId + "&select=id,lifecycle_status&limit=1",
+      ),
+    ]);
+    if (!Array.isArray(jobs) || !Array.isArray(payments) ||
+        !Array.isArray(paidSteps) || !Array.isArray(leads)) {
+      throw new Error("Invalid job price snapshots");
+    }
+    const job = jobs[0];
+    if (!job || !leads[0] || job.lead_id !== leadId) {
+      redirect("/crm-v2/pipeline?price_error=not_found");
+    }
+    if (["PAID", "CANCELLED"].includes(job.status) || payments.length > 0 ||
+        paidSteps.length > 0 || leads[0].lifecycle_status === "CLOSED_LOST") {
+      redirect("/crm-v2/pipeline?price_error=blocked");
+    }
+    if (job.updated_at !== expectedUpdatedAt || job.total_amount !== expectedPrice) {
+      redirect("/crm-v2/pipeline?price_error=conflict");
+    }
+    if (job.total_amount === nextPrice) {
+      redirect("/crm-v2/pipeline?price_updated=1");
+    }
+
+    const filter = [
+      "business_id=eq." + businessId, "lead_id=eq." + leadId,
+      "id=eq." + jobId, "status=eq." + job.status,
+      "updated_at=eq." + encodeURIComponent(expectedUpdatedAt),
+      expectedPrice === null ? "total_amount=is.null" : "total_amount=eq." + expectedPrice,
+      "select=id,lead_id,total_amount",
+    ].join("&");
+    const changed = await supabaseRest<{ id: string; lead_id: string; total_amount: number | null }>(
+      "jobs", "PATCH", { total_amount: nextPrice }, filter,
+    );
+    if (!changed || Array.isArray(changed) || changed.id !== jobId ||
+        changed.lead_id !== leadId || Number(changed.total_amount) !== nextPrice) {
+      redirect("/crm-v2/pipeline?price_error=conflict");
+    }
+
+    try {
+      await supabaseRest("activity_log", "POST", {
+        business_id: businessId,
+        customer_id: job.customer_id,
+        lead_id: leadId,
+        job_id: jobId,
+        event_type: "crm_v2.job_price.updated",
+        event_data: {
+          previous_amount: job.total_amount,
+          new_amount: nextPrice,
+          source: "crm_v2_pipeline",
+        },
+      }, "select=id");
+    } catch (error) {
+      console.error("Job price saved but audit event failed", error);
+    }
+  } catch (error) {
+    if (error && typeof error === "object" && "digest" in error) throw error;
+    redirect("/crm-v2/pipeline?price_error=unavailable");
+  }
+  revalidatePath("/crm-v2");
+  revalidatePath("/crm-v2/pipeline");
+  revalidatePath("/crm-v2/revenue");
+  revalidatePath("/crm/jobs");
+  revalidatePath("/crm/jobs/[jobId]", "page");
+  redirect("/crm-v2/pipeline?price_updated=1");
+}
