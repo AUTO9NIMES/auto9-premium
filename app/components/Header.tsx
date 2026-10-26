@@ -8,7 +8,7 @@ export function Header() {
         <img
           src="/logo-auto9-transparent.png"
           alt="AUTO 9"
-          className="h-24 w-auto object-contain md:h-32"
+          className="h-24 w-auto object-contain md:h-20"
         />
       </Link>
 
