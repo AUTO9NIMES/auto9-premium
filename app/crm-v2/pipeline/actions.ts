@@ -487,3 +487,142 @@ export async function updateV2DraftPrice(formData: FormData) {
   revalidatePath("/crm-v2/clients/[customerId]", "page");
   redirect("/crm-v2/pipeline?price_updated=1");
 }
+
+
+/**
+ * Adjust the operational amount of a manually tracked CRM V2 dossier.
+ * The original issued quote remains intact. Paid dossiers and canonical jobs
+ * stay locked to prevent retroactive financial changes.
+ */
+export async function updateV2ServicePrice(formData: FormData) {
+  await requireCrmAccess();
+
+  const leadId = String(formData.get("leadId") || "").trim();
+  const serviceId = String(formData.get("serviceId") || "").trim();
+  const expectedUpdatedAt = String(formData.get("expectedServiceUpdatedAt") || "").trim();
+  const expectedRaw = String(formData.get("expectedServicePrice") || "").trim();
+  const rawPrice = String(formData.get("servicePrice") || "").trim().replace(",", ".");
+  const expectedPrice = expectedRaw === "null" ? null : Number(expectedRaw);
+  const nextPrice = Number(rawPrice);
+  const decimal = /^\d+(?:\.\d{1,2})?$/;
+
+  if (
+    !UUID_REGEX.test(leadId) ||
+    !UUID_REGEX.test(serviceId) ||
+    !validExpectedTimestamp(expectedUpdatedAt) ||
+    !decimal.test(rawPrice) ||
+    !Number.isFinite(nextPrice) || nextPrice <= 0 || nextPrice > 10000000 ||
+    (expectedRaw !== "null" && (!decimal.test(expectedRaw) ||
+      !Number.isFinite(expectedPrice) || expectedPrice === null ||
+      expectedPrice < 0 || expectedPrice > 10000000))
+  ) {
+    redirect("/crm-v2/pipeline?price_error=invalid_amount");
+  }
+
+  const { businessId } = await resolveCurrentBusinessContext();
+
+  try {
+    const [leads, services, linkedJobs, paidSteps] = await Promise.all([
+      supabaseRest<Array<{ id: string; lifecycle_status: string; customer_id: string }>>(
+        "leads", "GET", null,
+        "business_id=eq." + businessId + "&id=eq." + leadId +
+          "&select=id,lifecycle_status,customer_id&limit=1",
+      ),
+      supabaseRest<Array<{ id: string; lead_id: string; base_price: number | null; updated_at: string }>>(
+        "lead_services", "GET", null,
+        "business_id=eq." + businessId + "&lead_id=eq." + leadId +
+          "&id=eq." + serviceId + "&select=id,lead_id,base_price,updated_at&limit=1",
+      ),
+      supabaseRest<Array<{ id: string }>>(
+        "jobs", "GET", null,
+        "business_id=eq." + businessId + "&lead_id=eq." + leadId +
+          "&select=id&limit=1",
+      ),
+      supabaseRest<Array<{ id: string }>>(
+        "activity_log", "GET", null,
+        "business_id=eq." + businessId + "&lead_id=eq." + leadId +
+          "&event_type=eq.crm_v2.step.completed&event_data->>step_key=eq.PAID&select=id&limit=1",
+      ),
+    ]);
+
+    if (!Array.isArray(leads) || !Array.isArray(services) ||
+        !Array.isArray(linkedJobs) || !Array.isArray(paidSteps)) {
+      throw new Error("Missing operational dossier snapshots.");
+    }
+
+    const lead = leads[0];
+    const service = services[0];
+    if (!lead || !service || service.lead_id !== leadId) {
+      redirect("/crm-v2/pipeline?price_error=not_found");
+    }
+
+    if (lead.lifecycle_status === "CLOSED_LOST" ||
+        linkedJobs.length > 0 || paidSteps.length > 0) {
+      redirect("/crm-v2/pipeline?price_error=blocked");
+    }
+
+    if (service.updated_at !== expectedUpdatedAt ||
+        service.base_price !== expectedPrice) {
+      redirect("/crm-v2/pipeline?price_error=conflict");
+    }
+
+    if (service.base_price === nextPrice) {
+      redirect("/crm-v2/pipeline?price_updated=1");
+    }
+
+    // Conditional PATCH prevents overwriting a concurrent edit.
+    const query = [
+      "business_id=eq." + businessId,
+      "lead_id=eq." + leadId,
+      "id=eq." + serviceId,
+      "updated_at=eq." + encodeURIComponent(expectedUpdatedAt),
+      expectedPrice === null ? "base_price=is.null" : "base_price=eq." + expectedPrice,
+      "select=id,lead_id,base_price,updated_at",
+    ].join("&");
+
+    const changed = await supabaseRest<{
+      id: string;
+      lead_id: string;
+      base_price: number | null;
+      updated_at: string;
+    }>("lead_services", "PATCH", { base_price: nextPrice }, query);
+
+    if (!changed || Array.isArray(changed) ||
+        changed.id !== serviceId || changed.lead_id !== leadId ||
+        Number(changed.base_price) !== nextPrice) {
+      redirect("/crm-v2/pipeline?price_error=conflict");
+    }
+
+    // Keep a trace of the price adjustment without emailing the customer.
+    try {
+      await supabaseRest(
+        "activity_log", "POST",
+        {
+          business_id: businessId,
+          customer_id: lead.customer_id,
+          lead_id: leadId,
+          event_type: "crm_v2.service_price.updated",
+          event_data: {
+            service_id: serviceId,
+            previous_amount: service.base_price,
+            new_amount: nextPrice,
+            source: "crm_v2_pipeline",
+          },
+        },
+        "select=id",
+      );
+    } catch (auditError) {
+      console.error("CRM V2 price updated but audit event failed", auditError);
+    }
+  } catch (error) {
+    if (error && typeof error === "object" && "digest" in error) throw error;
+    redirect("/crm-v2/pipeline?price_error=unavailable");
+  }
+
+  revalidatePath("/crm-v2");
+  revalidatePath("/crm-v2/pipeline");
+  revalidatePath("/crm-v2/revenue");
+  revalidatePath("/crm-v2/clients");
+  revalidatePath("/crm/pipeline");
+  redirect("/crm-v2/pipeline?price_updated=1");
+}
