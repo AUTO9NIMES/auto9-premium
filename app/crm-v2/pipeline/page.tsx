@@ -779,6 +779,13 @@ export default async function CrmV2Pipeline({
               key={item.lead.id || item.lead.created_at}
               item={item}
               activity={activity}
+              editFeedback={editLeadId === item.lead.id
+                ? editError
+                  ? "Enregistrement refusé (" + editError + "). Recharge le dossier et vérifie les champs."
+                  : editUpdated
+                    ? "Modification enregistrée avec succès."
+                    : null
+                : null}
               serviceOverride={item.lead.id ? serviceByLead.get(item.lead.id)?.name : null}
               servicePrice={item.lead.id ? serviceByLead.get(item.lead.id)?.price : null}
               serviceSnapshot={item.lead.id ? (() => {
