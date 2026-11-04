@@ -267,28 +267,29 @@ export default async function CrmV2Dashboard() {
 
   const cards = [
     {
-      label: "Leads à traiter",
-      value: String(leadsToTreat),
-      detail: "RDV non réservé",
+      label: "Prestations du jour",
+      value: String(todayAgenda.length),
+      detail: "Interventions planifiées",
       accent: true,
+      href: "/crm-v2/calendar?day=" + currentDay,
+    },
+    {
+      label: "Paiements à suivre",
+      value: String(unpaidCount),
+      detail: unpaidCount ? eur.format(unpaidKnownAmount) + " connus" +
+        (unpaidWithoutAmount ? " · prix à compléter" : "") : "Tout est à jour",
       href: "/crm-v2/pipeline",
     },
     {
-      label: "Dossiers clients",
-      value: String(clientDossiers),
-      detail: "RDV réservé · en suivi",
+      label: "Demandes à traiter",
+      value: String(leadsToTreat),
+      detail: "Sans réservation confirmée",
       href: "/crm-v2/pipeline",
     },
     {
-      label: "CA espèces",
-      value: eur.format(cashRevenue),
-      detail: "Paiements en espèces",
-      href: "/crm-v2/revenue",
-    },
-    {
-      label: "CA carte + virement",
-      value: eur.format(bankRevenue),
-      detail: "Encaissements bancaires",
+      label: "CA encaissé ce mois",
+      value: eur.format(monthRevenue),
+      detail: "Paiements réellement enregistrés",
       href: "/crm-v2/revenue",
     },
   ];
@@ -304,10 +305,10 @@ export default async function CrmV2Dashboard() {
         <div className="absolute inset-0 bg-gradient-to-t from-[#070b10]/70 via-transparent to-black/10" />
         <div className="relative z-10 flex min-h-[260px] flex-col justify-end p-6 md:min-h-[300px] md:p-8 xl:p-10">
           <div className="max-w-3xl">
-            <p className="text-[11px] uppercase tracking-[0.30em] text-cyan-200/70">AUTO 9 · Pilotage</p>
-            <h1 className="mt-3 text-4xl font-bold tracking-tight text-white md:text-6xl">Vue d&apos;ensemble</h1>
+            <p className="text-[11px] uppercase tracking-[0.30em] text-cyan-200/70">AUTO 9 · CRM V3 · Pilotage quotidien</p>
+            <h1 className="mt-3 text-4xl font-bold tracking-tight text-white md:text-6xl">Ma journée AUTO 9</h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-white/55">
-              Tout ce qui compte aujourd&apos;hui : chiffre, clients, dossiers et planning.
+              Tes interventions, tes encaissements et les actions importantes du jour, au même endroit.
             </p>
             <div className="mt-6 flex flex-wrap gap-2">
               <Link href="/crm-v2/clients?new=1" className="rounded-xl border border-cyan-300/35 bg-cyan-300/12 px-4 py-3 text-xs font-semibold text-cyan-100 backdrop-blur-sm transition hover:bg-cyan-300/20">
