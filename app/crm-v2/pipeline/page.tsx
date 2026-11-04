@@ -14,6 +14,8 @@ import {
   recordV2ManualPayment,
   toggleV2LeadStep,
   updateV2LeadDetails,
+  updateV2ContactOnly,
+  updateV2NoteOnly,
   updateV2DraftPrice,
   updateV2ServicePrice,
   updateV2JobPrice,
@@ -346,6 +348,8 @@ function LeadProgress({
                 initialPrice={String(item.latestJob?.total_amount ?? servicePrice ?? item.latestQuote?.total_price ?? "")}
                 initialNote={item.lead.notes || ""}
                 action={updateV2LeadDetails}
+                contactAction={updateV2ContactOnly}
+                noteAction={updateV2NoteOnly}
                 quoteId={item.latestQuote?.id ?? null}
                 expectedPrice={item.latestQuote?.total_price ?? null}
                 canEditPrice={Boolean(
