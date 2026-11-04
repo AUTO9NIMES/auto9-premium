@@ -36,7 +36,29 @@ function parisMonthKey(value: string | Date) {
 type DashboardLeadRow = {
   id: string;
   lifecycle_status: string;
+  customer_id: string;
 };
+
+type DashboardJobRow = {
+  id: string;
+  lead_id: string | null;
+  title: string | null;
+  total_amount: number | null;
+  status: string;
+};
+
+type DashboardServiceRow = {
+  lead_id: string;
+  base_price: number | null;
+};
+
+function manualStepDone(leadId: string, step: string, activity: DashboardStepActivity[]) {
+  const last = activity.find((entry) =>
+    entry.lead_id === leadId && entry.event_data?.step_key === step &&
+    (entry.event_type === "crm_v2.step.completed" || entry.event_type === "crm_v2.step.reopened"),
+  );
+  return last ? last.event_type === "crm_v2.step.completed" : null;
+}
 
 type DashboardStepActivity = {
   lead_id: string | null;
@@ -50,6 +72,7 @@ type DashboardCustomEvent = {
   event_date: string;
   event_time: string;
   status: string;
+  title: string;
 };
 
 function hasBookedStep(lead: DashboardLeadRow, activity: DashboardStepActivity[]) {
@@ -118,7 +141,7 @@ export default async function CrmV2Dashboard() {
 
   const nextMonth = nextMonthKey(currentMonth);
 
-  const [metrics, calendar, paymentsRaw, leadsRaw, stepActivityRaw, customEventsRaw, historicalEvents] = await Promise.all([
+  const [metrics, calendar, paymentsRaw, leadsRaw, stepActivityRaw, customEventsRaw, historicalEvents, jobsRaw, servicesRaw] = await Promise.all([
     getCrmDashboardMetrics(),
     getCalendarMonth({ month: currentMonth }),
     supabaseRest<Payment[]>(
@@ -131,7 +154,7 @@ export default async function CrmV2Dashboard() {
       "leads",
       "GET",
       null,
-      `business_id=eq.${businessId}&lifecycle_status=neq.CLOSED_LOST&order=created_at.desc&limit=5000&select=id,lifecycle_status`,
+      `business_id=eq.${businessId}&lifecycle_status=neq.CLOSED_LOST&order=created_at.desc&limit=5000&select=id,lifecycle_status,customer_id`,
     ),
     supabaseRest<DashboardStepActivity[]>(
       "activity_log",
@@ -143,9 +166,17 @@ export default async function CrmV2Dashboard() {
       "crm_calendar_events",
       "GET",
       null,
-      `business_id=eq.${businessId}&event_date=gte.${currentMonth}-01&event_date=lt.${nextMonth}-01&status=neq.CANCELLED&order=event_date.asc,event_time.asc&limit=5000&select=id,event_date,event_time,status`,
+      `business_id=eq.${businessId}&event_date=gte.${currentMonth}-01&event_date=lt.${nextMonth}-01&status=neq.CANCELLED&order=event_date.asc,event_time.asc&limit=5000&select=id,event_date,event_time,status,title`,
     ),
     getHistoricalCalendarEntries(businessId, currentMonth),
+    supabaseRest<DashboardJobRow[]>(
+      "jobs", "GET", null,
+      `business_id=eq.${businessId}&status=in.(SCHEDULED,CONFIRMED,IN_PROGRESS,COMPLETED,PAID)&order=created_at.desc&limit=5000&select=id,lead_id,title,total_amount,status`,
+    ),
+    supabaseRest<DashboardServiceRow[]>(
+      "lead_services", "GET", null,
+      `business_id=eq.${businessId}&order=created_at.desc,id.desc&limit=5000&select=lead_id,base_price`,
+    ),
   ]);
 
   const payments = (paymentsRaw as Payment[] | null) ?? [];
