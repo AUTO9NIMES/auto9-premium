@@ -259,12 +259,14 @@ function LeadProgress({
   serviceOverride,
   servicePrice,
   serviceSnapshot,
+  editFeedback,
 }: {
   item: LeadListItem;
   activity: StepActivity[];
   serviceOverride?: string | null;
   servicePrice?: number | null;
   serviceSnapshot?: { id: string; name: string; updatedAt: string } | null;
+  editFeedback?: string | null;
 }) {
   const amount = money(item.latestJob?.total_amount ?? servicePrice ?? item.latestQuote?.total_price ?? null);
   const closed = item.lead.lifecycle_status === "CLOSED_LOST";
