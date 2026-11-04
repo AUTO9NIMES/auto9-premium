@@ -218,9 +218,20 @@ export default function LeadEditPanel({
           </button>
           <button
             type="submit"
+            formAction={serviceNameAction}
+            formNoValidate
+            disabled={serviceLockedWithoutRow}
+            className="rounded-xl border border-white/15 bg-white/[0.04] px-4 py-3 text-xs font-semibold text-white/85 hover:bg-white/10 disabled:opacity-35"
+          >
+            Enregistrer prestation
+          </button>
+          <button
+            type="submit"
+            formAction={performanceDateAction}
+            formNoValidate
             className="rounded-xl border border-white/15 bg-white/[0.04] px-4 py-3 text-xs font-semibold text-white/85 hover:bg-white/10"
           >
-            Enregistrer prestation / date
+            Enregistrer date
           </button>
         </div>
         <p className="text-[11px] leading-5 text-white/45 md:col-span-2">
