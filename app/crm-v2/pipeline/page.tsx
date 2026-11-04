@@ -292,6 +292,28 @@ function LeadProgress({
           </div>
           <p className="mt-1 text-xs text-white/40">{vehicle(item)}</p>
           <p className="mt-3 text-sm text-white/65">{serviceName(item, serviceOverride)}</p>
+          {(item.customer.phone || item.customer.email) && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {item.customer.phone && (
+                <a
+                  href={"tel:" + item.customer.phone.replace(/[^+\\d]/g, "")}
+                  className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-[11px] font-semibold text-cyan-100/80 transition hover:border-cyan-300/35"
+                  aria-label={"Appeler " + name(item)}
+                >
+                  Appeler
+                </a>
+              )}
+              {item.customer.email && (
+                <a
+                  href={"mailto:" + encodeURIComponent(item.customer.email)}
+                  className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-[11px] font-semibold text-white/75 transition hover:border-cyan-300/35"
+                  aria-label={"Envoyer un email à " + name(item)}
+                >
+                  Email
+                </a>
+              )}
+            </div>
+          )}
           {closed && cancelled && (
             <div className="mt-3 rounded-xl border border-amber-300/12 bg-amber-300/[0.035] px-3 py-2">
               <p className="text-[10px] uppercase tracking-[0.14em] text-amber-100/55">
