@@ -253,47 +253,35 @@ export default function LeadEditPanel({
           />
         </label>
 
-        <div className="grid gap-2 md:col-span-2 sm:grid-cols-2">
-          <button
-            type="submit"
-            formAction={contactAction}
-            formNoValidate
-            className="rounded-xl border border-cyan-300/25 bg-cyan-300/10 px-4 py-3 text-xs font-semibold text-cyan-100 hover:bg-cyan-300/20"
-          >
-            Enregistrer coordonnées
-          </button>
-          <button
-            type="submit"
-            formAction={noteAction}
-            formNoValidate
-            className="rounded-xl border border-cyan-300/25 bg-cyan-300/10 px-4 py-3 text-xs font-semibold text-cyan-100 hover:bg-cyan-300/20"
-          >
-            Enregistrer la note
-          </button>
-          <button
-            type="submit"
-            formAction={serviceId ? serviceNameAction : action}
-            formNoValidate
-            disabled={serviceLockedWithoutRow}
-            className="rounded-xl border border-white/15 bg-white/[0.04] px-4 py-3 text-xs font-semibold text-white/85 hover:bg-white/10 disabled:opacity-35"
-          >
-            Enregistrer prestation
-          </button>
-          <button
-            type="submit"
-            formAction={performanceDateAction}
-            formNoValidate
-            className="rounded-xl border border-white/15 bg-white/[0.04] px-4 py-3 text-xs font-semibold text-white/85 hover:bg-white/10"
-          >
-            Enregistrer date
-          </button>
-        </div>
+        )}
+        {mode === "service" && !serviceId && (
+          <>
+            <input type="hidden" name="fullName" value={initialFullName} />
+            <input type="hidden" name="phone" value={initialPhone} />
+            <input type="hidden" name="email" value={initialEmail} />
+            <input type="hidden" name="city" value={initialCity} />
+            <input type="hidden" name="note" value={initialNote} />
+            <input type="hidden" name="performanceDate" value={initialPerformanceDate} />
+          </>
+        )}
+        <button
+          type="submit"
+          className="rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-5 py-3 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/20 md:col-span-2"
+        >
+          {mode === "contact" ? "Enregistrer les coordonnées" :
+            mode === "note" ? "Enregistrer la note" :
+            mode === "service" ? "Enregistrer la prestation" :
+            "Enregistrer la date"}
+        </button>
         <p className="text-[11px] leading-5 text-white/45 md:col-span-2">
-          Chaque bouton enregistre uniquement la partie indiquée. Les dossiers engagés
-          conservent les protections liées aux rendez-vous et aux paiements.
+          Cette action ne modifie que la rubrique sélectionnée.
+          Les paiements et les rendez-vous liés restent protégés.
         </p>
       </form>
+      )}
 
+      {mode === "price" && (
+      <>
       {canEditJobPrice && jobId && (
         <JobPriceForm
           leadId={leadId}
@@ -326,6 +314,8 @@ export default function LeadEditPanel({
         <p className="mt-4 border-t border-white/10 pt-4 text-xs text-amber-100/60">
           Montant protégé : paiement enregistré, prestation clôturée ou devis déjà engagé.
         </p>
+      )}
+      </>
       )}
     </div>
   );
