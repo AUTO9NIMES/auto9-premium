@@ -739,3 +739,159 @@ export async function updateV2JobPrice(formData: FormData) {
   revalidatePath("/crm/jobs/[jobId]", "page");
   redirect("/crm-v2/pipeline?price_updated=1");
 }
+
+
+/**
+ * Independent CRM V2 contact editor: never submits the service/date fields.
+ * Uses the canonical profile RPC to preserve validation, uniqueness rules,
+ * birth date and history across the full customer base.
+ */
+export async function updateV2ContactOnly(formData: FormData) {
+  await requireCrmAccess();
+  const leadId = String(formData.get("leadId") || "").trim();
+  const expectedUpdatedAt = String(formData.get("expectedCustomerUpdatedAt") || "").trim();
+  const fullName = String(formData.get("fullName") || "").trim();
+  const phone = String(formData.get("phone") || "").trim();
+  const email = String(formData.get("email") || "").trim();
+  const city = String(formData.get("city") || "").trim();
+
+  if (!UUID_REGEX.test(leadId) || !validExpectedTimestamp(expectedUpdatedAt) ||
+      !fullName || fullName.length > 200 || phone.length > 40 ||
+      email.length > 254 || city.length > 120) {
+    redirect("/crm-v2/pipeline?edit_error=invalid&lead=" + encodeURIComponent(leadId));
+  }
+
+  const { businessId } = await resolveCurrentBusinessContext();
+  let customerId: string;
+  try {
+    const leadRows = await supabaseRest<{ id: string; customer_id: string; lifecycle_status: string }>(
+      "leads", "GET", null,
+      "business_id=eq." + businessId + "&id=eq." + leadId +
+        "&select=id,customer_id,lifecycle_status&limit=1",
+    );
+    if (!Array.isArray(leadRows) || !leadRows[0]) {
+      redirect("/crm-v2/pipeline?edit_error=not_found&lead=" + encodeURIComponent(leadId));
+    }
+    const lead = leadRows[0];
+    if (lead.lifecycle_status === "CLOSED_LOST") {
+      redirect("/crm-v2/pipeline?edit_error=blocked&lead=" + encodeURIComponent(leadId));
+    }
+    customerId = lead.customer_id;
+    const customerRows = await supabaseRest<{ id: string; updated_at: string }>(
+      "customers", "GET", null,
+      "business_id=eq." + businessId + "&id=eq." + customerId +
+        "&select=id,updated_at&limit=1",
+    );
+    if (!Array.isArray(customerRows) || !customerRows[0]) {
+      redirect("/crm-v2/pipeline?edit_error=not_found&lead=" + encodeURIComponent(leadId));
+    }
+    if (customerRows[0].updated_at !== expectedUpdatedAt) {
+      redirect("/crm-v2/pipeline?edit_error=conflict&lead=" + encodeURIComponent(leadId));
+    }
+
+    const parts = fullName.split(/\s+/).filter(Boolean);
+    const response = await supabaseRest<unknown>(
+      "rpc/update_customer_profile", "POST", {
+        p_business_id: businessId,
+        p_customer_id: customerId,
+        p_full_name: fullName,
+        p_first_name: parts[0] || null,
+        p_last_name: parts.slice(1).join(" ") || null,
+        p_phone: phone || null,
+        p_email: email || null,
+        p_city: city || null,
+        p_source: "crm_v2_dossier_contact",
+        p_birth_date: null,
+        p_birth_date_provided: false,
+      },
+    );
+    if (!response || typeof response !== "object" || Array.isArray(response) ||
+        !("customer" in response) ||
+        !response.customer || typeof response.customer !== "object" ||
+        !("id" in response.customer) || response.customer.id !== customerId) {
+      throw new Error("Unexpected canonical customer profile response");
+    }
+  } catch (error) {
+    if (error && typeof error === "object" && "digest" in error) throw error;
+    console.error("CRM V2 contact save failed", error);
+    redirect("/crm-v2/pipeline?edit_error=contact_unavailable&lead=" + encodeURIComponent(leadId));
+  }
+
+  revalidatePath("/crm-v2");
+  revalidatePath("/crm-v2/pipeline");
+  revalidatePath("/crm-v2/clients");
+  revalidatePath("/crm/clients");
+  revalidatePath("/crm/pipeline");
+  revalidatePath("/crm-v2/clients/" + customerId);
+  redirect("/crm-v2/pipeline?edit_updated=contact&lead=" + encodeURIComponent(leadId) +
+    "#dossier-" + encodeURIComponent(leadId));
+}
+
+/**
+ * Independent note editor: optimistic update of the lead row only.
+ * Changes to a quote, service, date or shared customer profile cannot block it.
+ */
+export async function updateV2NoteOnly(formData: FormData) {
+  await requireCrmAccess();
+  const leadId = String(formData.get("leadId") || "").trim();
+  const expectedUpdatedAt = String(formData.get("expectedLeadUpdatedAt") || "").trim();
+  const note = String(formData.get("note") || "").trim();
+  if (!UUID_REGEX.test(leadId) || !validExpectedTimestamp(expectedUpdatedAt) ||
+      note.length > 2000) {
+    redirect("/crm-v2/pipeline?edit_error=invalid&lead=" + encodeURIComponent(leadId));
+  }
+  const { businessId } = await resolveCurrentBusinessContext();
+  try {
+    const rows = await supabaseRest<{ id: string; customer_id: string; updated_at: string;
+      lifecycle_status: string; notes: string | null }>(
+      "leads", "GET", null,
+      "business_id=eq." + businessId + "&id=eq." + leadId +
+        "&select=id,customer_id,updated_at,lifecycle_status,notes&limit=1",
+    );
+    if (!Array.isArray(rows) || !rows[0]) {
+      redirect("/crm-v2/pipeline?edit_error=not_found&lead=" + encodeURIComponent(leadId));
+    }
+    const lead = rows[0];
+    if (lead.lifecycle_status === "CLOSED_LOST") {
+      redirect("/crm-v2/pipeline?edit_error=blocked&lead=" + encodeURIComponent(leadId));
+    }
+    if (lead.updated_at !== expectedUpdatedAt) {
+      redirect("/crm-v2/pipeline?edit_error=conflict&lead=" + encodeURIComponent(leadId));
+    }
+    if ((lead.notes || "") === note) {
+      redirect("/crm-v2/pipeline?edit_updated=note&lead=" + encodeURIComponent(leadId) +
+        "#dossier-" + encodeURIComponent(leadId));
+    }
+
+    const update = await supabaseRest<{ id: string; customer_id: string; notes: string | null }>(
+      "leads", "PATCH", { notes: note || null },
+      "business_id=eq." + businessId + "&id=eq." + leadId +
+        "&updated_at=eq." + encodeURIComponent(expectedUpdatedAt) +
+        "&lifecycle_status=neq.CLOSED_LOST&select=id,customer_id,notes",
+    );
+    if (!update || Array.isArray(update) || update.id !== leadId ||
+        (update.notes || "") !== note) {
+      redirect("/crm-v2/pipeline?edit_error=conflict&lead=" + encodeURIComponent(leadId));
+    }
+    try {
+      await supabaseRest("activity_log", "POST", {
+        business_id: businessId,
+        lead_id: leadId,
+        customer_id: lead.customer_id,
+        event_type: "crm_v2.lead_note.updated",
+        event_data: { source: "crm_v2_pipeline" },
+      }, "select=id");
+    } catch (error) {
+      console.error("CRM V2 note saved; audit trail unavailable", error);
+    }
+  } catch (error) {
+    if (error && typeof error === "object" && "digest" in error) throw error;
+    console.error("CRM V2 note save failed", error);
+    redirect("/crm-v2/pipeline?edit_error=note_unavailable&lead=" + encodeURIComponent(leadId));
+  }
+  revalidatePath("/crm-v2");
+  revalidatePath("/crm-v2/pipeline");
+  revalidatePath("/crm/pipeline");
+  redirect("/crm-v2/pipeline?edit_updated=note&lead=" + encodeURIComponent(leadId) +
+    "#dossier-" + encodeURIComponent(leadId));
+}
