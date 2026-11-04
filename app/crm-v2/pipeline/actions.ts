@@ -978,3 +978,86 @@ export async function updateV2ServiceNameOnly(formData: FormData) {
   redirect("/crm-v2/pipeline?edit_updated=service&lead=" + encodeURIComponent(leadId) +
     "#dossier-" + encodeURIComponent(leadId));
 }
+
+
+/**
+ * Update the dossier's business date without changing an actual appointment.
+ * A date tied to a scheduled job or appointment must be changed in planning.
+ */
+export async function updateV2PerformanceDateOnly(formData: FormData) {
+  await requireCrmAccess();
+  const leadId = String(formData.get("leadId") || "").trim();
+  const expectedUpdatedAt = String(formData.get("expectedLeadUpdatedAt") || "").trim();
+  const nextDate = String(formData.get("performanceDate") || "").trim();
+  const dateValid = !nextDate || (
+    /^\d{4}-\d{2}-\d{2}$/.test(nextDate) &&
+    Number.isFinite(Date.parse(nextDate + "T00:00:00Z")) &&
+    new Date(nextDate + "T00:00:00Z").toISOString().slice(0, 10) === nextDate
+  );
+  if (!UUID_REGEX.test(leadId) || !validExpectedTimestamp(expectedUpdatedAt) || !dateValid) {
+    redirect("/crm-v2/pipeline?edit_error=invalid&lead=" + encodeURIComponent(leadId));
+  }
+  const { businessId } = await resolveCurrentBusinessContext();
+  try {
+    const [leads, jobs, appointments] = await Promise.all([
+      supabaseRest<{ id: string; customer_id: string; lifecycle_status: string;
+        updated_at: string; performance_date: string | null }>(
+        "leads", "GET", null,
+        "business_id=eq." + businessId + "&id=eq." + leadId +
+        "&select=id,customer_id,lifecycle_status,updated_at,performance_date&limit=1",
+      ),
+      supabaseRest<{ id: string }>("jobs", "GET", null,
+        "business_id=eq." + businessId + "&lead_id=eq." + leadId + "&select=id&limit=1"),
+      supabaseRest<{ id: string }>("appointments", "GET", null,
+        "business_id=eq." + businessId + "&lead_id=eq." + leadId + "&select=id&limit=1"),
+    ]);
+    if (!Array.isArray(leads) || !Array.isArray(jobs) || !Array.isArray(appointments) || !leads[0]) {
+      redirect("/crm-v2/pipeline?edit_error=not_found&lead=" + encodeURIComponent(leadId));
+    }
+    const lead = leads[0];
+    if (lead.lifecycle_status === "CLOSED_LOST" || jobs.length > 0 || appointments.length > 0) {
+      redirect("/crm-v2/pipeline?edit_error=date_locked&lead=" + encodeURIComponent(leadId));
+    }
+    if (lead.updated_at !== expectedUpdatedAt) {
+      redirect("/crm-v2/pipeline?edit_error=conflict&lead=" + encodeURIComponent(leadId));
+    }
+    if ((lead.performance_date || "") === nextDate) {
+      redirect("/crm-v2/pipeline?edit_updated=date&lead=" + encodeURIComponent(leadId) +
+        "#dossier-" + encodeURIComponent(leadId));
+    }
+
+    const changed = await supabaseRest<{ id: string; performance_date: string | null }>(
+      "leads", "PATCH", { performance_date: nextDate || null },
+      "business_id=eq." + businessId + "&id=eq." + leadId +
+      "&updated_at=eq." + encodeURIComponent(expectedUpdatedAt) +
+      "&lifecycle_status=neq.CLOSED_LOST&select=id,performance_date",
+    );
+    if (!changed || Array.isArray(changed) || changed.id !== leadId ||
+        (changed.performance_date || "") !== nextDate) {
+      redirect("/crm-v2/pipeline?edit_error=conflict&lead=" + encodeURIComponent(leadId));
+    }
+    try {
+      await supabaseRest("activity_log", "POST", {
+        business_id: businessId,
+        customer_id: lead.customer_id,
+        lead_id: leadId,
+        event_type: "crm_v2.dossier.date_adjusted",
+        event_data: {
+          source: "crm_v2_pipeline",
+          previous_performance_date: lead.performance_date,
+          new_performance_date: nextDate || null,
+        },
+      }, "select=id");
+    } catch (error) {
+      console.error("Date saved but audit event failed", error);
+    }
+  } catch (error) {
+    if (error && typeof error === "object" && "digest" in error) throw error;
+    console.error("CRM V2 performance date update failed", error);
+    redirect("/crm-v2/pipeline?edit_error=date_unavailable&lead=" + encodeURIComponent(leadId));
+  }
+  revalidatePath("/crm-v2/pipeline");
+  revalidatePath("/crm-v2/calendar");
+  redirect("/crm-v2/pipeline?edit_updated=date&lead=" + encodeURIComponent(leadId) +
+    "#dossier-" + encodeURIComponent(leadId));
+}
