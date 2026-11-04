@@ -75,17 +75,40 @@ export default function LeadEditPanel({
   expectedJobUpdatedAt: string;
   jobPriceAction: (formData: FormData) => void | Promise<void>;
 }) {
+  type EditMode = "contact" | "note" | "service" | "date" | "price";
   const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<EditMode>("contact");
+  const priceAvailable = Boolean(
+    (canEditJobPrice && jobId) ||
+    (canEditServicePrice && serviceId) ||
+    (canEditPrice && quoteId)
+  );
+  const modes: Array<{ id: EditMode; label: string; available: boolean }> = [
+    { id: "contact", label: "Coordonnées", available: true },
+    { id: "note", label: "Note", available: true },
+    { id: "service", label: "Prestation", available: !serviceLockedWithoutRow },
+    { id: "date", label: "Date", available: true },
+    { id: "price", label: "Prix", available: priceAvailable },
+  ];
+  const activate = (selected: EditMode) => {
+    setMode(selected);
+    setOpen(true);
+  };
 
   if (!open) {
     return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="rounded-xl border border-cyan-300/20 bg-cyan-300/[0.04] px-3 py-2 text-[11px] font-medium text-cyan-100/75 transition hover:border-cyan-300/35 hover:text-cyan-100"
-      >
-        Modifier la demande
-      </button>
+      <div className="flex max-w-[470px] flex-wrap justify-start gap-1.5 md:justify-end">
+        {modes.filter((item) => item.available).map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => activate(item.id)}
+            className="rounded-lg border border-cyan-300/20 bg-cyan-300/[0.04] px-3 py-2 text-[11px] font-semibold text-cyan-100/80 transition hover:border-cyan-300/45 hover:bg-cyan-300/10 focus-visible:outline-2 focus-visible:outline-cyan-200"
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
     );
   }
 
