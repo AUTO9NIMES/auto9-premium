@@ -386,6 +386,7 @@ function LeadProgress({
         )}
       </div>
 
+      {editFeedback && <p className="mx-5 mt-4 rounded-xl border border-cyan-300/20 p-3 text-sm text-cyan-100">{editFeedback}</p>}
       <div className="p-5">
         <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
           {steps.map((step, index) => {
