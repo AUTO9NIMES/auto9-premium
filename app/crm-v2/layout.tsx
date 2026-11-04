@@ -20,6 +20,7 @@ async function ensureCrmAccess() {
 
 const nav = [
   ["Pilotage", "/crm-v2"],
+  ["Garages pro", "/crm-v2/garages"],
   ["Développement", "/crm-v2/developpement"],
   ["Chiffre d’affaires", "/crm-v2/revenue"],
   ["Dossiers clients", "/crm-v2/pipeline"],
@@ -57,8 +58,8 @@ export default async function CrmV2Layout({ children }: { children: React.ReactN
           <div className="mt-auto rounded-2xl border border-white/8 bg-white/[0.03] p-4">
             <ThemeToggle />
             <p className="text-[10px] uppercase tracking-[0.2em] text-white/30">Version</p>
-            <p className="mt-2 text-sm text-cyan-200">CRM V2 · NOX</p>
-            <p className="mt-2 text-xs leading-5 text-white/35">Branche indépendante. Le CRM actuel reste intact.</p>
+            <p className="mt-2 text-sm text-cyan-200">CRM V3 · NOX</p>
+            <p className="mt-2 text-xs leading-5 text-white/35">Évolution du CRM V2. La V1 reste intacte.</p>
           </div>
         </aside>
 
