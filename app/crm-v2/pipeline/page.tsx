@@ -275,7 +275,7 @@ function LeadProgress({
   const firstPending = states.findIndex((state) => !state.done);
 
   return (
-    <article className="overflow-hidden rounded-3xl border border-white/8 bg-[#0b121b]">
+    <article id={item.lead.id ? "dossier-" + item.lead.id : undefined} className="scroll-mt-7 overflow-hidden rounded-3xl border border-white/8 bg-[#0b121b]">
       <div className="flex flex-col gap-4 border-b border-white/8 p-5 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -553,8 +553,9 @@ export default async function CrmV2Pipeline({
   const stepUpdated =
     (Array.isArray(params.step_updated) ? params.step_updated[0] : params.step_updated) === "1";
   const stepError = Array.isArray(params.step_error) ? params.step_error[0] : params.step_error;
-  const editUpdated =
-    (Array.isArray(params.edit_updated) ? params.edit_updated[0] : params.edit_updated) === "1";
+  const editUpdatedValue = Array.isArray(params.edit_updated) ? params.edit_updated[0] : params.edit_updated;
+  const editUpdated = editUpdatedValue === "1" || editUpdatedValue === "contact" || editUpdatedValue === "note";
+  const editLeadId = Array.isArray(params.lead) ? params.lead[0] : params.lead;
   const editError = Array.isArray(params.edit_error) ? params.edit_error[0] : params.edit_error;
   const priceUpdated = (Array.isArray(params.price_updated) ? params.price_updated[0] : params.price_updated) === "1";
   const priceError = Array.isArray(params.price_error) ? params.price_error[0] : params.price_error;
