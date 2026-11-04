@@ -23,6 +23,8 @@ export default function LeadEditPanel({
   action,
   contactAction,
   noteAction,
+  serviceNameAction,
+  performanceDateAction,
   quoteId,
   expectedPrice,
   canEditPrice,
@@ -57,6 +59,8 @@ export default function LeadEditPanel({
   action: (formData: FormData) => void | Promise<void>;
   contactAction: (formData: FormData) => void | Promise<void>;
   noteAction: (formData: FormData) => void | Promise<void>;
+  serviceNameAction: (formData: FormData) => void | Promise<void>;
+  performanceDateAction: (formData: FormData) => void | Promise<void>;
   quoteId: string | null;
   expectedPrice: number | null;
   canEditPrice: boolean;
