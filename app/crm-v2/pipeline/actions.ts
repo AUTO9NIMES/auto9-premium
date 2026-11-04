@@ -895,3 +895,86 @@ export async function updateV2NoteOnly(formData: FormData) {
   redirect("/crm-v2/pipeline?edit_updated=note&lead=" + encodeURIComponent(leadId) +
     "#dossier-" + encodeURIComponent(leadId));
 }
+
+
+/**
+ * Correct the operational label only. Never mutate a quote or job price.
+ * This is a descriptive correction, so a sent quote does not block it.
+ */
+export async function updateV2ServiceNameOnly(formData: FormData) {
+  await requireCrmAccess();
+  const leadId = String(formData.get("leadId") || "").trim();
+  const serviceId = String(formData.get("expectedServiceId") || "").trim();
+  const expectedUpdatedAt = String(formData.get("expectedServiceUpdatedAt") || "").trim();
+  const serviceName = String(formData.get("serviceName") || "").trim();
+  if (!UUID_REGEX.test(leadId) || !UUID_REGEX.test(serviceId) ||
+      !validExpectedTimestamp(expectedUpdatedAt) ||
+      !serviceName || serviceName.length > 200) {
+    redirect("/crm-v2/pipeline?edit_error=invalid&lead=" + encodeURIComponent(leadId));
+  }
+  const { businessId } = await resolveCurrentBusinessContext();
+  try {
+    const [leads, services] = await Promise.all([
+      supabaseRest<{ id: string; customer_id: string; lifecycle_status: string }>(
+        "leads", "GET", null, "business_id=eq." + businessId +
+        "&id=eq." + leadId + "&select=id,customer_id,lifecycle_status&limit=1",
+      ),
+      supabaseRest<{ id: string; service_name: string; updated_at: string }>(
+        "lead_services", "GET", null, "business_id=eq." + businessId +
+        "&lead_id=eq." + leadId +
+        "&order=created_at.desc,id.desc&select=id,service_name,updated_at&limit=1",
+      ),
+    ]);
+    if (!Array.isArray(leads) || !Array.isArray(services) ||
+        !leads[0] || !services[0] || services[0].id !== serviceId) {
+      redirect("/crm-v2/pipeline?edit_error=not_found&lead=" + encodeURIComponent(leadId));
+    }
+    if (leads[0].lifecycle_status === "CLOSED_LOST") {
+      redirect("/crm-v2/pipeline?edit_error=blocked&lead=" + encodeURIComponent(leadId));
+    }
+    if (services[0].updated_at !== expectedUpdatedAt) {
+      redirect("/crm-v2/pipeline?edit_error=conflict&lead=" + encodeURIComponent(leadId));
+    }
+    if (services[0].service_name === serviceName) {
+      redirect("/crm-v2/pipeline?edit_updated=service&lead=" + encodeURIComponent(leadId) +
+        "#dossier-" + encodeURIComponent(leadId));
+    }
+
+    const changed = await supabaseRest<{ id: string; service_name: string }>(
+      "lead_services", "PATCH", { service_name: serviceName },
+      "business_id=eq." + businessId + "&lead_id=eq." + leadId +
+      "&id=eq." + serviceId +
+      "&updated_at=eq." + encodeURIComponent(expectedUpdatedAt) +
+      "&select=id,service_name",
+    );
+    if (!changed || Array.isArray(changed) || changed.id !== serviceId ||
+        changed.service_name !== serviceName) {
+      redirect("/crm-v2/pipeline?edit_error=conflict&lead=" + encodeURIComponent(leadId));
+    }
+    try {
+      await supabaseRest("activity_log", "POST", {
+        business_id: businessId,
+        customer_id: leads[0].customer_id,
+        lead_id: leadId,
+        event_type: "crm_v2.service_label.corrected",
+        event_data: {
+          source: "crm_v2_pipeline",
+          service_id: serviceId,
+          previous_label: services[0].service_name,
+          new_label: serviceName,
+        },
+      }, "select=id");
+    } catch (error) {
+      console.error("Service name saved but audit event failed", error);
+    }
+  } catch (error) {
+    if (error && typeof error === "object" && "digest" in error) throw error;
+    console.error("CRM V2 service name update failed", error);
+    redirect("/crm-v2/pipeline?edit_error=service_unavailable&lead=" + encodeURIComponent(leadId));
+  }
+  revalidatePath("/crm-v2/pipeline");
+  revalidatePath("/crm-v2/clients");
+  revalidatePath("/crm/pipeline");
+  redirect("/crm-v2/pipeline?edit_updated=service&lead=" + encodeURIComponent(leadId) +
+    "#dossier-" + encodeURIComponent(leadId));
+}
