@@ -339,6 +339,74 @@ export default async function CrmV2Dashboard() {
         ))}
       </section>
 
+      <section className="grid gap-5 xl:grid-cols-[1.2fr_.8fr]">
+        <div className="rounded-3xl border border-cyan-300/15 bg-[#0b121b] p-5 md:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.22em] text-cyan-200/55">Aujourd'hui</p>
+              <h2 className="mt-2 text-xl font-semibold">Mes interventions</h2>
+            </div>
+            <Link href={"/crm-v2/calendar?day=" + currentDay} className="text-xs text-cyan-200/75 hover:text-cyan-100">Ouvrir la journée →</Link>
+          </div>
+          <div className="mt-5 space-y-2">
+            {todayAgenda.length ? todayAgenda.map((event) => (
+              <Link
+                key={event.id}
+                href={"/crm-v2/calendar?day=" + currentDay}
+                className="flex items-center gap-4 rounded-xl border border-white/8 bg-white/[0.025] p-4 transition hover:border-cyan-300/25 hover:bg-cyan-300/[0.03]"
+              >
+                <span className="w-12 shrink-0 text-sm font-semibold text-cyan-200">{event.time}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold text-white">{event.title}</span>
+                  <span className="mt-1 block truncate text-xs text-white/45">{event.subtitle}</span>
+                </span>
+                <span className="text-white/30">→</span>
+              </Link>
+            )) : (
+              <div className="rounded-xl border border-dashed border-white/10 p-5">
+                <p className="text-sm text-white/65">Aucune intervention inscrite aujourd'hui.</p>
+                <Link href="/crm-v2/calendar?new=1" className="mt-3 inline-block text-xs text-cyan-200">+ Ajouter un événement</Link>
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="rounded-3xl border border-white/8 bg-[#0b121b] p-5 md:p-6">
+          <p className="text-[10px] uppercase tracking-[0.22em] text-cyan-200/55">À suivre</p>
+          <h2 className="mt-2 text-xl font-semibold">Priorités</h2>
+          <div className="mt-5 space-y-3">
+            <Link href="/crm-v2/pipeline" className="flex items-center justify-between rounded-xl border border-white/8 bg-white/[0.025] p-4 transition hover:border-amber-300/30">
+              <span>
+                <span className="block text-sm font-semibold">Encaissements</span>
+                <span className="mt-1 block text-xs text-white/45">Prestations terminées sans paiement</span>
+              </span>
+              <span className="ml-3 text-xl font-bold text-amber-200">{unpaidCount}</span>
+            </Link>
+            <Link href="/crm-v2/pipeline" className="flex items-center justify-between rounded-xl border border-white/8 bg-white/[0.025] p-4 transition hover:border-cyan-300/25">
+              <span>
+                <span className="block text-sm font-semibold">Demandes à rappeler</span>
+                <span className="mt-1 block text-xs text-white/45">Sans rendez-vous confirmé</span>
+              </span>
+              <span className="ml-3 text-xl font-bold text-cyan-100">{leadsToTreat}</span>
+            </Link>
+            <Link href="/crm-v2/developpement" className="flex items-center justify-between rounded-xl border border-white/8 bg-white/[0.025] p-4 transition hover:border-cyan-300/25">
+              <span>
+                <span className="block text-sm font-semibold">Prospection garages</span>
+                <span className="mt-1 block text-xs text-white/45">Prospects et relances commerciales</span>
+              </span>
+              <span className="ml-3 text-white/35">→</span>
+            </Link>
+          </div>
+          <p className="mt-4 text-xs leading-5 text-white/35">Les montants à encaisser sont indicatifs. Le CA tient compte uniquement des paiements enregistrés.</p>
+        </div>
+      </section>
+
+      <section className="flex flex-wrap gap-2">
+        <Link href="/crm-v2/pipeline/new" className="rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-3 text-xs font-semibold text-cyan-100 hover:bg-cyan-300/20">+ Nouveau dossier</Link>
+        <Link href="/crm-v2/calendar?new=1" className="rounded-xl border border-white/12 bg-white/[0.035] px-4 py-3 text-xs font-semibold text-white/80 hover:border-white/25">+ Intervention</Link>
+        <Link href="/crm-v2/clients?new=1" className="rounded-xl border border-white/12 bg-white/[0.035] px-4 py-3 text-xs font-semibold text-white/80 hover:border-white/25">+ Client</Link>
+        <Link href="/crm-v2/developpement" className="rounded-xl border border-white/12 bg-white/[0.035] px-4 py-3 text-xs font-semibold text-white/80 hover:border-white/25">Prospection →</Link>
+      </section>
+
       <div className="grid gap-5 2xl:grid-cols-[1.25fr_.75fr]">
         <section className="rounded-3xl border border-white/8 bg-[#0b121b] p-5 md:p-6">
           <div className="flex items-center justify-between gap-4">
