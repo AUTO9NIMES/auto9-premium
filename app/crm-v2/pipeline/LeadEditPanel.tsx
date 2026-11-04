@@ -235,8 +235,8 @@ export default function LeadEditPanel({
           </button>
         </div>
         <p className="text-[11px] leading-5 text-white/45 md:col-span-2">
-          Chaque bouton enregistre uniquement la partie indiquée, sauf « prestation / date »
-          qui utilise les règles de validation du dossier.
+          Chaque bouton enregistre uniquement la partie indiquée. Les dossiers engagés
+          conservent les protections liées aux rendez-vous et aux paiements.
         </p>
       </form>
 
