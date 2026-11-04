@@ -116,9 +116,9 @@ export default function LeadEditPanel({
     <div className="w-full rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.025] p-4 md:min-w-[520px]">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold text-white">Modifier la demande</p>
+          <p className="text-sm font-semibold text-white">Modification rapide du dossier</p>
           <p className="mt-1 text-[10px] leading-4 text-white/35">
-            Enregistre les coordonnées, les notes et la prestation séparément. Ainsi, un champ verrouillé n'empêche plus les autres corrections.
+            Choisis une rubrique, modifie le champ et enregistre. Les autres informations restent intactes.
           </p>
         </div>
         <button
@@ -130,7 +130,31 @@ export default function LeadEditPanel({
         </button>
       </div>
 
-      <form action={action} className="mt-4 grid gap-3 md:grid-cols-2">
+      <nav aria-label="Choisir le champ à modifier" className="mt-4 flex flex-wrap gap-2">
+        {modes.map((item) => (
+          <button
+            type="button"
+            key={item.id}
+            disabled={!item.available}
+            aria-pressed={mode === item.id}
+            onClick={() => setMode(item.id)}
+            className={mode === item.id
+              ? "rounded-lg border border-cyan-300/45 bg-cyan-300/15 px-3 py-2.5 text-xs font-semibold text-cyan-100"
+              : "rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2.5 text-xs text-white/65 transition hover:border-cyan-300/30 disabled:cursor-not-allowed disabled:opacity-30"}
+          >
+            {item.label}
+          </button>
+        ))}
+      </nav>
+
+      {mode !== "price" && (
+      <form
+        action={mode === "contact" ? contactAction :
+          mode === "note" ? noteAction :
+          mode === "service" ? serviceId ? serviceNameAction : action :
+          performanceDateAction}
+        className="mt-4 grid gap-3 md:grid-cols-2"
+      >
         <input type="hidden" name="leadId" value={leadId} />
         <input type="hidden" name="expectedLeadUpdatedAt" value={expectedLeadUpdatedAt} />
         <input type="hidden" name="expectedCustomerUpdatedAt" value={expectedCustomerUpdatedAt} />
