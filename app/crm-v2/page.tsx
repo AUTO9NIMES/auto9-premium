@@ -204,6 +204,62 @@ export default async function CrmV2Dashboard() {
   const leadsToTreat = activeLeads.filter((lead) => !hasBookedStep(lead, stepActivity)).length;
   const clientDossiers = activeLeads.filter((lead) => hasBookedStep(lead, stepActivity)).length;
 
+  // Financial totals are based on recorded payments, never open quotes.
+  const monthRevenue = cashRevenue + bankRevenue;
+  const jobs = (jobsRaw as DashboardJobRow[] | null) ?? [];
+  const services = (servicesRaw as DashboardServiceRow[] | null) ?? [];
+  const paidJobIds = new Set(payments.map((payment) => payment.job_id));
+  const jobLeadIds = new Set(jobs.map((job) => job.lead_id).filter(Boolean));
+  const latestServiceByLead = new Map<string, DashboardServiceRow>();
+  for (const service of services) {
+    if (!latestServiceByLead.has(service.lead_id)) latestServiceByLead.set(service.lead_id, service);
+  }
+
+  const unpaidJobs = jobs.filter((job) =>
+    job.status === "COMPLETED" &&
+    !paidJobIds.has(job.id) &&
+    (!job.lead_id || manualStepDone(job.lead_id, "PAID", stepActivity) !== true),
+  );
+  const unpaidLeads = activeLeads.filter((lead) =>
+    !jobLeadIds.has(lead.id) &&
+    manualStepDone(lead.id, "PAID", stepActivity) !== true &&
+    (manualStepDone(lead.id, "COMPLETED", stepActivity) ??
+      ["COMPLETED", "REVIEW_REQUESTED"].includes(lead.lifecycle_status)),
+  );
+  const unpaidCount = unpaidJobs.length + unpaidLeads.length;
+  const unpaidKnownAmount =
+    unpaidJobs.reduce((total, job) => total + Math.max(0, Number(job.total_amount) || 0), 0) +
+    unpaidLeads.reduce((total, lead) =>
+      total + Math.max(0, Number(latestServiceByLead.get(lead.id)?.base_price) || 0), 0);
+  const unpaidWithoutAmount =
+    unpaidJobs.filter((job) => !(Number(job.total_amount) > 0)).length +
+    unpaidLeads.filter((lead) => !(Number(latestServiceByLead.get(lead.id)?.base_price) > 0)).length;
+
+  const todayAppointments = calendar.items
+    .filter((item) => parisDateKey(item.appointment.scheduledAt) === currentDay)
+    .map((item) => ({
+      id: "appointment-" + item.appointment.id,
+      time: hour.format(new Date(item.appointment.scheduledAt)),
+      title: item.customer.fullName,
+      subtitle: item.job.title || "Prestation AUTO 9",
+    }));
+  const todayCustomEvents = customEvents.filter((item) => item.event_date === currentDay)
+    .map((item) => ({
+      id: "calendar-" + item.id,
+      time: item.event_time?.slice(0, 5) || "—",
+      title: item.title || "Événement",
+      subtitle: "Intervention au planning",
+    }));
+  const todayHistorical = historicalEvents.filter((item) => item.eventDate === currentDay)
+    .map((item) => ({
+      id: "history-" + item.id,
+      time: item.eventTime?.slice(0, 5) || "—",
+      title: item.serviceName || "Prestation",
+      subtitle: "Prestation du dossier",
+    }));
+  const todayAgenda = [...todayAppointments, ...todayCustomEvents, ...todayHistorical]
+    .sort((a, b) => a.time.localeCompare(b.time));
+
   const nextEvents = calendar.items
     .filter((item) => new Date(item.appointment.scheduledAt).getTime() >= appointmentCutoff)
     .sort((a, b) => new Date(a.appointment.scheduledAt).getTime() - new Date(b.appointment.scheduledAt).getTime())
