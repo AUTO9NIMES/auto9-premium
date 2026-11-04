@@ -21,6 +21,8 @@ export default function LeadEditPanel({
   expectedServiceUpdatedAt,
   expectedServiceName,
   action,
+  contactAction,
+  noteAction,
   quoteId,
   expectedPrice,
   canEditPrice,
@@ -53,6 +55,8 @@ export default function LeadEditPanel({
   expectedServiceUpdatedAt: string;
   expectedServiceName: string;
   action: (formData: FormData) => void | Promise<void>;
+  contactAction: (formData: FormData) => void | Promise<void>;
+  noteAction: (formData: FormData) => void | Promise<void>;
   quoteId: string | null;
   expectedPrice: number | null;
   canEditPrice: boolean;
@@ -87,7 +91,7 @@ export default function LeadEditPanel({
         <div>
           <p className="text-sm font-semibold text-white">Modifier la demande</p>
           <p className="mt-1 text-[10px] leading-4 text-white/35">
-            Modifie les coordonnées, la prestation et la date métier du dossier.
+            Enregistre les coordonnées, les notes et la prestation séparément. Ainsi, un champ verrouillé n'empêche plus les autres corrections.
           </p>
         </div>
         <button
@@ -191,9 +195,34 @@ export default function LeadEditPanel({
           />
         </label>
 
-        <button className="rounded-xl border border-cyan-300/25 bg-cyan-300/10 px-4 py-3 text-xs font-semibold text-cyan-100 md:col-span-2">
-          Enregistrer les modifications
-        </button>
+        <div className="grid gap-2 md:col-span-2 sm:grid-cols-3">
+          <button
+            type="submit"
+            formAction={contactAction}
+            formNoValidate
+            className="rounded-xl border border-cyan-300/25 bg-cyan-300/10 px-4 py-3 text-xs font-semibold text-cyan-100 hover:bg-cyan-300/20"
+          >
+            Enregistrer coordonnées
+          </button>
+          <button
+            type="submit"
+            formAction={noteAction}
+            formNoValidate
+            className="rounded-xl border border-cyan-300/25 bg-cyan-300/10 px-4 py-3 text-xs font-semibold text-cyan-100 hover:bg-cyan-300/20"
+          >
+            Enregistrer la note
+          </button>
+          <button
+            type="submit"
+            className="rounded-xl border border-white/15 bg-white/[0.04] px-4 py-3 text-xs font-semibold text-white/85 hover:bg-white/10"
+          >
+            Enregistrer prestation / date
+          </button>
+        </div>
+        <p className="text-[11px] leading-5 text-white/45 md:col-span-2">
+          Chaque bouton enregistre uniquement la partie indiquée, sauf « prestation / date »
+          qui utilise les règles de validation du dossier.
+        </p>
       </form>
 
       {canEditJobPrice && jobId && (
