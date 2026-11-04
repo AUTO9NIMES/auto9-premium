@@ -16,6 +16,8 @@ import {
   updateV2LeadDetails,
   updateV2ContactOnly,
   updateV2NoteOnly,
+  updateV2ServiceNameOnly,
+  updateV2PerformanceDateOnly,
   updateV2DraftPrice,
   updateV2ServicePrice,
   updateV2JobPrice,
@@ -352,6 +354,8 @@ function LeadProgress({
                 action={updateV2LeadDetails}
                 contactAction={updateV2ContactOnly}
                 noteAction={updateV2NoteOnly}
+                serviceNameAction={updateV2ServiceNameOnly}
+                performanceDateAction={updateV2PerformanceDateOnly}
                 quoteId={item.latestQuote?.id ?? null}
                 expectedPrice={item.latestQuote?.total_price ?? null}
                 canEditPrice={Boolean(
@@ -557,7 +561,7 @@ export default async function CrmV2Pipeline({
     (Array.isArray(params.step_updated) ? params.step_updated[0] : params.step_updated) === "1";
   const stepError = Array.isArray(params.step_error) ? params.step_error[0] : params.step_error;
   const editUpdatedValue = Array.isArray(params.edit_updated) ? params.edit_updated[0] : params.edit_updated;
-  const editUpdated = editUpdatedValue === "1" || editUpdatedValue === "contact" || editUpdatedValue === "note";
+  const editUpdated = editUpdatedValue === "1" || editUpdatedValue === "contact" || editUpdatedValue === "note" || editUpdatedValue === "service" || editUpdatedValue === "date";
   const editLeadId = Array.isArray(params.lead) ? params.lead[0] : params.lead;
   const editError = Array.isArray(params.edit_error) ? params.edit_error[0] : params.edit_error;
   const priceUpdated = (Array.isArray(params.price_updated) ? params.price_updated[0] : params.price_updated) === "1";
