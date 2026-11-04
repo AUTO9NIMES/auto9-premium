@@ -164,6 +164,7 @@ export default function LeadEditPanel({
         <input type="hidden" name="expectedServiceUpdatedAt" value={expectedServiceUpdatedAt} />
         <input type="hidden" name="expectedServiceName" value={expectedServiceName} />
 
+        {mode === "contact" && (<>
         <label className="text-[10px] uppercase tracking-[0.12em] text-white/35">
           Nom client
           <input
@@ -202,7 +203,9 @@ export default function LeadEditPanel({
           />
         </label>
 
-        <label className="text-[10px] uppercase tracking-[0.12em] text-white/35">
+        </>)}
+        {mode === "date" && (
+        <label className="text-[10px] uppercase tracking-[0.12em] text-white/35 md:col-span-2">
           Date de prestation (facultative)
           <input
             name="performanceDate"
@@ -212,7 +215,9 @@ export default function LeadEditPanel({
           />
         </label>
 
-        <label className="text-[10px] uppercase tracking-[0.12em] text-white/35">
+        )}
+        {mode === "service" && (
+        <label className="text-[10px] uppercase tracking-[0.12em] text-white/35 md:col-span-2">
           Prestation
           {serviceLockedWithoutRow ? (
             <>
@@ -235,6 +240,8 @@ export default function LeadEditPanel({
           )}
         </label>
 
+        )}
+        {mode === "note" && (
         <label className="text-[10px] uppercase tracking-[0.12em] text-white/35 md:col-span-2">
           Note complémentaire
           <textarea
