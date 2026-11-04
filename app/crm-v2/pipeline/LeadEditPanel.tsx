@@ -199,7 +199,7 @@ export default function LeadEditPanel({
           />
         </label>
 
-        <div className="grid gap-2 md:col-span-2 sm:grid-cols-3">
+        <div className="grid gap-2 md:col-span-2 sm:grid-cols-2">
           <button
             type="submit"
             formAction={contactAction}
