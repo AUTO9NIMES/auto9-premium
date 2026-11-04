@@ -296,7 +296,7 @@ function LeadProgress({
             <div className="mt-3 flex flex-wrap gap-2">
               {item.customer.phone && (
                 <a
-                  href={"tel:" + item.customer.phone.replace(/[^+\\d]/g, "")}
+                  href={"tel:" + item.customer.phone.replace(/[^+0-9]/g, "")}
                   className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-[11px] font-semibold text-cyan-100/80 transition hover:border-cyan-300/35"
                   aria-label={"Appeler " + name(item)}
                 >
