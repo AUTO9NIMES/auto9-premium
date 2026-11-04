@@ -218,7 +218,7 @@ export default function LeadEditPanel({
           </button>
           <button
             type="submit"
-            formAction={serviceNameAction}
+            formAction={serviceId ? serviceNameAction : action}
             formNoValidate
             disabled={serviceLockedWithoutRow}
             className="rounded-xl border border-white/15 bg-white/[0.04] px-4 py-3 text-xs font-semibold text-white/85 hover:bg-white/10 disabled:opacity-35"
