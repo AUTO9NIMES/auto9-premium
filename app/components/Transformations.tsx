@@ -3,28 +3,28 @@
 import { useRef } from "react";
 import { DesktopVideo } from "./DesktopVideo";
 
-const instagramUrl = "https://www.instagram.com/auto9_nimes/";
+
 
 const results = [
   {
     title: "Intérieur",
     subtitle: "Redonnez vie à votre habitacle.",
     video: "/media/transformations-v2/interieur.mp4",
-    href: instagramUrl,
+    
     badge: "Confort",
   },
   {
     title: "Extérieur",
     subtitle: "Retrouvez une carrosserie éclatante.",
     video: "/media/transformations-v2/exterieur.mp4",
-    href: instagramUrl,
+    
     badge: "Brillance",
   },
   {
     title: "Formule Duo",
     subtitle: "La remise à neuf complète AUTO 9.",
     video: "/media/transformations-v2/duo.mp4",
-    href: instagramUrl,
+    
     badge: "Best Seller",
   },
 ];
@@ -46,7 +46,7 @@ export function Transformations() {
 
         <p className="mt-8 max-w-3xl text-xl leading-relaxed text-white/55">
           Découvrez nos prestations en vidéo et retrouvez davantage de résultats
-          sur Instagram.
+          directement ici.
         </p>
 
         <div className="mt-20 grid gap-8 lg:grid-cols-3">
@@ -66,7 +66,6 @@ function ResultCard({
     title: string;
     subtitle: string;
     video: string;
-    href: string;
     badge: string;
   };
 }) {
@@ -91,10 +90,7 @@ function ResultCard({
   };
 
   return (
-    <a
-      href={item.href}
-      target="_blank"
-      rel="noreferrer"
+    <article
       onMouseEnter={playVideo}
       onMouseLeave={pauseVideo}
       className="group relative overflow-hidden rounded-3xl border border-white/10 bg-black transition-all duration-500 hover:-translate-y-3 hover:border-[#B8C7D1]/70 hover:shadow-[0_0_80px_rgba(184,199,209,.25)]"
@@ -102,6 +98,7 @@ function ResultCard({
       <div className="relative aspect-[9/16] overflow-hidden">
         <DesktopVideo
           ref={videoRef}
+          controls
           src={item.video}
           muted
           loop
@@ -126,10 +123,10 @@ function ResultCard({
           <div className="mt-8 h-px w-14 bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] shadow-[0_18px_45px_rgba(184,199,209,.18)] transition-all duration-500 group-hover:w-28" />
 
           <span className="mt-8 inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.25em] text-white transition duration-300 group-hover:translate-x-2 group-hover:text-[#B8C7D1]">
-            Voir les vidéos sur Instagram →
+            Regarder la vidéo sur place
           </span>
         </div>
       </div>
-    </a>
+    </article>
   );
 }
