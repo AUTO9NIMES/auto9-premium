@@ -51,7 +51,7 @@ export function MobileHomeRefresh() {
               href="/devis"
               className="flex w-full items-center justify-center gap-4 rounded-full bg-[linear-gradient(135deg,#f2f6f9,#b9d6f6)] px-5 py-5 text-[12px] font-black uppercase tracking-[0.19em] text-[#050608] shadow-[0_18px_50px_rgba(112,171,238,.18)]"
             >
-              Configurer ma prestation
+              Obtenir mon devis
               <span className="text-lg">→</span>
             </Link>
 
