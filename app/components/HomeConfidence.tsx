@@ -83,7 +83,7 @@ export function HomeConfidence() {
                 href="/devis"
                 className="mt-7 inline-flex items-center gap-4 rounded-full border border-[#79b2f1]/45 bg-[linear-gradient(135deg,#1158be,#1f78e6)] px-6 py-4 text-[11px] font-black uppercase tracking-[0.22em] shadow-[0_0_30px_rgba(31,120,230,.2)] transition hover:brightness-110"
               >
-                Configurer ma prestation <span className="text-lg">→</span>
+                Obtenir mon devis <span className="text-lg">→</span>
               </Link>
             </div>
 

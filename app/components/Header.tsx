@@ -37,7 +37,7 @@ export function Header() {
           href="/devis"
           className="bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] text-[#050608] shadow-[0_18px_45px_rgba(184,199,209,.18)] rounded-2xl px-6 py-4 text-[#050608] transition hover:scale-105"
         >
-          Devis gratuit
+          Obtenir mon devis
         </Link>
       </div>
     </nav>
