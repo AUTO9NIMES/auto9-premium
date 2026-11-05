@@ -61,14 +61,14 @@ export function Hero() {
               href="/devis"
               className="inline-flex min-w-[290px] items-center justify-center rounded-full border border-[#d8e2ea]/35 bg-[linear-gradient(135deg,#eef3f7_0%,#c7d3dc_35%,#aebdca_65%,#dfe7ed_100%)] px-10 py-6 text-sm font-black uppercase tracking-[0.28em] text-black shadow-[0_16px_48px_rgba(140,170,195,0.18)] transition hover:scale-[1.015] hover:brightness-105"
             >
-              Devis gratuit <span className="ml-4 text-xl">→</span>
+              Obtenir mon devis <span className="ml-4 text-xl">→</span>
             </Link>
 
             <a
-              href="#reservation"
+              href="#realisations"
               className="inline-flex min-w-[250px] items-center justify-center rounded-full border border-white/14 bg-black/28 px-10 py-6 text-sm font-black uppercase tracking-[0.28em] text-white/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-sm transition hover:border-[#9fbdd1]/40 hover:bg-white/[0.035]"
             >
-              Réserver <span className="ml-4 text-xl">→</span>
+              Voir les résultats <span className="ml-4 text-xl">→</span>
             </a>
           </div>
         </div>
