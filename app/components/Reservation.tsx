@@ -30,9 +30,9 @@ export function Reservation() {
               </h2>
 
               <p className="mt-7 max-w-2xl text-[16px] leading-8 text-white/62 sm:text-[18px]">
-                Réservez votre prestation AUTO 9 en quelques secondes. Configurez
-                votre véhicule, choisissez votre prestation et vos options
-                directement en ligne.
+                Obtenez une estimation personnalisée : choisissez votre véhicule,
+                votre prestation et vos options, puis proposez un créneau.
+                Votre demande reste soumise à confirmation.
               </p>
 
               <div className="mt-9 grid max-w-3xl gap-3 sm:gap-4">
@@ -48,7 +48,7 @@ export function Reservation() {
                   </span>
 
                   <span className="relative flex-1 px-4 text-[11px] font-black uppercase tracking-[0.16em] sm:px-6 sm:text-[13px] sm:tracking-[0.2em]">
-                    Configurer ma prestation
+                    Obtenir mon devis
                   </span>
 
                   <span className="relative grid h-11 w-11 shrink-0 place-items-center rounded-full border border-[#2f78c5]/35 bg-[#0b2036]/10 text-[24px] transition-transform duration-300 group-hover:translate-x-1">
@@ -58,7 +58,7 @@ export function Reservation() {
               </div>
 
               <p className="mt-7 text-[13px] leading-6 text-white/38 sm:text-sm">
-                Réponse rapide selon disponibilité.
+                Nous vous répondons dès que possible selon notre activité.
                 <br />
                 Intervention à Nîmes et jusqu’à 30 km autour.
               </p>
@@ -76,14 +76,19 @@ export function Reservation() {
 
                   <div className="border-b border-white/10 pb-4 sm:border-b-0 sm:border-r sm:pb-0 sm:pr-5">
                     <p className="font-bold text-white/82">Réservation</p>
-                    <p className="mt-1">Choisissez directement votre prestation et votre créneau.</p>
+                    <p className="mt-1">Choisissez votre prestation et proposez un créneau.</p>
                   </div>
 
                   <div>
                     <p className="font-bold text-white/82">Confirmation</p>
-                    <p className="mt-1">Votre demande est confirmée selon les disponibilités AUTO 9.</p>
+                    <p className="mt-1">AUTO 9 vérifie votre demande et confirme le créneau selon les disponibilités.</p>
                   </div>
                 </div>
+              </div>
+              <div className="mt-5 rounded-[24px] border border-white/10 bg-black/20 p-6 sm:p-8">
+                <p className="text-[11px] font-black uppercase tracking-[0.35em] text-white/78 sm:text-xs">Question fréquente</p>
+                <h3 className="mt-4 text-lg font-bold text-white/90">Faut-il prévoir de l’eau et de l’électricité ?</h3>
+                <p className="mt-2 text-sm leading-7 text-white/55">Lors de votre demande, indiquez si un point d’eau et une prise électrique sont disponibles sur place. AUTO 9 vous confirmera les besoins précis selon la prestation et le lieu d’intervention.</p>
               </div>
             </div>
           </div>
