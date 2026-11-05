@@ -26,7 +26,6 @@ const services = [
     video: "/media/services-v2/duo.mp4",
     poster: "/media/services-v2/duo.jpg",
     href: "/devis?service=duo",
-    duration: "00:05",
     features: [
       { label: "Intérieur + extérieur", icon: "sparkles" },
       { label: "Moteur offert", icon: "drop" },
@@ -42,7 +41,6 @@ const services = [
     video: "/media/services-v2/interieur.mp4",
     poster: "/media/services-v2/interieur.jpg",
     href: "/devis?service=interieur",
-    duration: "00:05",
     features: [
       { label: "Habitacle complet", icon: "interior" },
       { label: "Aspiration & plastiques", icon: "vacuum" },
@@ -58,7 +56,6 @@ const services = [
     video: "/media/services-v2/exterieur.mp4",
     poster: "/media/services-v2/exterieur.jpg",
     href: "/devis?service=exterieur",
-    duration: "00:05",
     features: [
       { label: "Prélavage mousse", icon: "drop" },
       { label: "Jantes & carrosserie", icon: "wheel" },
@@ -74,7 +71,6 @@ const services = [
     video: "/media/services-v2/phares.mp4",
     poster: "/media/services-v2/phares.jpg",
     href: "/demande-speciale?type=phares",
-    duration: "00:05",
     features: [
       { label: "Clarté retrouvée", icon: "headlight" },
       { label: "Optiques rénovés", icon: "sparkles" },
@@ -90,7 +86,6 @@ const services = [
     video: "/media/services-v2/polissage.mp4",
     poster: "/media/services-v2/polissage.jpg",
     href: "/demande-speciale?type=polissage",
-    duration: "00:05",
     features: [
       { label: "Correction visuelle", icon: "polish" },
       { label: "Profondeur des reflets", icon: "depth" },
@@ -106,7 +101,6 @@ const services = [
     video: "/media/services-v2/jantes.mp4",
     poster: "/media/services-v2/jantes.jpg",
     href: "/demande-speciale?type=jantes",
-    duration: "00:05",
     features: [
       { label: "Remise en état", icon: "repair" },
       { label: "Finition homogène", icon: "wheel" },
@@ -122,7 +116,6 @@ const services = [
   video: string;
   poster: string;
   href: string;
-  duration: string;
   features: ReadonlyArray<{ label: string; icon: IconName }>;
 }>;
 
@@ -376,7 +369,6 @@ export function Services() {
         <div className={styles.mediaShade} />
         <div className={styles.badge}>{service.eyebrow}</div>
 
-        <div className={styles.duration}>{service.duration}</div>
 
         <div className={styles.mediaTitle}>
           <h3>{service.name}</h3>
