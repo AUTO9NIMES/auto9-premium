@@ -1,9 +1,9 @@
 const partners = [
-  "/partner-supercars.png",
-  "/partner-driving-spirit.png",
-  "/partner-crystalcars.png",
-  "/partner-twiice.png",
-  "/partner-renault.png",
+  { src: "/partner-supercars.png", name: "Supercars" },
+  { src: "/partner-driving-spirit.png", name: "Driving Spirit" },
+  { src: "/partner-crystalcars.png", name: "Crystal Cars" },
+  { src: "/partner-twiice.png", name: "Twiice Auto" },
+  { src: "/partner-renault.png", name: "Renault" },
 ];
 
 export function Partners() {
@@ -14,8 +14,8 @@ export function Partners() {
           {[...partners, ...partners, ...partners].map((logo, index) => (
             <img
               key={index}
-              src={logo}
-              alt="Partenaire AUTO 9"
+              src={logo.src}
+              alt={`Entreprise pour laquelle AUTO 9 a réalisé des prestations : ${logo.name}`}
               className="h-12 w-auto max-w-[160px] object-contain opacity-90 saturate-100 transition duration-300 hover:scale-105 hover:opacity-100"
             />
           ))}
