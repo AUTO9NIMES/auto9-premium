@@ -948,3 +948,17 @@
 .action{border-color:rgba(var(--metal-rgb),.5);background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));color:var(--text)}
 .popularBadge{background:var(--gradient-metal);color:var(--on-metal)}
 .heading h2,.secondaryTitle{letter-spacing:-.06em}
+
+/* Survol (appareils à souris) : un liseré émeraude s'allume sur le contour de la carte. */
+@media (hover: hover) and (pointer: fine) {
+  .fixedCard {
+    transition: border-color .5s ease, box-shadow .5s ease;
+  }
+  .fixedCard:hover {
+    border-color: rgba(var(--accent-rgb), .7);
+    box-shadow:
+      0 0 0 1px rgba(var(--accent-rgb), .25),
+      0 0 42px rgba(var(--accent-rgb), .18),
+      0 28px 80px rgba(0, 0, 0, .55);
+  }
+}

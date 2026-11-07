@@ -13,23 +13,23 @@ export function Header() {
       </Link>
 
       <div className="hidden items-center gap-9 text-xs font-black uppercase tracking-[0.2em] text-white/75 md:flex">
-        <a href="#services" className="transition hover:text-metal-mid">
+        <a href="#services" className="bg-[linear-gradient(90deg,var(--accent),var(--accent-soft))] bg-[length:0_1px] bg-[position:0_100%] bg-no-repeat pb-1.5 transition-[background-size,color] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-[length:100%_1px] hover:text-ivory focus-visible:bg-[length:100%_1px] focus-visible:text-ivory motion-reduce:transition-none">
           Services
         </a>
 
-        <a href="#realisations" className="transition hover:text-metal-mid">
+        <a href="#realisations" className="bg-[linear-gradient(90deg,var(--accent),var(--accent-soft))] bg-[length:0_1px] bg-[position:0_100%] bg-no-repeat pb-1.5 transition-[background-size,color] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-[length:100%_1px] hover:text-ivory focus-visible:bg-[length:100%_1px] focus-visible:text-ivory motion-reduce:transition-none">
           Réalisations
         </a>
 
-        <a href="/professionnels" className="transition hover:text-metal-mid">
+        <a href="/professionnels" className="bg-[linear-gradient(90deg,var(--accent),var(--accent-soft))] bg-[length:0_1px] bg-[position:0_100%] bg-no-repeat pb-1.5 transition-[background-size,color] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-[length:100%_1px] hover:text-ivory focus-visible:bg-[length:100%_1px] focus-visible:text-ivory motion-reduce:transition-none">
           Professionnels
         </a>
 
-        <a href="#reservation" className="transition hover:text-metal-mid">
+        <a href="#reservation" className="bg-[linear-gradient(90deg,var(--accent),var(--accent-soft))] bg-[length:0_1px] bg-[position:0_100%] bg-no-repeat pb-1.5 transition-[background-size,color] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-[length:100%_1px] hover:text-ivory focus-visible:bg-[length:100%_1px] focus-visible:text-ivory motion-reduce:transition-none">
           Réservation
         </a>
 
-        <a href={site.phoneHref} className="transition hover:text-metal-mid">
+        <a href={site.phoneHref} className="bg-[linear-gradient(90deg,var(--accent),var(--accent-soft))] bg-[length:0_1px] bg-[position:0_100%] bg-no-repeat pb-1.5 transition-[background-size,color] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-[length:100%_1px] hover:text-ivory focus-visible:bg-[length:100%_1px] focus-visible:text-ivory motion-reduce:transition-none">
           {site.phone}
         </a>
 
