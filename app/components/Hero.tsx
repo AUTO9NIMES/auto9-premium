@@ -29,7 +29,7 @@ export function Hero() {
             {/* Keep the brand aligned with the headline, not with the entire tall hero. */}
             <div aria-hidden="true" className="pointer-events-none hidden min-w-0 items-center justify-center lg:flex">
               <img
-                src="/signature-auto9.svg"
+                src="/brand/auto9-logo.png"
                 alt=""
                 width={420}
                 height={288}
