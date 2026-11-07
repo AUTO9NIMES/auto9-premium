@@ -85,11 +85,11 @@ export default function Home() {
       {/* ===================================================== */}
 
       <Services />
+      <HomeConfidence />
       <Transformations />
       <BeforeAfter />
       <RealisationsPreview />
       <Reviews />
-      <HomeConfidence />
       <Reservation />
       <Footer />
     </main>
