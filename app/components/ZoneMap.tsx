@@ -43,8 +43,8 @@ export function ZoneMap() {
 
   return (
     <section id="zone" className="relative scroll-mt-24 px-5 py-20 text-white sm:px-6 lg:px-8 lg:py-28">
-      <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
-        <div>
+      <div className="mx-auto grid max-w-7xl items-center gap-8 lg:grid-cols-[0.75fr_1.25fr] lg:gap-x-14 lg:gap-y-8">
+        <div className="lg:col-start-1 lg:row-start-1 lg:self-end">
           <p className="text-[11px] font-black uppercase tracking-[0.45em] text-accent sm:text-xs">Zone d’intervention</p>
           <h2 data-motion-reveal className="mt-5 text-[40px] font-black uppercase leading-[0.96] tracking-[-0.055em] sm:text-[54px] lg:text-[64px]">
             On vient jusqu’à{" "}
@@ -53,19 +53,12 @@ export function ZoneMap() {
           <p className="mt-6 max-w-md text-[15px] leading-7 text-white/55">
             Nîmes et jusqu’à 30 km autour, à domicile ou sur votre lieu de travail.
           </p>
-          <ul className="mt-8 flex flex-wrap gap-2" aria-label="Exemples de communes dans la zone">
-            {communes.map((commune) => (
-              <li key={commune.name} className="rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1.5 text-xs font-bold text-white/65">
-                {commune.name}
-              </li>
-            ))}
-          </ul>
         </div>
 
-        <div className="relative mx-auto w-full max-w-[520px] rounded-[2rem] border border-white/10 bg-[rgba(10,11,11,.62)] p-4 shadow-[0_30px_90px_rgba(0,0,0,.5),inset_0_1px_0_rgba(255,255,255,.06)] backdrop-blur-xl sm:p-6">
+        <div className="relative mx-auto w-full max-w-[720px] rounded-[2rem] border border-white/10 bg-[rgba(10,11,11,.62)] p-1.5 sm:p-4 lg:col-start-2 lg:row-span-2 lg:row-start-1 shadow-[0_30px_90px_rgba(0,0,0,.5),inset_0_1px_0_rgba(255,255,255,.06)] backdrop-blur-xl sm:p-6">
           <svg
             ref={ref}
-            viewBox="0 0 400 400"
+            viewBox="38 38 324 324"
             className={styles.map}
             data-in-view={inView ? "" : undefined}
             role="img"
@@ -145,6 +138,13 @@ export function ZoneMap() {
             </text>
           </svg>
         </div>
+        <ul className="flex flex-wrap gap-2 lg:col-start-1 lg:row-start-2 lg:self-start" aria-label="Exemples de communes dans la zone">
+          {communes.map((commune) => (
+            <li key={commune.name} className="rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1.5 text-xs font-bold text-white/65">
+              {commune.name}
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   );

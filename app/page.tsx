@@ -89,12 +89,12 @@ export default function Home() {
 
       <Services />
       <EngagementsTicker />
+      <ZoneMap />
       <HomeConfidence />
       <Transformations />
       <BeforeAfter />
       <RealisationsPreview />
       <Reviews />
-      <ZoneMap />
       <HomeFaq />
       <Reservation />
       <Footer />
