@@ -31,6 +31,35 @@ const benefits = [
   },
 ];
 
+const upgradePacks = [
+  {
+    name: "Pack Premium",
+    price: "+70 €",
+    includes: "Pack Standard inclus",
+    featured: false,
+    items: [
+      "Nettoyage sellerie (tissus, cuir…)",
+      "Nettoyage vapeur",
+      "Logo / marque sur les tapis",
+      "Lustrage ciblé d’un élément",
+      "Cire de protection hydrophobe, brillance 2 mois",
+    ],
+  },
+  {
+    name: "Pack Signature",
+    price: "+150 €",
+    includes: "Pack Premium inclus",
+    featured: true,
+    items: [
+      "Lustrage multi-éléments",
+      "Traitement et protection des surfaces (plastiques, cuirs, tissus)",
+      "Rénovation des plastiques extérieurs",
+      "Protection carrosserie renforcée, cire 6 mois",
+      "Coffret Signature : chiffon microfibre noir premium, mini microfibre écrans, parfum d’intérieur signature, nettoyant écrans et vitres, câble USB noir",
+    ],
+  },
+];
+
 const steps = [
   "Premier échange sur vos besoins",
   "Définition du volume et du niveau de préparation",
@@ -116,6 +145,9 @@ export default function ProfessionnelsPage() {
             <div className="relative">
               <p className="text-xs font-black uppercase tracking-[0.35em] text-accent-soft">Préparation livraison</p>
               <h3 className="mt-4 text-3xl font-black uppercase tracking-[-0.05em] md:text-5xl">Nettoyage complet avant livraison client</h3>
+              <p className="mt-4 text-sm font-black uppercase tracking-[0.25em] text-white/70">
+                Pack Standard · <span className="bg-price bg-clip-text text-transparent">100 €</span>
+              </p>
               <p className="mt-6 max-w-4xl text-base leading-relaxed text-white/55 md:text-lg">
                 Une préparation esthétique complète pour présenter un véhicule propre, soigné et prêt à être livré au client.
               </p>
@@ -129,6 +161,39 @@ export default function ProfessionnelsPage() {
                   <p className="text-xs font-black uppercase tracking-[0.25em] text-accent-soft">Intérieur</p>
                   <p className="mt-3 text-lg font-bold text-white/80">Moquettes · Tapis · Plastiques · Vitres</p>
                 </div>
+              </div>
+
+              <div className="mt-10">
+                <p className="text-xs font-black uppercase tracking-[0.25em] text-accent-soft">Aller plus loin</p>
+                <div className="mt-5 grid gap-5 md:grid-cols-2">
+                  {upgradePacks.map((pack) => (
+                    <article
+                      key={pack.name}
+                      className={
+                        pack.featured
+                          ? "relative rounded-[1.5rem] border border-accent/60 bg-[linear-gradient(160deg,rgba(255,255,255,.05),rgba(9,34,24,.55))] p-6 shadow-[0_0_32px_rgba(var(--accent-rgb),.12)]"
+                          : "relative rounded-[1.5rem] border border-white/10 bg-[linear-gradient(160deg,rgba(255,255,255,.04),rgba(0,0,0,.2))] p-6"
+                      }
+                    >
+                      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                        <h4 className="text-xl font-black uppercase tracking-[-0.03em] md:text-2xl">{pack.name}</h4>
+                        <p className="bg-price bg-clip-text text-2xl font-black tracking-[-0.04em] text-transparent">{pack.price}</p>
+                      </div>
+                      <p className="mt-2 text-xs font-black uppercase tracking-[0.22em] text-white/70">{pack.includes}</p>
+                      <ul className="mt-5 grid gap-3">
+                        {pack.items.map((item) => (
+                          <li key={item} className="flex gap-3 text-[0.95rem] leading-relaxed text-white/75">
+                            <span aria-hidden="true" className="text-accent-soft">✓</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </article>
+                  ))}
+                </div>
+                <p className="mt-4 text-sm leading-relaxed text-white/65">
+                  Pack Premium ou Signature : réservez votre créneau ci-dessus et précisez le pack souhaité à AUTO 9 lors de la confirmation.
+                </p>
               </div>
 
               <div className="mt-6 rounded-[1.5rem] border border-accent/20 bg-[#0b281c]/55 p-6">
