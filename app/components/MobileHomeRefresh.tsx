@@ -5,24 +5,24 @@ import type { ReactNode } from "react";
 
 export function MobileHomeRefresh() {
   return (
-    <div className="md:hidden bg-[#050608] text-white">
+    <div className="md:hidden text-white">
       <section className="relative min-h-[760px] overflow-hidden px-5 pb-9 pt-8">
         <div
           data-hero-media
-          className="absolute inset-0 bg-cover bg-[58%_center] will-change-transform"
+          className="absolute inset-0 bg-cover bg-[58%_center] [mask-image:linear-gradient(to_bottom,transparent_0%,black_14%,black_45%,transparent_88%)] will-change-transform"
           style={{
             backgroundImage: "url('/realisations/audi-rs7-face.jpg')",
           }}
         />
 
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,4,6,.94)_0%,rgba(3,4,6,.80)_28%,rgba(3,4,6,.44)_58%,rgba(3,4,6,.10)_100%)]" />
+        <div className="absolute inset-0 [mask-image:linear-gradient(to_bottom,black_45%,transparent_88%)] bg-[linear-gradient(90deg,rgba(3,4,6,.94)_0%,rgba(3,4,6,.80)_28%,rgba(3,4,6,.44)_58%,rgba(3,4,6,.10)_100%)]" />
 
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,6,8,.16)_0%,rgba(5,6,8,.08)_38%,rgba(5,6,8,.46)_74%,#050608_100%)]" />
+        <div className="absolute inset-0 [mask-image:linear-gradient(to_bottom,black_45%,transparent_88%)] bg-[linear-gradient(180deg,rgba(5,6,8,.16)_0%,rgba(5,6,8,.08)_38%,rgba(5,6,8,.46)_74%,transparent_100%)]" />
 
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_82%_30%,rgba(0,87,255,.10),transparent_42%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_82%_30%,rgba(var(--accent-rgb),.16),transparent_42%)]" />
 
         <div className="relative z-10 will-change-transform" data-motion-intro data-hero-fade>
-          <p className="pt-20 text-[11px] font-black uppercase tracking-[0.38em] text-[#9fc7ff]">
+          <p className="pt-24 text-[11px] font-black uppercase tracking-[0.38em] text-accent">
             Detailing premium à domicile · Nîmes
           </p>
 
@@ -31,7 +31,7 @@ export function MobileHomeRefresh() {
             <br />
             la joie du
             <br />
-            <span className="text-[#a8c9ef]">neuf.</span>
+            <span className="bg-price bg-clip-text text-transparent">neuf.</span>
           </h1>
 
           <p className="mt-6 max-w-[325px] text-[18px] leading-7 text-white/80">
@@ -49,7 +49,7 @@ export function MobileHomeRefresh() {
           <div className="mt-7 space-y-3">
             <Link
               href="/devis"
-              className="flex w-full items-center justify-center gap-4 rounded-full bg-[linear-gradient(135deg,#f2f6f9,#b9d6f6)] px-5 py-5 text-[12px] font-black uppercase tracking-[0.19em] text-[#050608] shadow-[0_18px_50px_rgba(112,171,238,.18)]"
+              className="flex w-full items-center justify-center gap-4 rounded-full bg-metal px-5 py-5 text-[12px] font-black uppercase tracking-[0.19em] text-on-metal shadow-[0_18px_50px_rgba(var(--metal-rgb),.18)]"
             >
               Configurer ma prestation
               <span className="text-lg">→</span>
@@ -57,10 +57,10 @@ export function MobileHomeRefresh() {
 
             <Link
               href="/professionnels"
-              className="flex w-full items-center justify-between rounded-[18px] border border-[#4f8dff]/30 bg-black/45 px-5 py-4 backdrop-blur-md"
+              className="flex w-full items-center justify-between rounded-[18px] border border-accent/30 bg-black/45 px-5 py-4 backdrop-blur-md"
             >
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[#6ea4ff]">
+                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-accent">
                   Espace pro
                 </p>
 
@@ -89,7 +89,7 @@ function MiniFeature({
 }) {
   return (
     <div className="flex min-w-0 flex-col items-center text-center">
-      <span className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-black/45 text-[#acd0ff] backdrop-blur">
+      <span className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-black/45 text-accent-soft backdrop-blur">
         {icon}
       </span>
       <span className="mt-2 whitespace-pre-line text-[10px] font-semibold leading-4 text-white/76">

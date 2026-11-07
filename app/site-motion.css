@@ -1,0 +1,303 @@
+/*
+ * AUTO 9 — Signature Motion
+ * Mouvements lents, courts, décélération douce. Uniquement transform / opacity / filter.
+ * Tout est limité aux pages marquées [data-motion-site] et coupé si l'utilisateur
+ * demande moins d'animations. Le script SiteMotion ne masque jamais un contenu déjà à l'écran.
+ */
+:root {
+  --motion-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Typographie Signature, hébergée sur le site (licence SIL OFL) : Manrope pour le texte,
+ * Archivo Black pour les titres. Couche « base » : les classes propres à chaque titre restent prioritaires. */
+@font-face {
+  font-family: "Archivo Black";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/archivo-black-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Archivo Black";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/archivo-black-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Manrope";
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("/fonts/manrope-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Manrope";
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("/fonts/manrope-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@layer base {
+  [data-motion-site] {
+    font-family: "Manrope", Arial, sans-serif;
+  }
+  [data-motion-site] :is(h1, h2, h3) {
+    font-family: "Archivo Black", "Manrope", Arial, sans-serif;
+    letter-spacing: -0.055em;
+    /* Filet de sécurité : un mot plus large que l'écran passe à la ligne au lieu de déborder. */
+    overflow-wrap: break-word;
+  }
+}
+
+/*
+ * Fond Signature : cuir Nappa noir, fixe derrière toute la page, éclairé d'une lumière douce
+ * et d'une lueur émeraude diffuse : l'habitacle d'une automobile de luxe.
+ * Les sections sont transparentes et « flottent » dessus. Tuile de grain générée pour AUTO 9
+ * (public/signature/leather-tile.webp|png, 256 px affichée à 128 px : nette sur écrans haute densité).
+ * [data-backdrop="deep"] (configurateur, devis) : cuir beaucoup plus sombre, sans lueur.
+ */
+[data-motion-site] {
+  position: relative;
+  isolation: isolate;
+}
+[data-motion-site]::before,
+[data-motion-site]::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+[data-motion-site]::before {
+  z-index: -2;
+  inset: -6vh 0;
+  background-color: #050908;
+  background-image:
+    /* lueur émeraude diffuse, comme le reflet d'une pierre dans l'habitacle */
+    radial-gradient(ellipse 48% 42% at 80% 14%, rgba(var(--accent-rgb), 0.13), transparent 72%),
+    /* lumière douce venue d'en haut à droite */
+    radial-gradient(ellipse 75% 65% at 72% 8%, rgba(255, 255, 255, 0.05), transparent 70%),
+    /* ombre : le cuir s'éteint loin de la lumière */
+    radial-gradient(ellipse 115% 95% at 70% 6%, transparent 30%, rgba(0, 0, 0, 0.7) 100%),
+    image-set(url("/signature/leather-tile.webp") type("image/webp"), url("/signature/leather-tile.png") type("image/png"));
+  background-size: auto, auto, auto, 128px 128px;
+}
+[data-backdrop="deep"]::before {
+  background-image:
+    radial-gradient(ellipse 80% 70% at 70% 0%, rgba(255, 255, 255, 0.025), transparent 70%),
+    linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
+    image-set(url("/signature/leather-tile.webp") type("image/webp"), url("/signature/leather-tile.png") type("image/png"));
+  background-size: auto, auto, 128px 128px;
+}
+/* Voile de lisibilité : assombrit légèrement le bas et les bords, là où le texte défile. */
+[data-motion-site]::after {
+  z-index: -1;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.3) 100%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* 0. Le fond respire : très léger zoom/dérive au fil du défilement, et un reflet qui glisse lentement. */
+  @supports (animation-timeline: scroll()) {
+    [data-motion-site]::before {
+      animation: motion-gem-drift linear both;
+      animation-timeline: scroll(root);
+    }
+  }
+  /* Reflet chrome neutre qui glisse lentement sur le cuir (pas sur le configurateur). */
+  [data-motion-site]:not([data-backdrop="deep"])::after {
+    background:
+      linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.035) 50%, transparent 60%),
+      linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.3) 100%);
+    background-size: 300% 100%, 100% 100%;
+    background-repeat: no-repeat;
+    animation: motion-gem-glint 18s ease-in-out infinite;
+  }
+
+  /* 1. Ouverture de page : kicker, titre puis ce qui suit, en cascade (hors hero de l'accueil). */
+  [data-motion-site] :is(p, span):has(+ h1):not([data-motion-intro] *) {
+    animation: motion-kicker-in 1.2s var(--motion-ease) 0.05s backwards;
+  }
+  [data-motion-site] h1:not([data-motion-intro] *) {
+    animation: motion-title-in 1.15s var(--motion-ease) 0.12s backwards;
+  }
+  [data-motion-site] h1:not([data-motion-intro] *) + * {
+    animation: motion-rise-in 1s var(--motion-ease) 0.32s backwards;
+  }
+  [data-motion-site] h1:not([data-motion-intro] *) + * + * {
+    animation: motion-rise-in 1s var(--motion-ease) 0.44s backwards;
+  }
+  [data-motion-site] h1:not([data-motion-intro] *) + * + * + * {
+    animation: motion-rise-in 1s var(--motion-ease) 0.56s backwards;
+  }
+
+  /* 2. Éléments révélés au défilement : masqués uniquement s'ils sont hors écran au chargement. */
+  [data-motion-site] [data-reveal-pending] {
+    opacity: 0;
+  }
+
+  /* 3. Images qui se dézooment en suivant le défilement (navigateurs compatibles uniquement). */
+  @supports (animation-timeline: view()) {
+    [data-motion-site] [data-motion-media] {
+      animation: motion-media linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 50%;
+    }
+  }
+
+  /* 4. Boutons métal : un reflet traverse le chrome au survol, légère pression au clic. */
+  [data-motion-site] :is(a, button).bg-metal {
+    background-image:
+      linear-gradient(105deg, transparent 0 42%, rgba(255, 255, 255, 0.7) 50%, transparent 58% 100%),
+      var(--gradient-metal);
+    background-size: 260% 100%, 100% 100%;
+    background-repeat: no-repeat;
+    background-position: 100% 0, 0 0;
+    transition:
+      background-position 0.9s var(--motion-ease),
+      scale 0.35s var(--motion-ease),
+      translate 0.35s var(--motion-ease),
+      box-shadow 0.35s var(--motion-ease),
+      filter 0.25s ease;
+  }
+  [data-motion-site] :is(a, button).bg-metal:is(:hover, :focus-visible) {
+    background-position: 0% 0, 0 0;
+  }
+  [data-motion-site] :is(a, button).bg-metal:active {
+    scale: 0.975;
+  }
+
+  /* 5. Mot clé émeraude : un reflet de lumière le balaie une fois (déclenché par SiteMotion). */
+  [data-motion-site] .bg-accent-word.bg-clip-text {
+    background-image:
+      linear-gradient(100deg, transparent 0 40%, rgba(255, 255, 255, 0.8) 50%, transparent 60% 100%),
+      var(--gradient-accent-word);
+    background-size: 250% 100%, 100% 100%;
+    background-repeat: no-repeat;
+    background-position: 0% 0, 0 0;
+  }
+}
+
+/* Dérive verticale seule (pas de zoom) : le grain reste net, sans moiré. */
+@keyframes motion-gem-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(0, -5vh, 0);
+  }
+}
+
+@keyframes motion-gem-glint {
+  0%,
+  100% {
+    background-position: 100% 0, 0 0;
+  }
+  50% {
+    background-position: 0% 0, 0 0;
+  }
+}
+
+@keyframes motion-kicker-in {
+  from {
+    opacity: 0;
+    letter-spacing: 0.9em;
+  }
+}
+
+@keyframes motion-title-in {
+  from {
+    opacity: 0.001;
+    translate: 0 28px;
+    filter: blur(14px);
+  }
+}
+
+@keyframes motion-rise-in {
+  from {
+    opacity: 0;
+    translate: 0 20px;
+    filter: blur(6px);
+  }
+}
+
+@keyframes motion-media {
+  from {
+    transform: scale(1.12);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+/* Mobile : trajets plus courts, sans flou (plus fluide sur les petits processeurs). */
+@media (max-width: 767px) {
+  @keyframes motion-title-in {
+    from {
+      opacity: 0.001;
+      translate: 0 18px;
+    }
+  }
+  @keyframes motion-rise-in {
+    from {
+      opacity: 0;
+      translate: 0 14px;
+    }
+  }
+}
+
+/* Jauge de lecture : fin trait émeraude en haut de l'écran (créée par SiteMotion). */
+.motion-progress {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 60;
+  height: 2px;
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  background: linear-gradient(90deg, var(--accent-deep), var(--accent), var(--accent-soft));
+  box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.6);
+  pointer-events: none;
+}
+
+/* Texte qui s'allume mot à mot : transition douce entre deux images. */
+.motion-word {
+  transition: opacity 0.25s linear;
+}
+
+/* Bandeau d'engagements : défilement continu, pause au survol. */
+@media (prefers-reduced-motion: no-preference) {
+  .ticker-track {
+    animation: ticker 38s linear infinite;
+  }
+  .ticker:hover .ticker-track {
+    animation-play-state: paused;
+  }
+}
+@keyframes ticker {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* FAQ : ouverture en douceur (navigateurs récents) ; ailleurs, ouverture instantanée. */
+@supports selector(::details-content) {
+  @media (prefers-reduced-motion: no-preference) {
+    .faq-item {
+      interpolate-size: allow-keywords;
+    }
+    .faq-item::details-content {
+      block-size: 0;
+      overflow: hidden;
+      transition:
+        block-size 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+        content-visibility 0.5s allow-discrete;
+    }
+    .faq-item[open]::details-content {
+      block-size: auto;
+    }
+  }
+}

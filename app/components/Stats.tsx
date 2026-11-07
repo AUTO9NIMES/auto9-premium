@@ -10,7 +10,7 @@ export function Stats() {
         </div>
 
         <div data-motion-reveal className="text-center md:text-left">
-          <p className="text-4xl font-light leading-none">+400</p>
+          <p data-motion-count className="text-4xl font-light leading-none">+400</p>
           <p className="mt-4 text-[10px] uppercase tracking-[0.28em] text-white/45">
             Véhicules remis à neuf
           </p>

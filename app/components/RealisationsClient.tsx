@@ -167,24 +167,22 @@ export function RealisationsClient({
     <>
       <section
         id="realisations"
-        className="relative scroll-mt-24 overflow-hidden bg-[#050608] px-6 py-24 text-white md:px-12 md:py-28"
+        className="relative scroll-mt-24 overflow-hidden px-6 pb-24 pt-10 text-white md:px-12 md:py-28"
       >
-        <div className="absolute right-0 top-24 h-[32rem] w-[32rem] rounded-full bg-[#B8C7D1]/5 blur-[160px]" />
 
-        <div className="absolute bottom-32 left-0 h-[26rem] w-[26rem] rounded-full bg-[#B8C7D1]/5 blur-[140px]" />
 
         <div className="relative mx-auto max-w-7xl">
-          <p className="text-xs font-black uppercase tracking-[0.55em] text-[#B8C7D1]">
+          <p className="text-xs font-black uppercase tracking-[0.55em] text-accent">
             Réalisations
           </p>
 
-          <div className="mt-6 flex flex-col justify-between gap-8 md:flex-row md:items-end">
+          <div className="mt-6 flex flex-col justify-between gap-6 md:flex-row md:items-end md:gap-8">
             <div>
-              <h1 className="max-w-4xl text-5xl font-black uppercase tracking-[-0.05em] md:text-7xl">
+              <h1 className="max-w-4xl text-[2.5rem] font-black uppercase leading-[0.95] tracking-[-0.05em] sm:text-5xl md:text-7xl">
                 Des preuves, pas des promesses.
               </h1>
 
-              <p className="mt-6 max-w-2xl text-lg leading-relaxed text-white/45">
+              <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/45 md:mt-6 md:text-lg">
                 Vidéos immersives, détails carrosserie, reflets,
                 prélavage, finitions intérieures et véhicules
                 préparés avec minutie.
@@ -203,55 +201,15 @@ export function RealisationsClient({
 
             <Link
               href="/devis"
-              className="w-fit rounded-full border border-white/15 px-7 py-4 text-xs font-black uppercase tracking-[0.25em] text-white/70 transition hover:border-[#B8C7D1] hover:text-[#B8C7D1]"
+              className="w-fit rounded-full border border-white/15 px-7 py-4 text-xs font-black uppercase tracking-[0.25em] text-white/70 transition hover:border-metal-mid hover:text-metal-mid"
             >
               Configurer ma prestation →
             </Link>
           </div>
 
-          {videos.length > 0 && (
-            <div className="mt-14 grid gap-6 lg:grid-cols-2">
-              {videos.map((video) => (
-                <article
-                  key={video.src}
-                  className="overflow-hidden rounded-[2rem] border border-[#B8C7D1]/25 bg-[#B8C7D1]/5 p-4 shadow-[0_0_90px_rgba(184,199,209,.14)]"
-                >
-                  <div className="overflow-hidden rounded-[1.5rem] bg-black">
-                    <video
-                      src={video.src}
-                      controls
-                      muted
-                      playsInline
-                      preload="metadata"
-                      controlsList="nodownload"
-                      className="aspect-[9/16] w-full bg-black object-cover sm:aspect-video"
-                    >
-                      Votre navigateur ne peut pas lire cette
-                      vidéo.
-                    </video>
-                  </div>
-
-                  <div className="p-3 pt-7">
-                    <p className="text-xs font-black uppercase tracking-[0.35em] text-[#B8C7D1]">
-                      {video.eyebrow}
-                    </p>
-
-                    <h2 className="mt-3 text-3xl font-black uppercase tracking-[-0.05em] md:text-4xl">
-                      {video.title}
-                    </h2>
-
-                    <p className="mt-4 text-sm leading-relaxed text-white/50">
-                      {video.description}
-                    </p>
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
-
           {photos.length > 0 ? (
             <>
-              <div className="mt-12 grid grid-flow-dense auto-rows-[220px] gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="mt-10 grid grid-flow-dense auto-rows-[220px] gap-5 sm:grid-cols-2 lg:grid-cols-4">
                 {visiblePhotos.map((photo, index) => (
                   <button
                     key={photo.src}
@@ -262,7 +220,7 @@ export function RealisationsClient({
                     aria-label={`Ouvrir la photo ${
                       index + 1
                     } sur ${photos.length}`}
-                    className={`group relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.025] text-left transition duration-500 hover:-translate-y-2 hover:border-[#B8C7D1]/55 hover:shadow-[0_0_60px_rgba(184,199,209,.12)] ${
+                    className={`group relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.025] text-left transition duration-500 hover:-translate-y-2 hover:border-metal-mid/55 hover:shadow-[0_0_60px_rgba(var(--metal-rgb),.12)] ${
                       photo.size === "tall"
                         ? "sm:row-span-2"
                         : photo.size === "wide"
@@ -294,7 +252,7 @@ export function RealisationsClient({
                   <button
                     type="button"
                     onClick={showMorePhotos}
-                    className="rounded-full border border-[#B8C7D1]/30 bg-[#B8C7D1]/5 px-8 py-4 text-xs font-black uppercase tracking-[0.25em] text-[#B8C7D1] transition hover:scale-105 hover:border-[#B8C7D1] hover:bg-[#B8C7D1]/10"
+                    className="rounded-full border border-metal-mid/40 bg-white/[0.04] px-8 py-4 text-xs font-black uppercase tracking-[0.25em] text-metal-hi transition hover:scale-105 hover:border-metal-mid hover:bg-white/[0.08]"
                   >
                     Afficher {nextPhotoBatchSize} photo
                     {nextPhotoBatchSize > 1 ? "s" : ""} de
@@ -318,9 +276,49 @@ export function RealisationsClient({
             </div>
           )}
 
+          {videos.length > 0 && (
+            <div className="mt-16 grid gap-6 lg:grid-cols-2">
+              {videos.map((video) => (
+                <article
+                  key={video.src}
+                  className="overflow-hidden rounded-[2rem] border border-white/12 bg-white/[0.03] p-4 shadow-[0_24px_70px_rgba(0,0,0,.35)] backdrop-blur-sm"
+                >
+                  <div className="overflow-hidden rounded-[1.5rem] bg-black">
+                    <video
+                      src={video.src}
+                      controls
+                      muted
+                      playsInline
+                      preload="metadata"
+                      controlsList="nodownload"
+                      className="aspect-[9/16] w-full bg-black object-cover sm:aspect-video"
+                    >
+                      Votre navigateur ne peut pas lire cette
+                      vidéo.
+                    </video>
+                  </div>
+
+                  <div className="p-3 pt-7">
+                    <p className="text-xs font-black uppercase tracking-[0.35em] text-accent">
+                      {video.eyebrow}
+                    </p>
+
+                    <h2 className="mt-3 text-3xl font-black uppercase tracking-[-0.05em] md:text-4xl">
+                      {video.title}
+                    </h2>
+
+                    <p className="mt-4 text-sm leading-relaxed text-white/50">
+                      {video.description}
+                    </p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+
           <div className="mt-10 flex flex-col justify-between gap-5 rounded-[2rem] border border-white/10 bg-white/[0.025] p-7 md:flex-row md:items-center">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.3em] text-[#B8C7D1]">
+              <p className="text-xs font-black uppercase tracking-[0.3em] text-accent">
                 Votre véhicule mérite aussi son avant / après.
               </p>
 
@@ -332,7 +330,7 @@ export function RealisationsClient({
 
             <Link
               href="/devis"
-              className="w-fit rounded-full bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] px-7 py-4 text-xs font-black uppercase tracking-[0.25em] text-[#050608] shadow-[0_18px_45px_rgba(184,199,209,.18)] transition hover:scale-105"
+              className="w-fit rounded-full bg-metal px-7 py-4 text-xs font-black uppercase tracking-[0.25em] text-on-metal shadow-[0_18px_45px_rgba(var(--metal-rgb),.18)] transition hover:scale-105"
             >
               Obtenir mon tarif →
             </Link>

@@ -167,12 +167,11 @@ export function PremiumQuoteConfigurator() {
 
   return (
     <section className="relative overflow-hidden px-6 py-16 md:px-12 md:py-24">
-      <div className="absolute left-1/2 top-20 h-96 w-96 -translate-x-1/2 rounded-full bg-[#3F7D9F]/10 blur-[120px]" />
 
       <div className="relative mx-auto max-w-7xl">
         <div className="flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.45em] text-[#4D8DFF]">
+            <p className="text-xs font-black uppercase tracking-[0.45em] text-accent-soft">
               Configurateur premium
             </p>
 
@@ -187,7 +186,7 @@ export function PremiumQuoteConfigurator() {
           </div>
 
           <div className="w-full rounded-[2rem] border border-[#B8C7D1]/25 bg-[#B8C7D1]/5 p-6 lg:w-[320px]">
-            <p className="text-xs font-black uppercase tracking-[0.3em] text-[#4D8DFF]">
+            <p className="text-xs font-black uppercase tracking-[0.3em] text-accent-soft">
               Estimation
             </p>
 
@@ -270,7 +269,7 @@ export function PremiumQuoteConfigurator() {
                     </p>
 
                     <div className="mt-6 border-t border-white/15 pt-5">
-                      <p className="mb-4 text-xs font-black uppercase tracking-[0.28em] text-[#8EC9E6]">
+                      <p className="mb-4 text-xs font-black uppercase tracking-[0.28em] text-accent">
                         Inclus
                       </p>
 
@@ -280,7 +279,7 @@ export function PremiumQuoteConfigurator() {
                             key={detail}
                             className="text-sm font-medium leading-relaxed text-white/75"
                           >
-                            <span className="font-black text-[#4D8DFF]">
+                            <span className="font-black text-accent-soft">
                               ✓
                             </span>{" "}
                             {detail}
@@ -290,7 +289,7 @@ export function PremiumQuoteConfigurator() {
                     </div>
 
                     <div className="mt-auto pt-8">
-                      <p className="text-base font-black text-[#4D8DFF]">
+                      <p className="text-base font-black text-accent-soft">
                         {service.priceLabel}
                       </p>
                     </div>
@@ -321,7 +320,7 @@ export function PremiumQuoteConfigurator() {
                     onClick={() => setSelectedVehicle(vehicle.id)}
                     className={`group overflow-hidden rounded-[2rem] border text-left transition duration-500 hover:-translate-y-1 ${
                       selectedVehicle === vehicle.id
-                        ? "border-[#B8C7D1] bg-[#B8C7D1]/5 shadow-[0_0_55px_rgba(63,125,159,.18)]"
+                        ? "border-[#B8C7D1] bg-[#B8C7D1]/5 shadow-[0_0_55px_rgba(var(--accent-rgb),.18)]"
                         : "border-white/10 bg-black/20 hover:border-[#B8C7D1]/20"
                     }`}
                   >
@@ -333,7 +332,7 @@ export function PremiumQuoteConfigurator() {
                         className="h-full w-full object-cover opacity-75 brightness-[0.62] contrast-110 saturate-110 transition duration-700 group-hover:scale-105 group-hover:opacity-95"
                       />
 
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#050608] via-[#050608]/35 to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-forest via-forest/35 to-transparent" />
 
                       <div className="absolute bottom-8 left-8 right-8">
                         <p className="text-6xl leading-none text-white">
@@ -345,7 +344,7 @@ export function PremiumQuoteConfigurator() {
                             {vehicle.name}
                           </h3>
 
-                          <p className="shrink-0 rounded-full border border-[#B8C7D1]/55 bg-[#B8C7D1]/5 px-6 py-3 text-xl font-black text-[#4D8DFF] backdrop-blur">
+                          <p className="shrink-0 rounded-full border border-[#B8C7D1]/55 bg-[#B8C7D1]/5 px-6 py-3 text-xl font-black text-accent-soft backdrop-blur">
                             {currentService.priceLabel}
                           </p>
                         </div>
@@ -356,7 +355,7 @@ export function PremiumQuoteConfigurator() {
               </div>
 
               <div className="mt-8 rounded-[1.5rem] border border-white/10 bg-black/20 p-5">
-                <p className="text-xs font-black uppercase tracking-[0.35em] text-[#4D8DFF]">
+                <p className="text-xs font-black uppercase tracking-[0.35em] text-accent-soft">
                   Infos véhicule
                 </p>
 
@@ -364,7 +363,7 @@ export function PremiumQuoteConfigurator() {
                   value={vehicleInfo}
                   onChange={(event) => setVehicleInfo(event.target.value)}
                   placeholder="Ex : Audi A3 2019, BMW Série 1, Mercedes Classe A..."
-                  className="mt-5 w-full rounded-2xl border border-white/10 bg-[#050608] px-5 py-4 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[#B8C7D1]/60"
+                  className="mt-5 w-full rounded-2xl border border-white/10 bg-forest px-5 py-4 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[#B8C7D1]/60"
                 />
               </div>
 
@@ -385,7 +384,7 @@ export function PremiumQuoteConfigurator() {
 
               <div className="mt-10 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
                 <div className="rounded-[1.5rem] border border-white/10 bg-black/20 p-5">
-                  <p className="text-xs font-black uppercase tracking-[0.3em] text-[#4D8DFF]">
+                  <p className="text-xs font-black uppercase tracking-[0.3em] text-accent-soft">
                     Photos
                   </p>
 
@@ -412,7 +411,7 @@ export function PremiumQuoteConfigurator() {
                 </div>
 
                 <div className="rounded-[1.5rem] border border-white/10 bg-black/20 p-5">
-                  <p className="text-xs font-black uppercase tracking-[0.3em] text-[#4D8DFF]">
+                  <p className="text-xs font-black uppercase tracking-[0.3em] text-accent-soft">
                     Commentaire
                   </p>
 
@@ -420,7 +419,7 @@ export function PremiumQuoteConfigurator() {
                     value={comment}
                     onChange={(event) => setComment(event.target.value)}
                     placeholder="Ex : phares jaunis, jante frottée avant droite, micro-rayures capot..."
-                    className="mt-6 min-h-44 w-full resize-none rounded-[1.5rem] border border-white/10 bg-[#050608] p-5 text-sm leading-relaxed text-white outline-none transition placeholder:text-white/35 focus:border-[#B8C7D1]/60"
+                    className="mt-6 min-h-44 w-full resize-none rounded-[1.5rem] border border-white/10 bg-forest p-5 text-sm leading-relaxed text-white outline-none transition placeholder:text-white/35 focus:border-[#B8C7D1]/60"
                   />
                 </div>
               </div>
@@ -479,7 +478,7 @@ export function PremiumQuoteConfigurator() {
 
               <div className="mt-10 grid gap-6 lg:grid-cols-[1fr_0.8fr]">
                 <div className="rounded-[1.5rem] border border-white/10 bg-black/20 p-6">
-                  <p className="text-xs font-black uppercase tracking-[0.3em] text-[#4D8DFF]">
+                  <p className="text-xs font-black uppercase tracking-[0.3em] text-accent-soft">
                     Demande sélectionnée
                   </p>
 
@@ -503,7 +502,7 @@ export function PremiumQuoteConfigurator() {
                         key={detail}
                         className="border-b border-white/10 py-3 text-sm text-white/65"
                       >
-                        <span className="text-[#4D8DFF]">✓</span> {detail}
+                        <span className="text-accent-soft">✓</span> {detail}
                       </p>
                     ))}
                   </div>
@@ -521,7 +520,7 @@ export function PremiumQuoteConfigurator() {
                   )}
 
                   <div className="p-6">
-                    <p className="text-xs font-black uppercase tracking-[0.3em] text-[#4D8DFF]">
+                    <p className="text-xs font-black uppercase tracking-[0.3em] text-accent-soft">
                       Estimation
                     </p>
 
@@ -537,7 +536,7 @@ export function PremiumQuoteConfigurator() {
                       href={whatsappLink}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-8 flex w-full items-center justify-center rounded-full bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] text-[#050608] shadow-[0_18px_45px_rgba(184,199,209,.18)] px-7 py-5 text-center text-xs font-black uppercase tracking-[0.25em] text-[#050608] transition hover:scale-105"
+                      className="mt-8 flex w-full items-center justify-center rounded-full bg-metal text-on-metal shadow-[0_18px_45px_rgba(var(--metal-rgb),.18)] px-7 py-5 text-center text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
                     >
                       Envoyer sur WhatsApp →
                     </a>
@@ -583,15 +582,14 @@ function HeadlightBooking() {
 
   return (
     <section className="relative overflow-hidden px-4 py-10 sm:px-6 md:px-12 md:py-16">
-      <div className="absolute left-1/2 top-16 h-80 w-80 -translate-x-1/2 rounded-full bg-[#0057FF]/10 blur-[120px]" />
 
       <div className="relative mx-auto max-w-3xl">
-        <p className="text-xs font-black uppercase tracking-[0.42em] text-[#4D8DFF]">
+        <p className="text-xs font-black uppercase tracking-[0.42em] text-accent-soft">
           Réservation
         </p>
 
         <h1 className="mt-4 text-4xl font-black uppercase tracking-[-0.06em] sm:text-5xl md:text-6xl">
-          Rénovation <span className="text-[#4D8DFF]">optiques</span>
+          Rénovation <span className="text-accent-soft">optiques</span>
         </h1>
 
         <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/58">
@@ -611,20 +609,20 @@ function HeadlightBooking() {
             </span>
           </div>
 
-          <div className="relative overflow-hidden rounded-[1.5rem] border border-[#0057FF]/35 bg-black shadow-[0_0_35px_rgba(0,87,255,.15)]">
+          <div className="relative overflow-hidden rounded-[1.5rem] border border-accent/35 bg-black shadow-[0_0_35px_rgba(var(--accent-rgb),.15)]">
             <img
               src="/phares/renault-apres.jpg"
               alt="Phare après rénovation AUTO 9"
               className="aspect-[4/5] h-full w-full object-cover"
             />
-            <span className="absolute left-3 top-3 rounded-full bg-[#0057FF] px-4 py-2 text-[10px] font-black uppercase tracking-[0.22em] text-white shadow-[0_0_20px_rgba(0,87,255,.45)]">
+            <span className="absolute left-3 top-3 rounded-full bg-metal px-4 py-2 text-[10px] font-black uppercase tracking-[0.22em] text-on-metal shadow-[0_0_20px_rgba(var(--metal-rgb),.3)]">
               Après
             </span>
           </div>
         </div>
 
-        <div className="mt-5 rounded-[1.5rem] border border-[#2F7BFF]/35 bg-[#0057FF]/10 p-5 shadow-[0_0_38px_rgba(0,87,255,.12)]">
-          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#8CB8FF]">
+        <div className="mt-5 rounded-[1.5rem] border border-accent/35 bg-accent/10 p-5 shadow-[0_0_38px_rgba(var(--accent-rgb),.12)]">
+          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-accent">
             Votre tarif
           </p>
           <div className="mt-2 flex items-end justify-between gap-4">
@@ -636,7 +634,7 @@ function HeadlightBooking() {
                 Ponçage, polissage et finition
               </p>
             </div>
-            <p className="text-5xl font-black tracking-[-0.07em] text-[#4D8DFF]">
+            <p className="text-5xl font-black tracking-[-0.07em] bg-price bg-clip-text text-transparent">
               {price}€
             </p>
           </div>
@@ -652,7 +650,7 @@ function HeadlightBooking() {
               type="button"
               onClick={() => setOptics(1)}
               className={`rounded-[1.35rem] border px-4 py-5 text-center transition ${optics === 1
-                ? "border-[#2F7BFF] bg-[#0057FF] shadow-[0_0_28px_rgba(0,87,255,.25)]"
+                ? "border-accent bg-accent/12 shadow-[0_0_28px_rgba(var(--accent-rgb),.18)]"
                 : "border-white/12 bg-white/[0.03] hover:border-white/25"
               }`}
             >
@@ -664,7 +662,7 @@ function HeadlightBooking() {
               type="button"
               onClick={() => setOptics(2)}
               className={`rounded-[1.35rem] border px-4 py-5 text-center transition ${optics === 2
-                ? "border-[#2F7BFF] bg-[#0057FF] shadow-[0_0_28px_rgba(0,87,255,.25)]"
+                ? "border-accent bg-accent/12 shadow-[0_0_28px_rgba(var(--accent-rgb),.18)]"
                 : "border-white/12 bg-white/[0.03] hover:border-white/25"
               }`}
             >
@@ -707,7 +705,7 @@ function HeadlightBooking() {
           target="_blank"
           rel="noreferrer"
           className={`mt-8 flex w-full items-center justify-center rounded-full px-6 py-5 text-center text-sm font-black uppercase tracking-[0.2em] transition ${name.trim() && phone.trim() && vehicle.trim()
-            ? "bg-[#0057FF] text-white shadow-[0_18px_45px_rgba(0,87,255,.28)] hover:scale-[1.01]"
+            ? "bg-metal text-on-metal shadow-[0_18px_45px_rgba(var(--metal-rgb),.22)] hover:scale-[1.01]"
             : "pointer-events-none bg-white/10 text-white/30"
           }`}
         >
@@ -746,7 +744,7 @@ function Field({
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         inputMode={inputMode}
-        className="mt-3 w-full rounded-[1.35rem] border border-white/12 bg-white/[0.04] px-5 py-5 text-base text-white outline-none transition placeholder:text-white/25 focus:border-[#2F7BFF]/70 focus:bg-[#0057FF]/5"
+        className="mt-3 w-full rounded-[1.35rem] border border-white/12 bg-white/[0.04] px-5 py-5 text-base text-white outline-none transition placeholder:text-white/25 focus:border-accent/70 focus:bg-accent/5"
       />
     </label>
   );
@@ -778,7 +776,7 @@ function StepButton({
       <span
         className={`grid h-10 w-10 shrink-0 place-items-center rounded-full text-sm font-black ${
           active || done
-            ? "bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] text-[#050608] shadow-[0_18px_45px_rgba(184,199,209,.18)] text-white"
+            ? "bg-accent text-on-metal shadow-[0_0_18px_rgba(var(--accent-rgb),.45)]"
             : "bg-white/10 text-white/55"
         }`}
       >
@@ -803,7 +801,7 @@ function StepHeader({
 }) {
   return (
     <div>
-      <p className="text-xs font-black uppercase tracking-[0.45em] text-[#4D8DFF]">
+      <p className="text-xs font-black uppercase tracking-[0.45em] text-accent-soft">
         {label}
       </p>
 
@@ -836,7 +834,7 @@ function StepActions({
           <button
             type="button"
             onClick={onPrevious}
-            className="rounded-full border border-white/15 px-7 py-4 text-xs font-black uppercase tracking-[0.25em] text-white/70 transition hover:border-[#B8C7D1] hover:text-[#4D8DFF]"
+            className="rounded-full border border-white/15 px-7 py-4 text-xs font-black uppercase tracking-[0.25em] text-white/70 transition hover:border-[#B8C7D1] hover:text-accent-soft"
           >
             ← {previousLabel}
           </button>
@@ -848,7 +846,7 @@ function StepActions({
           <button
             type="button"
             onClick={onNext}
-            className="rounded-full bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] text-[#050608] shadow-[0_18px_45px_rgba(184,199,209,.18)] px-7 py-4 text-xs font-black uppercase tracking-[0.25em] text-[#050608] transition hover:scale-105"
+            className="rounded-full bg-metal text-on-metal shadow-[0_18px_45px_rgba(var(--metal-rgb),.18)] px-7 py-4 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
           >
             {nextLabel} →
           </button>

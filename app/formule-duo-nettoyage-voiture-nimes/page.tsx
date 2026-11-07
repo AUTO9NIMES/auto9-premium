@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { Footer } from "../components/Footer";
+import { SiteMotion } from "../components/SiteMotion";
+import { MobileActionBar } from "../components/MobileActionBar";
 
 export const metadata: Metadata = {
   title:
@@ -73,7 +75,9 @@ const faq = [
 
 export default function FormuleDuoNettoyageVoitureNimesPage() {
   return (
-    <main className="min-h-screen bg-[#050608] text-white">
+    <main data-motion-site className="min-h-screen bg-forest text-white">
+      <SiteMotion />
+      <MobileActionBar />
       <div className="border-b border-white/10 px-6 py-6 md:px-12">
         <Link
           href="/"
@@ -84,8 +88,6 @@ export default function FormuleDuoNettoyageVoitureNimesPage() {
       </div>
 
       <section className="relative overflow-hidden px-6 py-24 md:px-12">
-        <div className="absolute right-0 top-0 h-96 w-96 rounded-full bg-[#B8C7D1]/5 blur-[130px]" />
-        <div className="absolute bottom-0 left-0 h-96 w-96 rounded-full bg-[#B8C7D1]/5 blur-[130px]" />
 
         <div className="relative mx-auto max-w-7xl">
           <p className="text-xs font-black uppercase tracking-[0.55em] text-[#B8C7D1]">
@@ -108,7 +110,7 @@ export default function FormuleDuoNettoyageVoitureNimesPage() {
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
                 <Link
                   href="/devis?service=duo"
-                  className="w-fit rounded-full bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] text-[#050608] shadow-[0_18px_45px_rgba(184,199,209,.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
+                  className="w-fit rounded-full bg-metal text-on-metal shadow-[0_18px_45px_rgba(var(--metal-rgb),.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
                 >
                   Demander mon devis →
                 </Link>
@@ -124,13 +126,13 @@ export default function FormuleDuoNettoyageVoitureNimesPage() {
 
             <div className="relative min-h-[520px] overflow-hidden rounded-[2rem] border border-[#B8C7D1]/20 bg-white/[0.03]">
               <img
-                src="/services/duo-card.png"
+                src="/services/duo-card.jpg"
                 alt="Formule Duo nettoyage voiture intérieur et extérieur à Nîmes par AUTO 9"
                 className="absolute inset-0 h-full w-full object-cover brightness-[0.78] contrast-110 saturate-110"
               />
 
-              <div className="absolute inset-0 bg-gradient-to-t from-[#050608] via-[#050608]/35 to-transparent" />
-              <div className="absolute inset-0 bg-gradient-to-r from-[#050608]/65 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-forest via-forest/35 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-forest/65 via-transparent to-transparent" />
 
               <div className="absolute bottom-0 left-0 right-0 p-7">
                 <p className="text-xs font-black uppercase tracking-[0.35em] text-[#B8C7D1]">
@@ -250,7 +252,7 @@ export default function FormuleDuoNettoyageVoitureNimesPage() {
 
               <Link
                 href="/devis?service=duo"
-                className="mt-8 inline-flex rounded-full bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] text-[#050608] shadow-[0_18px_45px_rgba(184,199,209,.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
+                className="mt-8 inline-flex rounded-full bg-metal text-on-metal shadow-[0_18px_45px_rgba(var(--metal-rgb),.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
               >
                 Configurer ma Formule Duo →
               </Link>
@@ -363,7 +365,7 @@ export default function FormuleDuoNettoyageVoitureNimesPage() {
 
               <Link
                 href="/devis?service=duo"
-                className="w-fit rounded-full bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] text-[#050608] shadow-[0_18px_45px_rgba(184,199,209,.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
+                className="w-fit rounded-full bg-metal text-on-metal shadow-[0_18px_45px_rgba(var(--metal-rgb),.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
               >
                 Demander mon devis →
               </Link>

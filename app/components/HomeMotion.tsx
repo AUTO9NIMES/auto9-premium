@@ -4,7 +4,7 @@ import { useEffect } from "react";
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 
-/** Progressive enhancement: keep the original AUTO 9 scrolling, plus a subtle hero fade on exit. */
+/** Progressive enhancement: subtle hero fade on exit. Section reveals live in SiteMotion. */
 export function HomeMotion() {
   useEffect(() => {
     const root = document.getElementById("auto9-home");
@@ -12,73 +12,6 @@ export function HomeMotion() {
 
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const compact = window.matchMedia("(max-width: 767px)");
-    const running = new Map<Element, Animation>();
-    const seen = new WeakSet<Element>();
-
-    let observer: IntersectionObserver | null = null;
-
-    if ("IntersectionObserver" in window && "animate" in Element.prototype) {
-      observer = new IntersectionObserver(
-        (entries) => {
-          for (const entry of entries) {
-            if (
-              !entry.isIntersecting ||
-              reducedMotion.matches ||
-              seen.has(entry.target)
-            ) {
-              continue;
-            }
-
-            const element = entry.target as HTMLElement;
-            seen.add(element);
-            observer?.unobserve(element);
-
-            if (element.contains(document.activeElement)) continue;
-
-            const animation = element.animate(
-              [
-                { opacity: 0.2 },
-                { opacity: 1 },
-              ],
-              {
-                duration: compact.matches ? 620 : 820,
-                delay: compact.matches
-                  ? 0
-                  : Math.min(Number(element.dataset.motionDelay || 0), 120),
-                easing: "cubic-bezier(0.22, 1, 0.36, 1)",
-                fill: "backwards",
-              },
-            );
-
-            running.set(element, animation);
-            animation.onfinish = () => running.delete(element);
-          }
-        },
-        { threshold: 0.06, rootMargin: "0px 0px -3% 0px" },
-      );
-    }
-
-    const cancelAnimations = () => {
-      running.forEach((animation) => animation.cancel());
-      running.clear();
-    };
-
-    const observe = () => {
-      observer?.disconnect();
-      cancelAnimations();
-      if (!observer || reducedMotion.matches) return;
-
-      root
-        .querySelectorAll<HTMLElement>("[data-motion-reveal]")
-        .forEach((element) => {
-          const rect = element.getBoundingClientRect();
-          if (rect.height && rect.top < window.innerHeight && rect.bottom > 0) {
-            seen.add(element);
-          }
-          if (!seen.has(element)) observer?.observe(element);
-        });
-    };
-
     const heroes = Array.from(
       root.querySelectorAll<HTMLElement>("[data-home-hero]"),
     );
@@ -142,35 +75,19 @@ export function HomeMotion() {
     };
 
     const handleMotionPreference = () => {
-      observe();
       if (reducedMotion.matches) resetHeroMotion();
       else requestHeroMotion();
     };
 
-    const handleFocus = (event: FocusEvent) => {
-      if (!(event.target instanceof Node)) return;
-      for (const [element, animation] of running) {
-        if (element.contains(event.target)) {
-          animation.cancel();
-          running.delete(element);
-        }
-      }
-    };
-
-    observe();
     requestHeroMotion();
 
     reducedMotion.addEventListener("change", handleMotionPreference);
-    root.addEventListener("focusin", handleFocus);
     window.addEventListener("scroll", requestHeroMotion, { passive: true });
     window.addEventListener("resize", requestHeroMotion, { passive: true });
 
     return () => {
-      observer?.disconnect();
-      cancelAnimations();
       if (heroRaf) window.cancelAnimationFrame(heroRaf);
       reducedMotion.removeEventListener("change", handleMotionPreference);
-      root.removeEventListener("focusin", handleFocus);
       window.removeEventListener("scroll", requestHeroMotion);
       window.removeEventListener("resize", requestHeroMotion);
     };

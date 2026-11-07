@@ -2,12 +2,22 @@
 
 @media (prefers-reduced-motion: no-preference) {
   .home [data-motion-intro] > * {
-    animation: entrance 850ms var(--home-motion-ease) backwards;
+    animation: entrance 1150ms var(--home-motion-ease) backwards;
   }
-  .home [data-motion-intro] > :nth-child(2) { animation-delay: 60ms; }
-  .home [data-motion-intro] > :nth-child(3) { animation-delay: 120ms; }
-  .home [data-motion-intro] > :nth-child(4) { animation-delay: 180ms; }
-  .home [data-motion-intro] > :nth-child(5) { animation-delay: 240ms; }
+  /* Ouverture cinématique : kicker qui se resserre, titre, puis le reste en cascade. */
+  .home [data-motion-intro] > :first-child {
+    animation-name: kicker-in;
+    animation-duration: 1400ms;
+  }
+  .home [data-motion-intro] > :nth-child(2) { animation-delay: 140ms; }
+  .home [data-motion-intro] > :nth-child(3) { animation-delay: 320ms; }
+  .home [data-motion-intro] > :nth-child(4) { animation-delay: 430ms; }
+  .home [data-motion-intro] > :nth-child(5) { animation-delay: 540ms; }
+  .home [data-motion-intro] > :nth-child(6) { animation-delay: 650ms; }
+  /* La vidéo du hero se dézoome lentement à l'ouverture (propriété scale : se combine avec l'effet de défilement). */
+  .home video[data-hero-media] {
+    animation: hero-media-in 2600ms var(--home-motion-ease) backwards;
+  }
   .home [data-motion-intro] a { transition-duration: 250ms; }
   .home [data-motion-intro] a:active { scale: .985; }
 
@@ -23,8 +33,17 @@
 }
 
 @keyframes entrance {
-  from { opacity: .65; translate: 0 18px; }
-  to { opacity: 1; translate: 0 0; }
+  from { opacity: .001; translate: 0 30px; filter: blur(14px); }
+  to { opacity: 1; translate: 0 0; filter: blur(0); }
+}
+
+@keyframes kicker-in {
+  from { opacity: 0; letter-spacing: 1.1em; }
+}
+
+@keyframes hero-media-in {
+  from { scale: 1.1; }
+  to { scale: 1; }
 }
 
 @keyframes image-drift {
@@ -33,11 +52,15 @@
 }
 
 @media (max-width: 767px) and (prefers-reduced-motion: no-preference) {
-  .home [data-motion-intro] > * { animation-duration: 550ms; }
+  .home [data-motion-intro] > * { animation-duration: 800ms; }
+  @keyframes entrance {
+    from { opacity: .001; translate: 0 16px; }
+    to { opacity: 1; translate: 0 0; }
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .home [data-motion-intro] > *, .home [data-motion-image] {
+  .home [data-motion-intro] > *, .home [data-motion-image], .home video[data-hero-media] {
     animation: none;
   }
 }

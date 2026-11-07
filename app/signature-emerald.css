@@ -1,0 +1,46 @@
+/* AUTO 9 — Signature Emeraude. Design layer only; components and workflows unchanged. */
+#auto9-home {
+  /* Couleurs : voir les tokens dans app/globals.css */
+  color: var(--text);
+  font-family: "Manrope", Arial, sans-serif;
+  isolation: isolate;
+}
+#auto9-home h1,#auto9-home h2,#auto9-home h3 {
+  font-family: "Archivo Black","Manrope",Arial,sans-serif;
+  letter-spacing: -.055em;
+}
+#auto9-home [data-home-hero]{
+  background: transparent;
+}
+#auto9-home [data-home-hero]::after {
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:1;
+  pointer-events:none;
+  background:radial-gradient(ellipse at 79% 55%,transparent 15%,rgba(3,22,15,.30) 74%);
+  mix-blend-mode:screen;
+  /* fondu vers le fond émeraude, pas de limite nette en bas du hero */
+  -webkit-mask-image:linear-gradient(to bottom,#000 55%,transparent);
+  mask-image:linear-gradient(to bottom,#000 55%,transparent);
+}
+#auto9-home [data-home-hero] video {
+  filter: saturate(.79) contrast(1.15);
+}
+#auto9-home a,#auto9-home button{transition: filter .25s ease,border-color .25s ease,color .25s ease,box-shadow .25s ease,transform .25s ease;}
+#auto9-home a:focus-visible,#auto9-home button:focus-visible{outline:2px solid var(--accent);outline-offset:3px;}
+#auto9-home a[href="/devis"],#auto9-home a[href^="/devis?"]{
+  box-shadow: 0 10px 34px rgba(var(--metal-rgb), .17);
+}
+#auto9-home [id="services"],
+#auto9-home [id="realisations"],
+#auto9-home [id="reservation"] {
+  scroll-margin-top:80px;
+}
+#auto9-home [data-motion-reveal] h2{
+  text-transform:uppercase;
+}
+#auto9-home ::selection{color:var(--on-metal);background:var(--accent-soft);}
+@media(prefers-reduced-motion:reduce){
+  #auto9-home a,#auto9-home button{transition:none!important;}
+}

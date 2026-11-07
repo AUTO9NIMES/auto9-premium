@@ -3,6 +3,33 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* AUTO 9 — Signature Emeraude : source unique des couleurs du site public. */
+  --bg-base: #071710;
+  --text: #ece8e0;
+  --text-body: #c2c7c3;
+  --muted: #a9aeb2;
+
+  /* Gris métal (luxe) */
+  --metal-hi: #f4f5f6;
+  --metal-mid: #c3c8cb;
+  --metal-lo: #a7acb0;
+  --on-metal: #0a120e;
+
+  /* Seul accent : émeraude (kickers, mot clé, jauges, petits indicateurs, focus) */
+  --accent: #34c085;
+  --accent-soft: #6fd9a8;
+  --accent-strong: #2aa673;
+  --accent-deep: #1e9462;
+
+  /* Composantes RGB pour les ombres/halos translucides : rgba(var(--accent-rgb), .2) */
+  --accent-rgb: 52, 192, 133;
+  --accent-soft-rgb: 111, 217, 168;
+  --metal-rgb: 195, 200, 203;
+
+  --gradient-metal: linear-gradient(180deg, #eef0f1 0%, #c3c8cb 48%, #a7acb0 52%, #d9dcde 100%);
+  --gradient-price: linear-gradient(180deg, #f4f5f6 0%, #c3c8cb 55%, #e0e3e5 100%);
+  --gradient-accent-word: linear-gradient(100deg, #b8f0d6 0%, #34c085 45%, #7fddb0 62%, #1e9462 100%);
 }
 
 @theme inline {
@@ -10,6 +37,30 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  --color-forest: var(--bg-base);
+  --color-ivory: var(--text);
+  --color-body: var(--text-body);
+  --color-muted: var(--muted);
+  --color-metal-hi: var(--metal-hi);
+  --color-metal-mid: var(--metal-mid);
+  --color-metal-lo: var(--metal-lo);
+  --color-on-metal: var(--on-metal);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-deep: var(--accent-deep);
+}
+
+/* Fonds en dégradé : bg-metal (grands boutons), bg-price (prix), bg-accent-word (mot clé d'un titre). */
+@utility bg-metal {
+  background-image: var(--gradient-metal);
+}
+@utility bg-price {
+  background-image: var(--gradient-price);
+}
+@utility bg-accent-word {
+  background-image: var(--gradient-accent-word);
 }
 
 @media (prefers-color-scheme: dark) {

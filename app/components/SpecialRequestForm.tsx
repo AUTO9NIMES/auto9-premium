@@ -239,13 +239,11 @@ export function SpecialRequestForm() {
   }
 
   return (
-    <section className="relative min-h-screen overflow-hidden bg-[#050608] px-5 py-10 text-white md:px-12 md:py-16">
+    <section className="relative min-h-screen overflow-hidden px-5 py-10 text-white md:px-12 md:py-16">
 
       {/* HALOS DE FOND */}
 
-      <div className="pointer-events-none absolute left-1/2 top-20 h-[32rem] w-[32rem] -translate-x-1/2 rounded-full bg-[#0057FF]/10 blur-[150px]" />
 
-      <div className="pointer-events-none absolute -right-40 top-[40%] h-96 w-96 rounded-full bg-[#0057FF]/7 blur-[130px]" />
 
       <div className="relative mx-auto max-w-5xl">
 
@@ -253,18 +251,18 @@ export function SpecialRequestForm() {
 
         <Link
           href="/#services"
-          className="text-xs font-black uppercase tracking-[0.25em] text-white/50 transition hover:text-[#7DB7FF]"
+          className="text-xs font-black uppercase tracking-[0.25em] text-white/50 transition hover:text-accent-soft"
         >
           ← Retour aux prestations
         </Link>
 
         {/* CARTE PRINCIPALE */}
 
-        <div className="relative mt-8 overflow-hidden rounded-[2rem] border border-[#0057FF]/30 bg-[linear-gradient(145deg,rgba(0,87,255,.16),rgba(255,255,255,.055))] p-5 shadow-[0_0_90px_rgba(0,87,255,.14)] md:p-10">
+        <div className="relative mt-8 overflow-hidden rounded-[2rem] border border-accent/30 bg-[linear-gradient(145deg,rgba(var(--accent-rgb),.16),rgba(255,255,255,.055))] p-5 shadow-[0_0_90px_rgba(var(--accent-rgb),.14)] md:p-10">
 
           {/* HALO INTERNE */}
 
-          <div className="pointer-events-none absolute -right-32 -top-32 h-80 w-80 rounded-full bg-[#0057FF]/15 blur-[100px]" />
+          <div className="pointer-events-none absolute -right-32 -top-32 h-80 w-80 rounded-full bg-accent/[0.05] blur-[100px]" />
 
           <div className="relative">
 
@@ -273,7 +271,7 @@ export function SpecialRequestForm() {
             <div className="flex flex-col justify-between gap-5 border-b border-white/15 pb-7 md:flex-row md:items-end">
 
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.35em] text-[#2F7BFF]">
+                <p className="text-xs font-black uppercase tracking-[0.35em] text-accent">
                   {config.eyebrow}
                 </p>
 
@@ -288,11 +286,11 @@ export function SpecialRequestForm() {
 
               {/* PRIX / TYPE */}
 
-              <div className="relative isolate w-fit overflow-hidden rounded-full border border-[#2F7BFF]/60 bg-[radial-gradient(circle_at_center,rgba(0,87,255,.30),rgba(0,87,255,.10)_65%,transparent_100%)] px-5 py-3 text-lg font-black text-white shadow-[0_0_28px_rgba(0,87,255,.32)]">
+              <div className="relative isolate w-fit overflow-hidden rounded-full border border-accent/60 bg-[radial-gradient(circle_at_center,rgba(var(--accent-rgb),.30),rgba(var(--accent-rgb),.10)_65%,transparent_100%)] px-5 py-3 text-lg font-black text-white shadow-[0_0_28px_rgba(var(--accent-rgb),.32)]">
 
-                <span className="pointer-events-none absolute inset-0 -z-10 bg-[#0057FF]/20 blur-lg" />
+                <span className="pointer-events-none absolute inset-0 -z-10 bg-accent/20 blur-lg" />
 
-                <span className="drop-shadow-[0_0_10px_rgba(125,183,255,.9)]">
+                <span className="drop-shadow-[0_0_10px_rgba(var(--accent-rgb),.9)]">
                   {config.price}
                 </span>
               </div>
@@ -367,7 +365,7 @@ export function SpecialRequestForm() {
 
               {/* PHOTOS */}
 
-              <div className="rounded-[1.5rem] border border-white/15 bg-white/[0.04] p-5 shadow-[inset_0_0_35px_rgba(0,87,255,.035)] md:p-6">
+              <div className="rounded-[1.5rem] border border-white/15 bg-white/[0.04] p-5 shadow-[inset_0_0_35px_rgba(var(--accent-rgb),.035)] md:p-6">
 
                 <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
 
@@ -381,7 +379,7 @@ export function SpecialRequestForm() {
                     </p>
                   </div>
 
-                  <label className="cursor-pointer rounded-full border border-[#0057FF]/50 bg-[#0057FF]/15 px-5 py-3 text-xs font-black text-white shadow-[0_0_20px_rgba(0,87,255,.10)] transition hover:bg-[#0057FF]">
+                  <label className="cursor-pointer rounded-full border border-accent/50 bg-accent/15 px-5 py-3 text-xs font-black text-white shadow-[0_0_20px_rgba(var(--accent-rgb),.10)] transition hover:bg-accent/25">
 
                     + Ajouter des photos
 
@@ -473,7 +471,7 @@ export function SpecialRequestForm() {
                 <button
                   type="submit"
                   disabled={!ready || sending}
-                  className="rounded-full bg-[#0057FF] px-7 py-4 text-xs font-black uppercase tracking-[0.2em] text-white shadow-[0_15px_35px_rgba(0,87,255,.30),0_0_25px_rgba(0,87,255,.15)] transition hover:scale-[1.02] hover:shadow-[0_18px_45px_rgba(0,87,255,.40)] disabled:cursor-not-allowed disabled:opacity-35"
+                  className="rounded-full bg-metal px-7 py-4 text-xs font-black uppercase tracking-[0.2em] text-on-metal shadow-[0_15px_35px_rgba(var(--metal-rgb),.22)] transition hover:scale-[1.02] hover:shadow-[0_18px_45px_rgba(var(--metal-rgb),.32)] disabled:cursor-not-allowed disabled:opacity-35"
                 >
                   {sending
                     ? "Envoi..."
@@ -495,7 +493,7 @@ export function SpecialRequestForm() {
 /* ========================================================= */
 
 const inputClass =
-  "w-full rounded-xl border border-white/15 bg-white/[0.055] px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[#2F7BFF]/80 focus:bg-[#0057FF]/10 focus:shadow-[0_0_22px_rgba(0,87,255,.12)]";
+  "w-full rounded-xl border border-white/15 bg-white/[0.055] px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-accent/80 focus:bg-accent/10 focus:shadow-[0_0_22px_rgba(var(--accent-rgb),.12)]";
 
 function Field({
   label,
@@ -531,8 +529,8 @@ function ServiceDetailSelection({ options }: { options: string[] }) {
             onClick={() => setDetail(option)}
             className={`rounded-full border px-4 py-3 text-xs font-black transition ${
               detail === option
-                ? "border-[#2F7BFF] bg-[#0057FF] text-white shadow-[0_0_22px_rgba(0,87,255,.35)]"
-                : "border-white/15 bg-white/[0.04] text-white/60 hover:border-[#0057FF]/60 hover:bg-[#0057FF]/10 hover:text-white"
+                ? "border-accent bg-accent/15 text-white shadow-[0_0_22px_rgba(var(--accent-rgb),.22)]"
+                : "border-white/15 bg-white/[0.04] text-white/60 hover:border-accent/60 hover:bg-accent/10 hover:text-white"
             }`}
           >
             {option}

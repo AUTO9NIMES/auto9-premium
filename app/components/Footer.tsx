@@ -33,10 +33,10 @@ export function Footer() {
   ];
 
   return (
-    <footer className="border-t border-white/10 bg-[#050608] px-6 py-20 text-white md:px-12">
+    <footer className="px-6 py-20 text-white md:px-12">
       <div className="mx-auto max-w-7xl">
-        <div className="rounded-[2rem] border border-[#B8C7D1]/20 bg-[#B8C7D1]/5 p-8 md:p-12">
-          <p className="text-xs font-black uppercase tracking-[0.45em] text-[#B8C7D1]">
+        <div className="rounded-[2rem] border border-metal-mid/20 bg-metal-mid/5 p-8 md:p-12">
+          <p className="text-xs font-black uppercase tracking-[0.45em] text-accent">
             Une dernière envie ?
           </p>
 
@@ -47,7 +47,7 @@ export function Footer() {
 
             <Link
               href="/devis"
-              className="w-fit rounded-full bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] text-[#050608] shadow-[0_18px_45px_rgba(184,199,209,.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
+              className="w-fit rounded-full bg-metal text-on-metal shadow-[0_18px_45px_rgba(var(--metal-rgb),.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
             >
               Obtenir mon devis →
             </Link>
@@ -57,7 +57,7 @@ export function Footer() {
         <div className="mt-16 grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
           <div>
             <img
-              src="/logo-auto9.png"
+              src="/brand/auto9-logo.webp"
               alt="AUTO 9"
               className="h-16 w-auto opacity-95"
             />
@@ -109,7 +109,7 @@ export function Footer() {
         </div>
 
         <div className="mt-12 border-t border-white/10 pt-8">
-          <p className="text-xs font-black uppercase tracking-[0.45em] text-[#B8C7D1]">
+          <p className="text-xs font-black uppercase tracking-[0.45em] text-accent">
             Navigation
           </p>
 
@@ -118,7 +118,7 @@ export function Footer() {
               <a
                 key={link.href}
                 href={link.href}
-                className="rounded-full border border-white/10 bg-white/[0.025] px-5 py-3 text-[10px] font-black uppercase tracking-[0.22em] text-white/50 transition hover:border-[#B8C7D1] hover:text-[#B8C7D1]"
+                className="rounded-full border border-white/10 bg-white/[0.025] px-5 py-3 text-[10px] font-black uppercase tracking-[0.22em] text-white/50 transition hover:border-metal-mid hover:text-metal-mid"
               >
                 {link.label}
               </a>
@@ -136,14 +136,14 @@ export function Footer() {
               <div className="mt-5 flex flex-wrap gap-x-5 gap-y-3">
                 <a
                   href="/mentions-legales"
-                  className="text-xs uppercase tracking-[0.22em] text-white/30 transition hover:text-[#B8C7D1]"
+                  className="text-xs uppercase tracking-[0.22em] text-white/30 transition hover:text-metal-mid"
                 >
                   Mentions légales
                 </a>
 
                 <a
                   href="/politique-confidentialite"
-                  className="text-xs uppercase tracking-[0.22em] text-white/30 transition hover:text-[#B8C7D1]"
+                  className="text-xs uppercase tracking-[0.22em] text-white/30 transition hover:text-metal-mid"
                 >
                   Confidentialité
                 </a>
@@ -152,11 +152,11 @@ export function Footer() {
 
             <p className="group text-xs uppercase tracking-[0.28em] text-white/25">
               Crafted with passion by{" "}
-              <span className="font-bold text-[#B8C7D1] transition group-hover:text-white">
+              <span className="font-bold text-metal-mid transition group-hover:text-white">
                 NOX
               </span>
               {" & "}
-              <span className="font-bold text-white transition group-hover:text-[#B8C7D1]">
+              <span className="font-bold text-white transition group-hover:text-metal-mid">
                 NICO
               </span>
             </p>
