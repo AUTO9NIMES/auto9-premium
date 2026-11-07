@@ -97,7 +97,7 @@ export default function GoogleAnalytics() {
         <>
           {bannerVisible && (
             <div
-              className="fixed inset-x-0 bottom-0 p-3 sm:p-5"
+              className="fixed inset-x-0 bottom-0 p-3 sm:inset-x-auto sm:right-0 sm:p-5"
               style={{
                 zIndex: 2147483647,
                 pointerEvents: "auto",
@@ -105,23 +105,23 @@ export default function GoogleAnalytics() {
               }}
             >
               <div
-                className="mx-auto max-w-4xl rounded-3xl border border-white/15 bg-[#080f0c]/95 p-5 text-white shadow-2xl backdrop-blur-2xl sm:p-6"
+                className="mx-auto max-w-md rounded-2xl border border-white/12 bg-[#06100b]/90 p-4 font-[Manrope,Arial,sans-serif] text-white shadow-[0_20px_60px_rgba(0,0,0,.55)] backdrop-blur-xl sm:mx-0 sm:p-5"
                 style={{
                   pointerEvents: "auto",
                   touchAction: "manipulation",
                 }}
               >
-                <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-                  <div className="max-w-2xl">
-                    <p className="text-xs font-black uppercase tracking-[0.28em] text-accent-soft">
+                <div className="flex flex-col gap-3.5">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.28em] text-accent-soft">
                       Vos préférences
                     </p>
 
-                    <h2 className="mt-2 text-xl font-black">
+                    <h2 className="mt-1.5 text-[15px] font-extrabold">
                       AUTO 9 respecte votre vie privée
                     </h2>
 
-                    <p className="mt-2 text-sm leading-6 text-white/65">
+                    <p className="mt-1.5 text-[12.5px] leading-5 text-white/60">
                       Nous utilisons Google Analytics uniquement
                       avec votre accord afin de comprendre comment
                       le site est utilisé et d’améliorer nos services.
@@ -129,17 +129,17 @@ export default function GoogleAnalytics() {
 
                     <Link
                       href="/politique-confidentialite"
-                      className="mt-3 inline-block text-xs font-bold text-accent-soft underline underline-offset-4"
+                      className="mt-2 inline-block text-[11px] font-bold text-accent-soft underline underline-offset-4"
                     >
                       Consulter la politique de confidentialité
                     </Link>
                   </div>
 
-                  <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+                  <div className="flex gap-2">
                     <button
                       type="button"
                       onClick={refuseCookies}
-                      className="rounded-full border border-white/15 px-5 py-3 text-xs font-black uppercase tracking-[0.14em] text-white/70 transition hover:border-white/30 hover:text-white"
+                      className="flex-1 rounded-full border border-white/15 px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.14em] text-white/70 transition hover:border-white/30 hover:text-white"
                       style={{
                         pointerEvents: "auto",
                         touchAction: "manipulation",
@@ -152,7 +152,7 @@ export default function GoogleAnalytics() {
                     <button
                       type="button"
                       onClick={acceptCookies}
-                      className="rounded-full bg-metal px-5 py-3 text-xs font-black uppercase tracking-[0.14em] text-on-metal shadow-[0_12px_30px_rgba(var(--metal-rgb),.22)] transition hover:brightness-105"
+                      className="flex-1 rounded-full bg-metal px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.14em] text-on-metal shadow-[0_12px_30px_rgba(var(--metal-rgb),.22)] transition hover:brightness-105"
                       style={{
                         pointerEvents: "auto",
                         touchAction: "manipulation",

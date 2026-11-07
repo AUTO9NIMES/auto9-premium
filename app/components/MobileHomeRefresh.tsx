@@ -9,7 +9,7 @@ export function MobileHomeRefresh() {
       <section className="relative min-h-[760px] overflow-hidden px-5 pb-9 pt-8">
         <div
           data-hero-media
-          className="absolute inset-0 bg-cover bg-[58%_center] [mask-image:linear-gradient(to_bottom,black_45%,transparent_88%)] will-change-transform"
+          className="absolute inset-0 bg-cover bg-[58%_center] [mask-image:linear-gradient(to_bottom,transparent_0%,black_14%,black_45%,transparent_88%)] will-change-transform"
           style={{
             backgroundImage: "url('/realisations/audi-rs7-face.jpg')",
           }}
@@ -22,7 +22,7 @@ export function MobileHomeRefresh() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_82%_30%,rgba(var(--accent-rgb),.16),transparent_42%)]" />
 
         <div className="relative z-10 will-change-transform" data-motion-intro data-hero-fade>
-          <p className="pt-20 text-[11px] font-black uppercase tracking-[0.38em] text-accent">
+          <p className="pt-24 text-[11px] font-black uppercase tracking-[0.38em] text-accent">
             Detailing premium à domicile · Nîmes
           </p>
 

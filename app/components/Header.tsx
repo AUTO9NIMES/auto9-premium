@@ -8,7 +8,7 @@ export function Header() {
         <img
           src="/signature-auto9.svg"
           alt="AUTO 9"
-          className="h-24 w-auto object-contain md:h-20"
+          className="h-[72px] w-auto object-contain md:h-20"
         />
       </Link>
 

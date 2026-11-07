@@ -1,9 +1,10 @@
 const partners = [
-  "/partner-supercars.png",
-  "/partner-driving-spirit.png",
-  "/partner-crystalcars.png",
-  "/partner-twiice.png",
-  "/partner-renault.png",
+  // Versions détourées monochromes (public/partners) : un bandeau homogène sur le fond émeraude.
+  "/partners/supercars.png",
+  "/partners/driving-spirit.png",
+  "/partners/crystalcars.png",
+  "/partners/twiice.png",
+  "/partners/renault.png",
 ];
 
 export function Partners() {
@@ -16,7 +17,7 @@ export function Partners() {
               key={index}
               src={logo}
               alt="Partenaire AUTO 9"
-              className="h-12 w-auto max-w-[160px] object-contain opacity-90 saturate-100 transition duration-300 hover:scale-105 hover:opacity-100"
+              className="h-10 w-auto max-w-[150px] object-contain opacity-55 transition duration-500 hover:scale-105 hover:opacity-100"
             />
           ))}
         </div>
