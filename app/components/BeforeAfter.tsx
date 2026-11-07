@@ -1,13 +1,13 @@
 export function BeforeAfter() {
   return (
     <section className="relative overflow-hidden bg-[#071710] px-5 py-20 text-white sm:px-6 lg:px-8 lg:py-28">
-      <div className="pointer-events-none absolute -left-32 top-24 h-[420px] w-[420px] rounded-full bg-[#22c242]/10 blur-[150px]" />
-      <div className="pointer-events-none absolute -right-32 bottom-8 h-[420px] w-[420px] rounded-full bg-[#61dc79]/[0.07] blur-[150px]" />
+      <div className="pointer-events-none absolute -left-32 top-24 h-[420px] w-[420px] rounded-full bg-accent/10 blur-[150px]" />
+      <div className="pointer-events-none absolute -right-32 bottom-8 h-[420px] w-[420px] rounded-full bg-accent-soft/[0.07] blur-[150px]" />
 
       <div className="relative mx-auto max-w-6xl">
         <div className="grid gap-8 lg:grid-cols-[0.75fr_1.25fr] lg:items-end">
           <div>
-            <p className="text-[11px] font-black uppercase tracking-[0.45em] text-[#9fdbab] sm:text-xs">
+            <p className="text-[11px] font-black uppercase tracking-[0.45em] text-accent-soft sm:text-xs">
               Avant / Après
             </p>
             <h2 data-motion-reveal className="mt-5 text-[42px] font-black uppercase leading-[0.96] tracking-[-0.055em] sm:text-[58px] lg:text-[68px]">
@@ -37,9 +37,9 @@ export function BeforeAfter() {
             />
           </figure>
 
-          <figure className="group relative overflow-hidden rounded-[28px] border border-[#7cd88e]/30 bg-[linear-gradient(145deg,#101f13,#080b10)] p-3 shadow-[0_0_55px_rgba(30,138,127,.12),0_24px_70px_rgba(0,0,0,.34)]">
-            <div className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full bg-[#27d94b]/14 blur-[65px]" />
-            <div className="absolute left-6 top-6 z-10 rounded-full border border-[#92d8a0]/30 bg-[#182c1c]/70 px-4 py-2 text-[10px] font-black uppercase tracking-[0.28em] text-[#cee4d2] backdrop-blur-md">
+          <figure className="group relative overflow-hidden rounded-[28px] border border-accent-soft/30 bg-[linear-gradient(145deg,#101f19,#080b10)] p-3 shadow-[0_0_55px_rgba(var(--accent-rgb),.12),0_24px_70px_rgba(0,0,0,.34)]">
+            <div className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full bg-accent/14 blur-[65px]" />
+            <div className="absolute left-6 top-6 z-10 rounded-full border border-accent-soft/30 bg-[#182c1c]/70 px-4 py-2 text-[10px] font-black uppercase tracking-[0.28em] text-ivory backdrop-blur-md">
               Après
             </div>
             <img

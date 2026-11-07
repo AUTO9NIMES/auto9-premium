@@ -35,7 +35,7 @@ export function Header() {
 
         <Link
           href="/devis"
-          className="bg-metal text-on-metal shadow-[0_18px_45px_rgba(195,200,203,.18)] rounded-2xl px-6 py-4 transition hover:scale-105"
+          className="bg-metal text-on-metal shadow-[0_18px_45px_rgba(var(--metal-rgb),.18)] rounded-2xl px-6 py-4 transition hover:scale-105"
         >
           Devis gratuit
         </Link>

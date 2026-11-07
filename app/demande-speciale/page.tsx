@@ -11,7 +11,7 @@ export default function DemandeSpecialePage() {
           <section className="min-h-screen bg-[#071710] px-5 py-10 text-white md:px-12 md:py-16">
             <div className="mx-auto max-w-5xl">
               <div className="mt-8 animate-pulse rounded-[2rem] border border-white/10 bg-white/[0.03] p-8 md:p-10">
-                <p className="text-xs font-black uppercase tracking-[0.3em] text-[#2dd24e]">
+                <p className="text-xs font-black uppercase tracking-[0.3em] text-accent">
                   AUTO 9
                 </p>
 

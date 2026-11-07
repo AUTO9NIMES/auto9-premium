@@ -17,7 +17,7 @@
   background:
     radial-gradient(ellipse 60% 38% at 83% 9%, rgba(29,112,75,.27),transparent 76%),
     radial-gradient(ellipse 58% 42% at 6% 68%,rgba(23,91,64,.22),transparent 75%),
-    repeating-linear-gradient(119deg,transparent 0px,rgba(108,210,160,.014) 2px,transparent 5px,transparent 38px),
+    repeating-linear-gradient(119deg,transparent 0px,rgba(var(--accent-soft-rgb),.014) 2px,transparent 5px,transparent 38px),
     var(--bg-base);
 }
 #auto9-home h1,#auto9-home h2,#auto9-home h3 {
@@ -42,7 +42,7 @@
 #auto9-home a,#auto9-home button{transition: filter .25s ease,border-color .25s ease,color .25s ease,box-shadow .25s ease,transform .25s ease;}
 #auto9-home a:focus-visible,#auto9-home button:focus-visible{outline:2px solid var(--accent);outline-offset:3px;}
 #auto9-home a[href="/devis"],#auto9-home a[href^="/devis?"]{
-  box-shadow: 0 10px 34px rgba(195, 200, 203, .17);
+  box-shadow: 0 10px 34px rgba(var(--metal-rgb), .17);
 }
 #auto9-home [id="services"],
 #auto9-home [id="realisations"],

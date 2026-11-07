@@ -6,16 +6,16 @@ export function Reservation() {
       id="reservation"
       className="relative overflow-hidden bg-[#071710] px-5 py-16 text-white sm:px-6 lg:px-8 lg:py-24"
     >
-      <div className="pointer-events-none absolute left-1/2 top-10 h-[420px] w-[680px] -translate-x-1/2 rounded-full bg-[#20b53e]/[0.08] blur-[150px]" />
+      <div className="pointer-events-none absolute left-1/2 top-10 h-[420px] w-[680px] -translate-x-1/2 rounded-full bg-accent/[0.08] blur-[150px]" />
 
       <div className="relative mx-auto max-w-6xl">
-        <div className="overflow-hidden rounded-[30px] border border-[#a4d3ad]/20 bg-[linear-gradient(145deg,#111a27_0%,#0a1018_42%,#08090c_100%)] shadow-[0_30px_90px_rgba(0,0,0,.38)] sm:rounded-[36px]">
+        <div className="overflow-hidden rounded-[30px] border border-accent-soft/20 bg-[linear-gradient(145deg,#111a27_0%,#0a1018_42%,#08090c_100%)] shadow-[0_30px_90px_rgba(0,0,0,.38)] sm:rounded-[36px]">
           <div className="relative p-7 sm:p-10 lg:p-14">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_88%_4%,rgba(46,151,126,.12),transparent_36%)]" />
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_88%_4%,rgba(var(--accent-rgb),.12),transparent_36%)]" />
             <div className="pointer-events-none absolute inset-x-12 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(185,216,250,.45),transparent)]" />
 
             <div className="relative">
-              <p className="text-[11px] font-black uppercase tracking-[0.42em] text-[#bbdbc2] sm:text-xs">
+              <p className="text-[11px] font-black uppercase tracking-[0.42em] text-accent sm:text-xs">
                 Réservation
               </p>
 
@@ -38,7 +38,7 @@ export function Reservation() {
               <div className="mt-9 grid max-w-3xl gap-3 sm:gap-4">
                 <Link
                   href="/devis"
-                  className="group relative flex min-h-[70px] items-center overflow-hidden rounded-full border border-white/50 bg-metal px-5 text-on-metal shadow-[0_12px_36px_rgba(195,200,203,.16),inset_0_1px_0_rgba(255,255,255,.85)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_44px_rgba(195,200,203,.24)] active:scale-[0.985] sm:min-h-[78px] sm:px-7"
+                  className="group relative flex min-h-[70px] items-center overflow-hidden rounded-full border border-white/50 bg-metal px-5 text-on-metal shadow-[0_12px_36px_rgba(var(--metal-rgb),.16),inset_0_1px_0_rgba(255,255,255,.85)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_44px_rgba(var(--metal-rgb),.24)] active:scale-[0.985] sm:min-h-[78px] sm:px-7"
                 >
                   <span className="pointer-events-none absolute inset-0 opacity-45 [background:repeating-linear-gradient(90deg,rgba(255,255,255,.13)_0px,rgba(255,255,255,.13)_1px,rgba(0,0,0,.025)_1px,rgba(0,0,0,.025)_3px)]" />
                   <span className="pointer-events-none absolute inset-x-10 top-0 h-px bg-white/90" />

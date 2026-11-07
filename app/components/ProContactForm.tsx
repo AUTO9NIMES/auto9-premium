@@ -201,7 +201,7 @@ ${form.message || "Non renseigné"}`;
           <div className="mt-4 flex flex-col gap-3 sm:flex-row">
             <button
               type="submit"
-              className="rounded-full bg-metal text-on-metal shadow-[0_18px_45px_rgba(195,200,203,.18)] px-7 py-4 text-xs font-black uppercase tracking-[0.25em] text-[#071710] transition hover:scale-105"
+              className="rounded-full bg-metal text-on-metal shadow-[0_18px_45px_rgba(var(--metal-rgb),.18)] px-7 py-4 text-xs font-black uppercase tracking-[0.25em] text-[#071710] transition hover:scale-105"
             >
               Envoyer par email →
             </button>

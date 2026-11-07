@@ -137,30 +137,30 @@ export default function ProfessionnelsPage() {
   }
 
   const fieldClass =
-    "w-full rounded-2xl border border-[#31bf8a]/20 bg-[#071710]/80 px-5 py-4 text-white outline-none transition placeholder:text-white/20 focus:border-[#31bf8a]/70 focus:shadow-[0_0_28px_rgba(38,113,240,.14)]";
+    "w-full rounded-2xl border border-accent/20 bg-[#071710]/80 px-5 py-4 text-white outline-none transition placeholder:text-white/20 focus:border-accent/70 focus:shadow-[0_0_28px_rgba(38,113,240,.14)]";
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#071710] text-white">
       <div className="border-b border-white/10 px-6 py-6 md:px-12">
-        <Link href="/" className="text-xs font-black uppercase tracking-[0.3em] text-white/50 transition hover:text-[#60dba8]">
+        <Link href="/" className="text-xs font-black uppercase tracking-[0.3em] text-white/50 transition hover:text-accent-soft">
           ← Retour au site
         </Link>
       </div>
 
       <section className="relative px-6 pb-20 pt-10 md:px-12 md:pt-14">
-        <div className="pointer-events-none absolute -left-44 top-16 h-[520px] w-[520px] rounded-full bg-[#186b4b]/15 blur-[150px]" />
-        <div className="pointer-events-none absolute -right-44 top-[460px] h-[560px] w-[560px] rounded-full bg-[#31bf8a]/10 blur-[160px]" />
+        <div className="pointer-events-none absolute -left-44 top-16 h-[520px] w-[520px] rounded-full bg-accent-deep/15 blur-[150px]" />
+        <div className="pointer-events-none absolute -right-44 top-[460px] h-[560px] w-[560px] rounded-full bg-accent/10 blur-[160px]" />
 
         <div className="relative mx-auto max-w-7xl">
           <section
             id="reservation"
-            className="relative overflow-hidden rounded-[2rem] border border-[#31bf8a]/35 bg-[radial-gradient(circle_at_12%_8%,rgba(38,113,240,.18),transparent_36%),linear-gradient(145deg,rgba(9,18,32,.98),rgba(5,8,13,.98))] p-7 shadow-[0_30px_90px_rgba(0,0,0,.55),0_0_55px_rgba(38,113,240,.16)] md:p-10"
+            className="relative overflow-hidden rounded-[2rem] border border-accent/35 bg-[radial-gradient(circle_at_12%_8%,rgba(38,113,240,.18),transparent_36%),linear-gradient(145deg,rgba(9,18,32,.98),rgba(5,8,13,.98))] p-7 shadow-[0_30px_90px_rgba(0,0,0,.55),0_0_55px_rgba(38,113,240,.16)] md:p-10"
           >
             <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#2671f0]/15 blur-[90px]" />
             <div className="pointer-events-none absolute -bottom-28 left-1/4 h-80 w-80 rounded-full bg-[#72aaff]/10 blur-[110px]" />
 
             <div className="relative max-w-3xl">
-              <p className="text-xs font-black uppercase tracking-[0.55em] text-[#60dba8]">Réservation professionnels</p>
+              <p className="text-xs font-black uppercase tracking-[0.55em] text-accent-soft">Réservation professionnels</p>
               <h1 className="mt-5 text-4xl font-black uppercase tracking-[-0.055em] md:text-6xl">Réserver une préparation</h1>
               <p className="mt-5 max-w-2xl leading-relaxed text-white/50">
                 Votre véhicule à préparer en quelques secondes. Sélectionnez votre créneau souhaité et AUTO 9 vous confirme rapidement la réservation.
@@ -209,9 +209,9 @@ export default function ProfessionnelsPage() {
 
                 <div>
                   <label className="mb-3 block text-xs font-black uppercase tracking-[0.25em] text-white/60">Prestation *</label>
-                  <div className="flex min-h-[58px] items-center justify-between rounded-2xl border border-[#31bf8a]/35 bg-[linear-gradient(135deg,rgba(18,104,255,.16),rgba(5,10,18,.9))] px-5 py-4 shadow-[0_0_26px_rgba(38,113,240,.08)]">
+                  <div className="flex min-h-[58px] items-center justify-between rounded-2xl border border-accent/35 bg-[linear-gradient(135deg,rgba(18,104,255,.16),rgba(5,10,18,.9))] px-5 py-4 shadow-[0_0_26px_rgba(38,113,240,.08)]">
                     <div>
-                      <p className="text-xs font-black uppercase tracking-[0.18em] text-[#60dba8]">Prépa livraison</p>
+                      <p className="text-xs font-black uppercase tracking-[0.18em] text-accent-soft">Prépa livraison</p>
                       <p className="mt-1 text-xs text-white/40">Intérieur + extérieur</p>
                     </div>
                     <strong className="text-2xl font-black tracking-[-0.04em] text-white">100 €</strong>
@@ -226,7 +226,7 @@ export default function ProfessionnelsPage() {
                     <p className="mt-2 text-xs text-white/35">Cumulables — cochez tout ce dont le véhicule a besoin.</p>
                   </div>
 
-                  <div className="rounded-full border border-[#31bf8a]/30 bg-[#186b4b]/10 px-4 py-2 text-sm font-bold text-white/70">
+                  <div className="rounded-full border border-accent/30 bg-accent-deep/10 px-4 py-2 text-sm font-bold text-white/70">
                     Total <span className="ml-2 text-lg font-black text-white">{totalPrice} €</span>
                   </div>
                 </div>
@@ -240,8 +240,8 @@ export default function ProfessionnelsPage() {
                         key={addon.id}
                         className={`group flex cursor-pointer items-center justify-between gap-4 rounded-2xl border px-5 py-4 transition duration-200 ${
                           checked
-                            ? "border-[#31bf8a]/70 bg-[#186b4b]/15 shadow-[0_0_26px_rgba(38,113,240,.12)]"
-                            : "border-[#31bf8a]/20 bg-[#071710]/70 hover:border-[#31bf8a]/45"
+                            ? "border-accent/70 bg-accent-deep/15 shadow-[0_0_26px_rgba(38,113,240,.12)]"
+                            : "border-accent/20 bg-[#071710]/70 hover:border-accent/45"
                         }`}
                       >
                         <span className="flex min-w-0 items-center gap-3">
@@ -254,7 +254,7 @@ export default function ProfessionnelsPage() {
                           <span className="text-sm font-bold text-white/75 group-hover:text-white">{addon.name}</span>
                         </span>
 
-                        <strong className="shrink-0 text-sm font-black text-[#60dba8]">+{addon.price} €</strong>
+                        <strong className="shrink-0 text-sm font-black bg-price bg-clip-text text-transparent">+{addon.price} €</strong>
                       </label>
                     );
                   })}
@@ -264,12 +264,12 @@ export default function ProfessionnelsPage() {
               {error && <p className="rounded-xl border border-red-400/25 bg-red-400/10 p-4 text-sm font-bold text-red-200">{error}</p>}
               {success && <p className="rounded-xl border border-emerald-400/25 bg-emerald-400/10 p-4 text-sm font-bold text-emerald-200">Réservation envoyée ✓ AUTO 9 vous confirme rapidement le créneau.</p>}
 
-              <div className="flex flex-col justify-between gap-5 border-t border-[#31bf8a]/15 pt-6 sm:flex-row sm:items-center">
+              <div className="flex flex-col justify-between gap-5 border-t border-accent/15 pt-6 sm:flex-row sm:items-center">
                 <p className="max-w-xl text-xs leading-relaxed text-white/40">Réservation destinée aux garages et professionnels partenaires AUTO 9.</p>
                 <button
                   type="submit"
                   disabled={!ready || sending}
-                  className="rounded-full border border-[#31bf8a]/55 bg-[linear-gradient(135deg,#1057d6,#2677ef)] px-8 py-5 text-xs font-black uppercase tracking-[0.3em] text-white shadow-[0_0_28px_rgba(38,113,240,.35),0_18px_45px_rgba(0,0,0,.3)] transition hover:scale-[1.02] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-35"
+                  className="rounded-full border border-accent/55 bg-[linear-gradient(135deg,#1057d6,#2677ef)] px-8 py-5 text-xs font-black uppercase tracking-[0.3em] text-white shadow-[0_0_28px_rgba(38,113,240,.35),0_18px_45px_rgba(0,0,0,.3)] transition hover:scale-[1.02] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-35"
                 >
                   {sending ? "Envoi..." : success ? "Réservation envoyée ✓" : "Réserver la préparation →"}
                 </button>
@@ -278,7 +278,7 @@ export default function ProfessionnelsPage() {
           </section>
 
           <div className="mt-20">
-            <p className="text-xs font-black uppercase tracking-[0.55em] text-[#60dba8]">Professionnels de l’auto</p>
+            <p className="text-xs font-black uppercase tracking-[0.55em] text-accent-soft">Professionnels de l’auto</p>
             <div className="mt-6 grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-end">
               <div>
                 <h2 className="text-4xl font-black uppercase tracking-[-0.06em] md:text-7xl">Préparation esthétique pour garages & pros auto.</h2>
@@ -286,20 +286,20 @@ export default function ProfessionnelsPage() {
                   AUTO 9 accompagne les professionnels de l’automobile dans la préparation esthétique de leurs véhicules : mise en vente, livraison client, présentation parc VO et image premium.
                 </p>
               </div>
-              <div className="rounded-[2rem] border border-[#31bf8a]/25 bg-[#0b1628]/65 p-7 shadow-[0_0_35px_rgba(38,113,240,.08)]">
-                <p className="text-xs font-black uppercase tracking-[0.3em] text-[#60dba8]">Objectif</p>
+              <div className="rounded-[2rem] border border-accent/25 bg-[#0b1628]/65 p-7 shadow-[0_0_35px_rgba(38,113,240,.08)]">
+                <p className="text-xs font-black uppercase tracking-[0.3em] text-accent-soft">Objectif</p>
                 <p className="mt-4 text-2xl font-black uppercase tracking-[-0.04em]">Des véhicules plus propres, mieux présentés, plus faciles à vendre.</p>
               </div>
             </div>
           </div>
 
-          <div className="mt-14 overflow-hidden rounded-[2rem] border border-[#31bf8a]/15 bg-white/[0.025] p-7 md:p-9">
-            <p className="text-xs font-black uppercase tracking-[0.35em] text-[#60dba8]">Ils nous font confiance</p>
+          <div className="mt-14 overflow-hidden rounded-[2rem] border border-accent/15 bg-white/[0.025] p-7 md:p-9">
+            <p className="text-xs font-black uppercase tracking-[0.35em] text-accent-soft">Ils nous font confiance</p>
             <div className="mt-8 overflow-hidden rounded-[1.5rem] border border-white/10 bg-black/20"><Partners /></div>
           </div>
 
-          <div className="mt-16 rounded-[2rem] border border-[#31bf8a]/15 bg-white/[0.025] p-7 md:p-9">
-            <p className="text-xs font-black uppercase tracking-[0.35em] text-[#60dba8]">Pour qui ?</p>
+          <div className="mt-16 rounded-[2rem] border border-accent/15 bg-white/[0.025] p-7 md:p-9">
+            <p className="text-xs font-black uppercase tracking-[0.35em] text-accent-soft">Pour qui ?</p>
             <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {targets.map((target) => (
                 <div key={target} className="rounded-2xl border border-white/10 bg-black/20 p-5 text-sm font-black uppercase tracking-[0.18em] text-white/65">
@@ -311,18 +311,18 @@ export default function ProfessionnelsPage() {
 
           <div className="mt-16 grid gap-6 md:grid-cols-3">
             {benefits.map((benefit) => (
-              <article key={benefit.title} className="rounded-[2rem] border border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(38,113,240,.08),transparent_45%),rgba(255,255,255,.025)] p-7 transition hover:-translate-y-2 hover:border-[#31bf8a]/30">
-                <p className="text-sm font-black uppercase tracking-[0.25em] text-[#60dba8]">AUTO 9</p>
+              <article key={benefit.title} className="rounded-[2rem] border border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(38,113,240,.08),transparent_45%),rgba(255,255,255,.025)] p-7 transition hover:-translate-y-2 hover:border-accent/30">
+                <p className="text-sm font-black uppercase tracking-[0.25em] text-accent-soft">AUTO 9</p>
                 <h2 className="mt-5 text-3xl font-black uppercase tracking-[-0.05em]">{benefit.title}</h2>
                 <p className="mt-5 leading-relaxed text-white/50">{benefit.text}</p>
               </article>
             ))}
           </div>
 
-          <section className="relative mt-24 overflow-hidden rounded-[2rem] border border-[#31bf8a]/25 bg-[radial-gradient(circle_at_100%_0%,rgba(38,113,240,.14),transparent_38%),linear-gradient(145deg,rgba(255,255,255,.045),rgba(9,19,34,.58))] p-8 shadow-[0_0_42px_rgba(38,113,240,.08)] md:p-10">
+          <section className="relative mt-24 overflow-hidden rounded-[2rem] border border-accent/25 bg-[radial-gradient(circle_at_100%_0%,rgba(38,113,240,.14),transparent_38%),linear-gradient(145deg,rgba(255,255,255,.045),rgba(9,19,34,.58))] p-8 shadow-[0_0_42px_rgba(38,113,240,.08)] md:p-10">
             <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#2671f0]/12 blur-[90px]" />
             <div className="relative">
-              <p className="text-xs font-black uppercase tracking-[0.35em] text-[#60dba8]">Préparation livraison</p>
+              <p className="text-xs font-black uppercase tracking-[0.35em] text-accent-soft">Préparation livraison</p>
               <h3 className="mt-4 text-3xl font-black uppercase tracking-[-0.05em] md:text-5xl">Nettoyage complet avant livraison client</h3>
               <p className="mt-6 max-w-4xl text-base leading-relaxed text-white/55 md:text-lg">
                 Une préparation esthétique complète pour présenter un véhicule propre, soigné et prêt à être livré au client.
@@ -330,17 +330,17 @@ export default function ProfessionnelsPage() {
 
               <div className="mt-8 grid gap-5 md:grid-cols-2">
                 <div className="rounded-[1.5rem] border border-white/10 bg-black/20 p-6">
-                  <p className="text-xs font-black uppercase tracking-[0.25em] text-[#60dba8]">Extérieur</p>
+                  <p className="text-xs font-black uppercase tracking-[0.25em] text-accent-soft">Extérieur</p>
                   <p className="mt-3 text-lg font-bold text-white/80">Carrosserie · Jantes</p>
                 </div>
                 <div className="rounded-[1.5rem] border border-white/10 bg-black/20 p-6">
-                  <p className="text-xs font-black uppercase tracking-[0.25em] text-[#60dba8]">Intérieur</p>
+                  <p className="text-xs font-black uppercase tracking-[0.25em] text-accent-soft">Intérieur</p>
                   <p className="mt-3 text-lg font-bold text-white/80">Moquettes · Tapis · Plastiques · Vitres</p>
                 </div>
               </div>
 
-              <div className="mt-6 rounded-[1.5rem] border border-[#31bf8a]/20 bg-[#0b1628]/55 p-6">
-                <p className="text-xs font-black uppercase tracking-[0.25em] text-[#60dba8]">En supplément</p>
+              <div className="mt-6 rounded-[1.5rem] border border-accent/20 bg-[#0b1628]/55 p-6">
+                <p className="text-xs font-black uppercase tracking-[0.25em] text-accent-soft">En supplément</p>
                 <p className="mt-3 leading-relaxed text-white/60">Sièges +30 € · Rénovation plastiques +15 € · Polissage 1 élément +30 €</p>
               </div>
             </div>
@@ -348,14 +348,14 @@ export default function ProfessionnelsPage() {
 
           <div className="mt-24 grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.55em] text-[#60dba8]">Process</p>
+              <p className="text-xs font-black uppercase tracking-[0.55em] text-accent-soft">Process</p>
               <h2 className="mt-6 text-4xl font-black uppercase tracking-[-0.05em] md:text-6xl">Simple, clair, efficace.</h2>
               <p className="mt-6 leading-relaxed text-white/50">Un fonctionnement fluide pour préparer vos véhicules régulièrement, sans alourdir l’organisation de vos équipes.</p>
             </div>
             <div className="grid gap-4">
               {steps.map((step, index) => (
-                <div key={step} className="flex gap-5 rounded-[2rem] border border-[#31bf8a]/15 bg-white/[0.025] p-6">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[#31bf8a]/30 bg-[#186b4b]/10 text-sm font-black text-[#60dba8]">{index + 1}</div>
+                <div key={step} className="flex gap-5 rounded-[2rem] border border-accent/15 bg-white/[0.025] p-6">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-accent/30 bg-accent-deep/10 text-sm font-black text-accent-soft">{index + 1}</div>
                   <p className="pt-3 text-lg font-bold text-white/70">{step}</p>
                 </div>
               ))}

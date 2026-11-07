@@ -19,10 +19,10 @@ export function MobileHomeRefresh() {
 
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,6,8,.16)_0%,rgba(5,6,8,.08)_38%,rgba(5,6,8,.46)_74%,#071710_100%)]" />
 
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_82%_30%,rgba(49,191,138,.16),transparent_42%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_82%_30%,rgba(var(--accent-rgb),.16),transparent_42%)]" />
 
         <div className="relative z-10 will-change-transform" data-motion-intro data-hero-fade>
-          <p className="pt-20 text-[11px] font-black uppercase tracking-[0.38em] text-[#31bf8a]">
+          <p className="pt-20 text-[11px] font-black uppercase tracking-[0.38em] text-accent">
             Detailing premium à domicile · Nîmes
           </p>
 
@@ -49,7 +49,7 @@ export function MobileHomeRefresh() {
           <div className="mt-7 space-y-3">
             <Link
               href="/devis"
-              className="flex w-full items-center justify-center gap-4 rounded-full bg-metal px-5 py-5 text-[12px] font-black uppercase tracking-[0.19em] text-on-metal shadow-[0_18px_50px_rgba(195,200,203,.18)]"
+              className="flex w-full items-center justify-center gap-4 rounded-full bg-metal px-5 py-5 text-[12px] font-black uppercase tracking-[0.19em] text-on-metal shadow-[0_18px_50px_rgba(var(--metal-rgb),.18)]"
             >
               Configurer ma prestation
               <span className="text-lg">→</span>
@@ -57,10 +57,10 @@ export function MobileHomeRefresh() {
 
             <Link
               href="/professionnels"
-              className="flex w-full items-center justify-between rounded-[18px] border border-[#31bf8a]/30 bg-black/45 px-5 py-4 backdrop-blur-md"
+              className="flex w-full items-center justify-between rounded-[18px] border border-accent/30 bg-black/45 px-5 py-4 backdrop-blur-md"
             >
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[#31bf8a]">
+                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-accent">
                   Espace pro
                 </p>
 
@@ -89,7 +89,7 @@ function MiniFeature({
 }) {
   return (
     <div className="flex min-w-0 flex-col items-center text-center">
-      <span className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-black/45 text-[#a8e5ce] backdrop-blur">
+      <span className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-black/45 text-accent-soft backdrop-blur">
         {icon}
       </span>
       <span className="mt-2 whitespace-pre-line text-[10px] font-semibold leading-4 text-white/76">

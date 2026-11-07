@@ -332,7 +332,7 @@ export function RealisationsClient({
 
             <Link
               href="/devis"
-              className="w-fit rounded-full bg-metal px-7 py-4 text-xs font-black uppercase tracking-[0.25em] text-[#071710] shadow-[0_18px_45px_rgba(195,200,203,.18)] transition hover:scale-105"
+              className="w-fit rounded-full bg-metal px-7 py-4 text-xs font-black uppercase tracking-[0.25em] text-[#071710] shadow-[0_18px_45px_rgba(var(--metal-rgb),.18)] transition hover:scale-105"
             >
               Obtenir mon tarif →
             </Link>

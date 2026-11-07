@@ -4,9 +4,9 @@ export function PremiumBlueTheme() {
       dangerouslySetInnerHTML={{
         __html: `
           :root {
-            --auto9-blue-premium: #50a762;
-            --auto9-blue-premium-light: #A7D8EA;
-            --auto9-blue-premium-rgb: 79, 142, 168;
+            --auto9-blue-premium: var(--accent);
+            --auto9-blue-premium-light: var(--accent-soft);
+            --auto9-blue-premium-rgb: var(--accent-rgb);
           }
 
           [class~="text-[#B8C7D1]"] {

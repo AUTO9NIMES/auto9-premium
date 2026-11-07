@@ -116,7 +116,7 @@ export default function NettoyageVoitureNimesPage() {
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
                 <Link
                   href="/devis"
-                  className="w-fit rounded-full bg-metal text-on-metal shadow-[0_18px_45px_rgba(195,200,203,.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
+                  className="w-fit rounded-full bg-metal text-on-metal shadow-[0_18px_45px_rgba(var(--metal-rgb),.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
                 >
                   Obtenir mon devis →
                 </Link>
@@ -285,7 +285,7 @@ export default function NettoyageVoitureNimesPage() {
 
               <Link
                 href="/devis"
-                className="mt-8 inline-flex rounded-full bg-metal text-on-metal shadow-[0_18px_45px_rgba(195,200,203,.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
+                className="mt-8 inline-flex rounded-full bg-metal text-on-metal shadow-[0_18px_45px_rgba(var(--metal-rgb),.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
               >
                 Configurer ma prestation →
               </Link>
@@ -361,7 +361,7 @@ export default function NettoyageVoitureNimesPage() {
 
               <Link
                 href="/devis"
-                className="w-fit rounded-full bg-metal text-on-metal shadow-[0_18px_45px_rgba(195,200,203,.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
+                className="w-fit rounded-full bg-metal text-on-metal shadow-[0_18px_45px_rgba(var(--metal-rgb),.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
               >
                 Demander mon devis →
               </Link>

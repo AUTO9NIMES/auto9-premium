@@ -118,7 +118,7 @@ export default function PrestationsPremiumAutoNimesPage() {
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
                 <a
                   href="/devis-premium"
-                  className="w-fit rounded-full bg-metal text-on-metal shadow-[0_18px_45px_rgba(195,200,203,.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
+                  className="w-fit rounded-full bg-metal text-on-metal shadow-[0_18px_45px_rgba(var(--metal-rgb),.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
                 >
                   Demander un devis premium →
                 </a>
@@ -281,7 +281,7 @@ export default function PrestationsPremiumAutoNimesPage() {
 
               <a
                 href="/devis-premium"
-                className="mt-8 inline-flex rounded-full bg-metal text-on-metal shadow-[0_18px_45px_rgba(195,200,203,.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
+                className="mt-8 inline-flex rounded-full bg-metal text-on-metal shadow-[0_18px_45px_rgba(var(--metal-rgb),.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
               >
                 Devis premium →
               </a>
@@ -357,7 +357,7 @@ export default function PrestationsPremiumAutoNimesPage() {
 
               <a
                 href="/devis-premium"
-                className="w-fit rounded-full bg-metal text-on-metal shadow-[0_18px_45px_rgba(195,200,203,.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
+                className="w-fit rounded-full bg-metal text-on-metal shadow-[0_18px_45px_rgba(var(--metal-rgb),.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
               >
                 Demander mon devis →
               </a>

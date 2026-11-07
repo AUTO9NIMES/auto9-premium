@@ -38,11 +38,11 @@ export function Reviews() {
 
   return (
     <section className="relative overflow-hidden bg-[#071710] px-5 py-16 text-white sm:px-6 lg:px-8 lg:py-24">
-      <div className="pointer-events-none absolute left-1/2 top-10 h-72 w-72 -translate-x-1/2 rounded-full bg-[#30da52]/10 blur-[120px]" />
+      <div className="pointer-events-none absolute left-1/2 top-10 h-72 w-72 -translate-x-1/2 rounded-full bg-accent/10 blur-[120px]" />
 
       <div className="relative mx-auto max-w-6xl">
         <div className="max-w-2xl">
-          <p className="text-[10px] font-black uppercase tracking-[0.42em] text-[#72e389] sm:text-[11px]">
+          <p className="text-[10px] font-black uppercase tracking-[0.42em] text-accent-soft sm:text-[11px]">
             Avis clients
           </p>
 
@@ -131,7 +131,7 @@ export function Reviews() {
                   key={review.name}
                   className={
                     index === 0
-                      ? "h-2 w-2 rounded-full bg-[#66e47f]"
+                      ? "h-2 w-2 rounded-full bg-accent-soft"
                       : "h-2 w-2 rounded-full bg-white/20"
                   }
                 />
@@ -164,7 +164,7 @@ export function Reviews() {
           href="https://share.google/pRkmz18Y7YlOHJPS2"
           target="_blank"
           rel="noreferrer"
-          className="mt-7 flex w-full items-center justify-center gap-3 rounded-full bg-metal px-5 py-4.5 text-center text-[11px] font-black uppercase tracking-[0.18em] text-on-metal shadow-[0_18px_50px_rgba(195,200,203,.14)] sm:mt-8 sm:w-fit sm:px-8"
+          className="mt-7 flex w-full items-center justify-center gap-3 rounded-full bg-metal px-5 py-4.5 text-center text-[11px] font-black uppercase tracking-[0.18em] text-on-metal shadow-[0_18px_50px_rgba(var(--metal-rgb),.14)] sm:mt-8 sm:w-fit sm:px-8"
         >
           <GoogleG small />
           Voir les avis Google
