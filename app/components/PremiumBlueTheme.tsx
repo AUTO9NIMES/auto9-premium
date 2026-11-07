@@ -4,7 +4,7 @@ export function PremiumBlueTheme() {
       dangerouslySetInnerHTML={{
         __html: `
           :root {
-            --auto9-blue-premium: #4F8EA8;
+            --auto9-blue-premium: #50a762;
             --auto9-blue-premium-light: #A7D8EA;
             --auto9-blue-premium-rgb: 79, 142, 168;
           }
@@ -13,7 +13,7 @@ export function PremiumBlueTheme() {
             color: var(--auto9-blue-premium) !important;
           }
 
-          [class~="text-[#4D8DFF]"] {
+          [class~="text-[#68e481]"] {
             color: var(--auto9-blue-premium-light) !important;
           }
 
@@ -21,7 +21,7 @@ export function PremiumBlueTheme() {
             color: var(--auto9-blue-premium) !important;
           }
 
-          [class~="hover:text-[#4D8DFF]"]:hover {
+          [class~="hover:text-[#68e481]"]:hover {
             color: var(--auto9-blue-premium-light) !important;
           }
 
@@ -29,17 +29,17 @@ export function PremiumBlueTheme() {
             color: var(--auto9-blue-premium) !important;
           }
 
-          .group:hover [class~="group-hover:text-[#4D8DFF]"] {
+          .group:hover [class~="group-hover:text-[#68e481]"] {
             color: var(--auto9-blue-premium-light) !important;
           }
 
-          [class~="bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] text-[#050608] shadow-[0_18px_45px_rgba(184,199,209,.18)]"],
-          [class~="hover:bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] text-[#050608] shadow-[0_18px_45px_rgba(184,199,209,.18)]"]:hover {
+          [class~="bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] text-[#071710] shadow-[0_18px_45px_rgba(184,199,209,.18)]"],
+          [class~="hover:bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] text-[#071710] shadow-[0_18px_45px_rgba(184,199,209,.18)]"]:hover {
             background-color: var(--auto9-blue-premium) !important;
           }
 
-          [class~="bg-[#4D8DFF]"],
-          [class~="hover:bg-[#4D8DFF]"]:hover {
+          [class~="bg-[#68e481]"],
+          [class~="hover:bg-[#68e481]"]:hover {
             background-color: var(--auto9-blue-premium-light) !important;
           }
 
