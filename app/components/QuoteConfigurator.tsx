@@ -704,19 +704,19 @@ export function QuoteConfigurator() {
   }
 
   return (
-    <section className="relative min-h-screen overflow-hidden bg-[#050608] px-3 pb-32 pt-4 text-white sm:px-6 lg:px-8">
-      <div className="auto9-orb-one pointer-events-none absolute left-1/2 top-20 h-[28rem] w-[28rem] -translate-x-1/2 rounded-full bg-[#0057FF]/10 blur-[130px]" />
+    <section className="relative min-h-screen overflow-hidden bg-[#071710] px-3 pb-32 pt-4 text-white sm:px-6 lg:px-8">
+      <div className="auto9-orb-one pointer-events-none absolute left-1/2 top-20 h-[28rem] w-[28rem] -translate-x-1/2 rounded-full bg-[#26d94a]/10 blur-[130px]" />
 
-      <div className="auto9-orb-two pointer-events-none absolute -right-40 top-[38rem] h-[30rem] w-[30rem] rounded-full bg-[#0057FF]/10 blur-[150px]" />
+      <div className="auto9-orb-two pointer-events-none absolute -right-40 top-[38rem] h-[30rem] w-[30rem] rounded-full bg-[#26d94a]/10 blur-[150px]" />
 
-      <div className="auto9-orb-three pointer-events-none absolute -left-48 top-[72rem] h-[32rem] w-[32rem] rounded-full bg-[#7DB7FF]/5 blur-[160px]" />
+      <div className="auto9-orb-three pointer-events-none absolute -left-48 top-[72rem] h-[32rem] w-[32rem] rounded-full bg-[#9ddfaa]/5 blur-[160px]" />
 
       <div className="auto9-grid pointer-events-none absolute inset-0 opacity-[0.025]" />
 
       <div className="relative mx-auto max-w-7xl">
         <div className="mb-3 h-1 overflow-hidden rounded-full bg-white/[0.06]">
           <div
-            className="h-full rounded-full bg-[linear-gradient(90deg,#0057FF,#7DB7FF)] shadow-[0_0_18px_rgba(0,87,255,.65)] transition-[width] duration-700 ease-out"
+            className="h-full rounded-full bg-[linear-gradient(90deg,#26d94a,#9ddfaa)] shadow-[0_0_18px_rgba(16,116,142,.65)] transition-[width] duration-700 ease-out"
             style={{
               width: `${(step / stepLabels.length) * 100}%`,
             }}
@@ -738,16 +738,16 @@ export function QuoteConfigurator() {
                   aria-current={active ? "step" : undefined}
                   className={`group flex items-center gap-2 rounded-full border px-3 py-2 transition duration-300 hover:-translate-y-0.5 lg:gap-3 lg:px-4 lg:py-2.5 ${
                     active
-                      ? "auto9-active-step border-[#0057FF]/70 bg-[#0057FF]/15"
+                      ? "auto9-active-step border-[#26d94a]/70 bg-[#26d94a]/15"
                       : done
-                        ? "border-[#0057FF]/25 bg-[#0057FF]/5"
-                        : "border-white/10 bg-black/30 hover:border-[#0057FF]/35"
+                        ? "border-[#26d94a]/25 bg-[#26d94a]/5"
+                        : "border-white/10 bg-black/30 hover:border-[#26d94a]/35"
                   }`}
                 >
                   <span
                     className={`grid h-7 w-7 place-items-center rounded-full text-[10px] font-black transition duration-300 lg:h-10 lg:w-10 lg:text-sm ${
                       active || done
-                        ? "bg-[#0057FF] text-white shadow-[0_0_18px_rgba(0,87,255,.45)]"
+                        ? "bg-[#26d94a] text-white shadow-[0_0_18px_rgba(16,116,142,.45)]"
                         : "bg-white/10 text-white/45 group-hover:bg-white/15"
                     }`}
                   >
@@ -775,7 +775,7 @@ export function QuoteConfigurator() {
           ref={stepContentRef}
           className="relative overflow-hidden rounded-[1.6rem] border border-white/10 bg-[linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.018))] p-4 shadow-2xl backdrop-blur-sm sm:p-6 lg:p-10 xl:p-12"
         >
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(125,183,255,.65),transparent)]" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(72,183,142,.65),transparent)]" />
 
           <div key={step} className="auto9-step-enter relative">
             {step === 1 && (
@@ -796,8 +796,8 @@ export function QuoteConfigurator() {
                         key={service.id}
                         className={`auto9-card-enter group overflow-hidden rounded-2xl border transition duration-300 hover:-translate-y-1 ${
                           active
-                            ? "border-[#0057FF] bg-[#0057FF]/10 shadow-[0_0_38px_rgba(0,87,255,.16)]"
-                            : "border-white/10 bg-black/25 hover:border-[#0057FF]/40 hover:bg-[#0057FF]/5"
+                            ? "border-[#26d94a] bg-[#26d94a]/10 shadow-[0_0_38px_rgba(16,116,142,.16)]"
+                            : "border-white/10 bg-black/25 hover:border-[#26d94a]/40 hover:bg-[#26d94a]/5"
                         }`}
                         style={{
                           animationDelay: `${index * 80}ms`,
@@ -808,11 +808,11 @@ export function QuoteConfigurator() {
                           onClick={() => handleServiceChange(service.id)}
                           className="relative w-full p-4 text-left lg:p-6"
                         >
-                          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(0,87,255,.13),transparent_50%)] opacity-0 transition duration-500 group-hover:opacity-100" />
+                          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(16,116,142,.13),transparent_50%)] opacity-0 transition duration-500 group-hover:opacity-100" />
 
                           <div className="relative flex items-start justify-between gap-3">
                             <div>
-                              <span className="rounded-full border border-white/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-[#7DB7FF] lg:text-xs">
+                              <span className="rounded-full border border-white/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-[#9ddfaa] lg:text-xs">
                                 {service.tag}
                               </span>
 
@@ -821,13 +821,13 @@ export function QuoteConfigurator() {
                               </h3>
                             </div>
 
-                            <div className="relative isolate rounded-xl border border-[#2F7BFF]/30 bg-[#0057FF]/10 px-3 py-2 shadow-[0_0_18px_rgba(0,87,255,.22)]">
-                              <span className="pointer-events-none absolute inset-1 -z-10 rounded-lg bg-[#0057FF]/20 blur-lg" />
+                            <div className="relative isolate rounded-xl border border-[#4ee06b]/30 bg-[#26d94a]/10 px-3 py-2 shadow-[0_0_18px_rgba(16,116,142,.22)]">
+                              <span className="pointer-events-none absolute inset-1 -z-10 rounded-lg bg-[#26d94a]/20 blur-lg" />
 
-                              <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#7DB7FF]">
+                              <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#9ddfaa]">
                                 Dès
                               </p>
-                              <p className="text-2xl font-black text-white drop-shadow-[0_0_10px_rgba(125,183,255,.90)] lg:text-4xl">
+                              <p className="text-2xl font-black text-white drop-shadow-[0_0_10px_rgba(72,183,142,.90)] lg:text-4xl">
                                 {startingPrice}€
                               </p>
                             </div>
@@ -839,14 +839,14 @@ export function QuoteConfigurator() {
                         </button>
 
                         <details className="border-t border-white/10 px-4 py-3 text-xs text-white/55 lg:px-6 lg:py-4 lg:text-base">
-                          <summary className="cursor-pointer select-none font-black uppercase tracking-[0.12em] text-white/70 transition hover:text-[#7DB7FF]">
+                          <summary className="cursor-pointer select-none font-black uppercase tracking-[0.12em] text-white/70 transition hover:text-[#9ddfaa]">
                             Voir ce qui est inclus
                           </summary>
 
                           <div className="mt-3 space-y-2">
                             {service.operations.map((operation) => (
                               <p key={operation}>
-                                <span className="text-[#7DB7FF]">✓</span>{" "}
+                                <span className="text-[#9ddfaa]">✓</span>{" "}
                                 {operation}
                               </p>
                             ))}
@@ -879,14 +879,14 @@ export function QuoteConfigurator() {
                         }}
                         className={`auto9-card-enter group relative overflow-hidden rounded-2xl border p-3 text-left transition duration-300 hover:-translate-y-1 lg:p-6 ${
                           active
-                            ? "border-[#0057FF] bg-[#0057FF]/10 shadow-[0_0_35px_rgba(0,87,255,.18)]"
-                            : "border-white/10 bg-black/25 hover:border-[#0057FF]/40 hover:bg-[#0057FF]/5"
+                            ? "border-[#26d94a] bg-[#26d94a]/10 shadow-[0_0_35px_rgba(16,116,142,.18)]"
+                            : "border-white/10 bg-black/25 hover:border-[#26d94a]/40 hover:bg-[#26d94a]/5"
                         }`}
                         style={{
                           animationDelay: `${index * 70}ms`,
                         }}
                       >
-                        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(0,87,255,.12),transparent_48%)] opacity-0 transition duration-500 group-hover:opacity-100" />
+                        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(16,116,142,.12),transparent_48%)] opacity-0 transition duration-500 group-hover:opacity-100" />
 
                         <div className="relative flex items-center gap-3 lg:block">
                           <img
@@ -904,7 +904,7 @@ export function QuoteConfigurator() {
                               <span
                                 className={`grid h-7 w-7 place-items-center rounded-full text-xs font-black transition duration-300 ${
                                   active
-                                    ? "bg-[#0057FF] text-white shadow-[0_0_18px_rgba(0,87,255,.55)]"
+                                    ? "bg-[#26d94a] text-white shadow-[0_0_18px_rgba(16,116,142,.55)]"
                                     : "border border-white/15 text-transparent"
                                 }`}
                               >
@@ -1052,8 +1052,8 @@ export function QuoteConfigurator() {
                             onClick={() => setMainPhotoIndex(index)}
                             className={`group relative block w-full overflow-hidden rounded-xl border transition duration-300 hover:-translate-y-1 ${
                               mainPhotoIndex === index
-                                ? "border-[#0057FF] shadow-[0_0_24px_rgba(0,87,255,.35)]"
-                                : "border-white/10 hover:border-[#0057FF]/45"
+                                ? "border-[#26d94a] shadow-[0_0_24px_rgba(16,116,142,.35)]"
+                                : "border-white/10 hover:border-[#26d94a]/45"
                             }`}
                           >
                             <img
@@ -1065,7 +1065,7 @@ export function QuoteConfigurator() {
                             <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
 
                             {mainPhotoIndex === index && (
-                              <span className="absolute bottom-2 left-2 rounded-full bg-[#0057FF] px-2 py-1 text-[8px] font-black uppercase tracking-[0.12em] text-white">
+                              <span className="absolute bottom-2 left-2 rounded-full bg-[#26d94a] px-2 py-1 text-[8px] font-black uppercase tracking-[0.12em] text-white">
                                 Principale
                               </span>
                             )}
@@ -1103,7 +1103,7 @@ export function QuoteConfigurator() {
                         setCustomerComment(event.target.value)
                       }
                       placeholder="Taches, poils d’animaux, rayures, odeurs, besoins particuliers…"
-                      className="mt-3 min-h-32 w-full resize-none rounded-xl border border-white/10 bg-black/30 p-4 text-sm outline-none transition placeholder:text-white/30 focus:border-[#0057FF] focus:shadow-[0_0_22px_rgba(0,87,255,.12)] lg:text-base"
+                      className="mt-3 min-h-32 w-full resize-none rounded-xl border border-white/10 bg-black/30 p-4 text-sm outline-none transition placeholder:text-white/30 focus:border-[#26d94a] focus:shadow-[0_0_22px_rgba(16,116,142,.12)] lg:text-base"
                     />
                   </div>
                 </div>
@@ -1145,7 +1145,7 @@ export function QuoteConfigurator() {
                     }}
                   >
                     <div>
-                      <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#7DB7FF]">
+                      <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#9ddfaa]">
                         Date souhaitée
                       </p>
 
@@ -1165,10 +1165,10 @@ export function QuoteConfigurator() {
                               }
                               className={`rounded-xl border px-2 py-2.5 text-center text-[10px] font-black uppercase transition duration-300 ${
                                 active
-                                  ? "border-[#0057FF] bg-[#0057FF] text-white shadow-[0_0_18px_rgba(0,87,255,.4)]"
+                                  ? "border-[#26d94a] bg-[#26d94a] text-white shadow-[0_0_18px_rgba(16,116,142,.4)]"
                                   : disabled
                                     ? "cursor-not-allowed border-white/5 text-white/15"
-                                    : "border-white/10 text-white/60 hover:-translate-y-0.5 hover:border-[#0057FF]/50 hover:text-white"
+                                    : "border-white/10 text-white/60 hover:-translate-y-0.5 hover:border-[#26d94a]/50 hover:text-white"
                               }`}
                             >
                               <span className="block">{day.dayName}</span>
@@ -1183,7 +1183,7 @@ export function QuoteConfigurator() {
                     </div>
 
                     <div>
-                      <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#7DB7FF]">
+                      <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#9ddfaa]">
                         Heure souhaitée
                       </p>
 
@@ -1206,10 +1206,10 @@ export function QuoteConfigurator() {
                               }
                               className={`rounded-full border px-2 py-2.5 text-xs font-black transition duration-300 ${
                                 active
-                                  ? "border-[#0057FF] bg-[#0057FF] text-white shadow-[0_0_18px_rgba(0,87,255,.4)]"
+                                  ? "border-[#26d94a] bg-[#26d94a] text-white shadow-[0_0_18px_rgba(16,116,142,.4)]"
                                   : disabled
                                     ? "cursor-not-allowed border-white/5 text-white/15"
-                                    : "border-white/10 text-white/60 hover:-translate-y-0.5 hover:border-[#0057FF]/50 hover:text-white"
+                                    : "border-white/10 text-white/60 hover:-translate-y-0.5 hover:border-[#26d94a]/50 hover:text-white"
                               }`}
                             >
                               {time.replace(":", "h")}
@@ -1238,7 +1238,7 @@ export function QuoteConfigurator() {
                       }
                       placeholder="Nom et prénom *"
                       autoComplete="name"
-                      className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm outline-none transition placeholder:text-white/30 focus:border-[#0057FF] focus:shadow-[0_0_22px_rgba(0,87,255,.12)]"
+                      className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm outline-none transition placeholder:text-white/30 focus:border-[#26d94a] focus:shadow-[0_0_22px_rgba(16,116,142,.12)]"
                     />
 
                     <input
@@ -1249,7 +1249,7 @@ export function QuoteConfigurator() {
                       placeholder="Téléphone *"
                       inputMode="tel"
                       autoComplete="tel"
-                      className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm outline-none transition placeholder:text-white/30 focus:border-[#0057FF] focus:shadow-[0_0_22px_rgba(0,87,255,.12)]"
+                      className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm outline-none transition placeholder:text-white/30 focus:border-[#26d94a] focus:shadow-[0_0_22px_rgba(16,116,142,.12)]"
                     />
 
                     <input
@@ -1261,7 +1261,7 @@ export function QuoteConfigurator() {
                       placeholder="Email (pour recevoir votre devis)"
                       inputMode="email"
                       autoComplete="email"
-                      className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm outline-none transition placeholder:text-white/30 focus:border-[#0057FF] focus:shadow-[0_0_22px_rgba(0,87,255,.12)] sm:col-span-2"
+                      className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm outline-none transition placeholder:text-white/30 focus:border-[#26d94a] focus:shadow-[0_0_22px_rgba(16,116,142,.12)] sm:col-span-2"
                     />
 
                     <input
@@ -1271,7 +1271,7 @@ export function QuoteConfigurator() {
                       }
                       placeholder="Ville"
                       autoComplete="address-level2"
-                      className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm outline-none transition placeholder:text-white/30 focus:border-[#0057FF] focus:shadow-[0_0_22px_rgba(0,87,255,.12)] sm:col-span-2"
+                      className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm outline-none transition placeholder:text-white/30 focus:border-[#26d94a] focus:shadow-[0_0_22px_rgba(16,116,142,.12)] sm:col-span-2"
                     />
 
                     <label className="grid gap-2 text-sm text-white/60">
@@ -1281,7 +1281,7 @@ export function QuoteConfigurator() {
                         onChange={(event) => setVehicleBrand(event.target.value)}
                         required
                         placeholder="Ex. BMW"
-                        className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[#0057FF] focus:shadow-[0_0_22px_rgba(0,87,255,.12)]"
+                        className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[#26d94a] focus:shadow-[0_0_22px_rgba(16,116,142,.12)]"
                       />
                     </label>
 
@@ -1292,7 +1292,7 @@ export function QuoteConfigurator() {
                         onChange={(event) => setVehicleModel(event.target.value)}
                         required
                         placeholder="Ex. Série 3"
-                        className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[#0057FF] focus:shadow-[0_0_22px_rgba(0,87,255,.12)]"
+                        className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[#26d94a] focus:shadow-[0_0_22px_rgba(16,116,142,.12)]"
                       />
                     </label>
 
@@ -1302,7 +1302,7 @@ export function QuoteConfigurator() {
                         value={vehiclePlate}
                         onChange={(event) => setVehiclePlate(event.target.value)}
                         placeholder="Ex. AB-123-CD"
-                        className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[#0057FF] focus:shadow-[0_0_22px_rgba(0,87,255,.12)]"
+                        className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[#26d94a] focus:shadow-[0_0_22px_rgba(16,116,142,.12)]"
                       />
                     </label>
 
@@ -1316,20 +1316,20 @@ export function QuoteConfigurator() {
                   </div>
 
                   <div
-                    className="auto9-card-enter overflow-hidden rounded-2xl border border-[#0057FF]/30 bg-[#0057FF]/10 shadow-[0_0_45px_rgba(0,87,255,.08)]"
+                    className="auto9-card-enter overflow-hidden rounded-2xl border border-[#26d94a]/30 bg-[#26d94a]/10 shadow-[0_0_45px_rgba(16,116,142,.08)]"
                     style={{
                       animationDelay: "100ms",
                     }}
                   >
                     {mainCustomerPhoto && (
-                      <div className="relative h-44 overflow-hidden border-b border-[#0057FF]/20 sm:h-52 lg:h-60">
+                      <div className="relative h-44 overflow-hidden border-b border-[#26d94a]/20 sm:h-52 lg:h-60">
                         <img
                           src={mainCustomerPhoto.url}
                           alt="Photo principale du véhicule"
                           className="h-full w-full object-cover"
                         />
 
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#050608]/80 via-transparent to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#071710]/80 via-transparent to-transparent" />
 
                         <div className="absolute bottom-3 left-3 rounded-full border border-white/15 bg-black/65 px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.16em] text-white backdrop-blur">
                           Photo principale
@@ -1344,7 +1344,7 @@ export function QuoteConfigurator() {
                     )}
 
                     <div className="p-4">
-                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#7DB7FF]">
+                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#9ddfaa]">
                         Votre demande
                       </p>
 
@@ -1385,7 +1385,7 @@ export function QuoteConfigurator() {
                       <details className="group mt-5 overflow-hidden rounded-xl border border-white/10 bg-black/25">
                         <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-4 text-left [&::-webkit-details-marker]:hidden">
                           <div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#7DB7FF]">
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#9ddfaa]">
                               Prestation sélectionnée
                             </p>
 
@@ -1394,7 +1394,7 @@ export function QuoteConfigurator() {
                             </p>
                           </div>
 
-                          <span className="flex shrink-0 items-center gap-2 text-[10px] font-black uppercase tracking-[0.14em] text-white/65 transition group-open:text-[#7DB7FF]">
+                          <span className="flex shrink-0 items-center gap-2 text-[10px] font-black uppercase tracking-[0.14em] text-white/65 transition group-open:text-[#9ddfaa]">
                             Voir ce qui est inclus
 
                             <span className="text-lg transition-transform duration-300 group-open:rotate-180">
@@ -1414,7 +1414,7 @@ export function QuoteConfigurator() {
                                 key={operation}
                                 className="flex gap-2 text-sm leading-relaxed text-white/70"
                               >
-                                <span className="shrink-0 font-black text-[#7DB7FF]">
+                                <span className="shrink-0 font-black text-[#9ddfaa]">
                                   ✓
                                 </span>
 
@@ -1425,17 +1425,17 @@ export function QuoteConfigurator() {
                         </div>
                       </details>
 
-                      <div className="mt-5 flex items-end justify-between gap-4 border-t border-[#0057FF]/25 pt-4">
+                      <div className="mt-5 flex items-end justify-between gap-4 border-t border-[#26d94a]/25 pt-4">
                         <span className="text-sm text-white/55">
                           Total estimé
                         </span>
 
-                        <div className="relative isolate rounded-2xl border border-[#2F7BFF]/40 bg-[radial-gradient(circle_at_center,rgba(0,87,255,.28),rgba(0,87,255,.08)_58%,transparent_82%)] px-4 py-2 shadow-[0_0_28px_rgba(0,87,255,.36),inset_0_0_20px_rgba(0,87,255,.10)]">
-                          <span className="pointer-events-none absolute inset-0 -z-10 rounded-2xl bg-[#0057FF]/20 blur-xl" />
+                        <div className="relative isolate rounded-2xl border border-[#4ee06b]/40 bg-[radial-gradient(circle_at_center,rgba(16,116,142,.28),rgba(16,116,142,.08)_58%,transparent_82%)] px-4 py-2 shadow-[0_0_28px_rgba(16,116,142,.36),inset_0_0_20px_rgba(16,116,142,.10)]">
+                          <span className="pointer-events-none absolute inset-0 -z-10 rounded-2xl bg-[#26d94a]/20 blur-xl" />
 
                           <span
                             key={totalPrice}
-                            className="auto9-price-pop block text-4xl font-black text-white drop-shadow-[0_0_14px_rgba(125,183,255,.95)]"
+                            className="auto9-price-pop block text-4xl font-black text-white drop-shadow-[0_0_14px_rgba(72,183,142,.95)]"
                           >
                             {totalPrice}€
                           </span>
@@ -1443,7 +1443,7 @@ export function QuoteConfigurator() {
                       </div>
 
                       {hasQuoteAddon && (
-                        <p className="mt-2 text-xs text-[#7DB7FF]">
+                        <p className="mt-2 text-xs text-[#9ddfaa]">
                           + complément sur devis partenaire
                         </p>
                       )}
@@ -1480,16 +1480,16 @@ export function QuoteConfigurator() {
             </p>
           </div>
 
-          <div className="relative isolate mr-auto rounded-xl border border-[#2F7BFF]/35 bg-[#0057FF]/10 px-3 py-1.5 shadow-[0_0_20px_rgba(0,87,255,.28)] sm:mr-0 lg:px-4 lg:py-2">
-            <span className="pointer-events-none absolute inset-0 -z-10 rounded-xl bg-[#0057FF]/20 blur-lg" />
+          <div className="relative isolate mr-auto rounded-xl border border-[#4ee06b]/35 bg-[#26d94a]/10 px-3 py-1.5 shadow-[0_0_20px_rgba(16,116,142,.28)] sm:mr-0 lg:px-4 lg:py-2">
+            <span className="pointer-events-none absolute inset-0 -z-10 rounded-xl bg-[#26d94a]/20 blur-lg" />
 
-            <p className="text-[9px] uppercase tracking-[0.18em] text-[#7DB7FF] lg:text-sm">
+            <p className="text-[9px] uppercase tracking-[0.18em] text-[#9ddfaa] lg:text-sm">
               Estimation
             </p>
 
             <p
               key={totalPrice}
-              className="auto9-price-pop text-xl font-black text-white drop-shadow-[0_0_10px_rgba(125,183,255,.90)] lg:text-3xl"
+              className="auto9-price-pop text-xl font-black text-white drop-shadow-[0_0_10px_rgba(72,183,142,.90)] lg:text-3xl"
             >
               {totalPrice}€
             </p>
@@ -1499,7 +1499,7 @@ export function QuoteConfigurator() {
             <button
               type="button"
               onClick={() => goToStep(step - 1)}
-              className="rounded-full border border-white/15 px-4 py-3 text-[10px] font-black uppercase tracking-[0.14em] text-white/70 transition duration-300 hover:-translate-y-0.5 hover:border-[#7DB7FF] hover:text-white lg:px-8 lg:py-5 lg:text-xs"
+              className="rounded-full border border-white/15 px-4 py-3 text-[10px] font-black uppercase tracking-[0.14em] text-white/70 transition duration-300 hover:-translate-y-0.5 hover:border-[#9ddfaa] hover:text-white lg:px-8 lg:py-5 lg:text-xs"
             >
               Retour
             </button>
@@ -1509,7 +1509,7 @@ export function QuoteConfigurator() {
             <button
               type="button"
               onClick={() => goToStep(step + 1)}
-              className="group rounded-full bg-[#0057FF] px-5 py-3 text-[10px] font-black uppercase tracking-[0.16em] text-white shadow-[0_12px_30px_rgba(0,87,255,.3)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#1768FF] hover:shadow-[0_16px_40px_rgba(0,87,255,.42)] lg:px-9 lg:py-5 lg:text-sm"
+              className="group rounded-full bg-[#26d94a] px-5 py-3 text-[10px] font-black uppercase tracking-[0.16em] text-white shadow-[0_12px_30px_rgba(16,116,142,.3)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#3adc5a] hover:shadow-[0_16px_40px_rgba(16,116,142,.42)] lg:px-9 lg:py-5 lg:text-sm"
             >
               Continuer{" "}
               <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">
@@ -1650,11 +1650,11 @@ export function QuoteConfigurator() {
         @keyframes auto9ActivePulse {
           0%,
           100% {
-            box-shadow: 0 0 0 rgba(0, 87, 255, 0);
+            box-shadow: 0 0 0 rgba(16,116,142,0);
           }
 
           50% {
-            box-shadow: 0 0 28px rgba(0, 87, 255, 0.18);
+            box-shadow: 0 0 28px rgba(16,116,142,0.18);
           }
         }
 
@@ -1697,10 +1697,10 @@ export function QuoteConfigurator() {
 
         .auto9-grid {
           background-image:
-            linear-gradient(rgba(125, 183, 255, 0.5) 1px, transparent 1px),
+            linear-gradient(rgba(72,183,142,0.5) 1px, transparent 1px),
             linear-gradient(
               90deg,
-              rgba(125, 183, 255, 0.5) 1px,
+              rgba(72,183,142,0.5) 1px,
               transparent 1px
             );
           background-size: 48px 48px;
@@ -1750,7 +1750,7 @@ function AssistantStep({
 }) {
   return (
     <div>
-      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#7DB7FF] lg:text-xs">
+      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#9ddfaa] lg:text-xs">
         {eyebrow}
       </p>
 
@@ -1784,16 +1784,16 @@ function ChoiceRow({
       onClick={onClick}
       className={`group flex w-full items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left transition duration-300 hover:-translate-y-0.5 lg:px-5 lg:py-4 ${
         active
-          ? "border-[#0057FF] bg-[#0057FF]/10 shadow-[0_0_24px_rgba(0,87,255,.11)]"
-          : "border-white/10 bg-black/25 hover:border-[#0057FF]/40 hover:bg-[#0057FF]/5"
+          ? "border-[#26d94a] bg-[#26d94a]/10 shadow-[0_0_24px_rgba(16,116,142,.11)]"
+          : "border-white/10 bg-black/25 hover:border-[#26d94a]/40 hover:bg-[#26d94a]/5"
       }`}
     >
       <span className="flex min-w-0 items-center gap-3">
         <span
           className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-black transition duration-300 lg:h-8 lg:w-8 ${
             active
-              ? "bg-[#0057FF] text-white shadow-[0_0_18px_rgba(0,87,255,.45)]"
-              : "border border-white/15 text-transparent group-hover:border-[#0057FF]/45"
+              ? "bg-[#26d94a] text-white shadow-[0_0_18px_rgba(16,116,142,.45)]"
+              : "border border-white/15 text-transparent group-hover:border-[#26d94a]/45"
           }`}
         >
           ✓
@@ -1803,7 +1803,7 @@ function ChoiceRow({
       </span>
 
       {price && (
-        <span className="shrink-0 text-xs font-black text-[#7DB7FF] lg:text-sm">
+        <span className="shrink-0 text-xs font-black text-[#9ddfaa] lg:text-sm">
           {price}
         </span>
       )}
