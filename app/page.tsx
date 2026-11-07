@@ -17,11 +17,13 @@ import { Footer } from "./components/Footer";
 import { HomeMotion } from "./components/HomeMotion";
 import motion from "./home-motion.module.css";
 import { SiteMotion } from "./components/SiteMotion";
+import { MobileActionBar } from "./components/MobileActionBar";
 
 export default function Home() {
   return (
     <main data-motion-site id="auto9-home" className={`${motion.home} min-h-screen bg-forest text-white`}>
       <SiteMotion />
+      <MobileActionBar />
       <HomeMotion />
 
       {/* ===================================================== */}

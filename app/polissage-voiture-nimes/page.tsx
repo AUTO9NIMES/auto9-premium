@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { Footer } from "../components/Footer";
 import { SiteMotion } from "../components/SiteMotion";
+import { MobileActionBar } from "../components/MobileActionBar";
 
 export const metadata: Metadata = {
   title: "Polissage voiture Nîmes | AUTO 9 - Brillance et correction carrosserie",
@@ -88,6 +89,7 @@ export default function PolissageVoitureNimesPage() {
   return (
     <main data-motion-site className="min-h-screen bg-forest text-white">
       <SiteMotion />
+      <MobileActionBar />
       <div className="border-b border-white/10 px-6 py-6 md:px-12">
         <Link
           href="/"
