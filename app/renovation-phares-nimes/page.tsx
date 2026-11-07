@@ -85,7 +85,7 @@ const faq = [
 
 export default function RenovationPharesNimesPage() {
   return (
-    <main className="min-h-screen bg-[#050608] text-white">
+    <main className="min-h-screen bg-[#071710] text-white">
       <div className="border-b border-white/10 px-6 py-6 md:px-12">
         <Link
           href="/"
@@ -120,7 +120,7 @@ export default function RenovationPharesNimesPage() {
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
                 <a
                   href="/devis-premium?presta=phares"
-                  className="w-fit rounded-full bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] text-[#050608] shadow-[0_18px_45px_rgba(184,199,209,.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
+                  className="w-fit rounded-full bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] text-[#071710] shadow-[0_18px_45px_rgba(184,199,209,.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
                 >
                   Demander mon devis →
                 </a>
@@ -141,8 +141,8 @@ export default function RenovationPharesNimesPage() {
                 className="absolute inset-0 h-full w-full object-cover brightness-[0.82] contrast-110 saturate-110"
               />
 
-              <div className="absolute inset-0 bg-gradient-to-t from-[#050608] via-[#050608]/25 to-transparent" />
-              <div className="absolute inset-0 bg-gradient-to-r from-[#050608]/45 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#071710] via-[#071710]/25 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-[#071710]/45 via-transparent to-transparent" />
 
               <div className="absolute bottom-0 left-0 right-0 p-7">
                 <p className="text-xs font-black uppercase tracking-[0.35em] text-[#B8C7D1]">
@@ -200,7 +200,7 @@ export default function RenovationPharesNimesPage() {
 
               <a
                 href="/devis-premium?presta=phares"
-                className="mt-8 inline-flex rounded-full bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] text-[#050608] shadow-[0_18px_45px_rgba(184,199,209,.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
+                className="mt-8 inline-flex rounded-full bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] text-[#071710] shadow-[0_18px_45px_rgba(184,199,209,.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
               >
                 Rénover mes phares →
               </a>
@@ -366,7 +366,7 @@ export default function RenovationPharesNimesPage() {
 
               <a
                 href="/devis-premium?presta=phares"
-                className="mt-8 inline-flex rounded-full bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] text-[#050608] shadow-[0_18px_45px_rgba(184,199,209,.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
+                className="mt-8 inline-flex rounded-full bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] text-[#071710] shadow-[0_18px_45px_rgba(184,199,209,.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
               >
                 Demander mon devis →
               </a>
@@ -451,7 +451,7 @@ export default function RenovationPharesNimesPage() {
 
               <a
                 href="/devis-premium?presta=phares"
-                className="w-fit rounded-full bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] text-[#050608] shadow-[0_18px_45px_rgba(184,199,209,.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
+                className="w-fit rounded-full bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] text-[#071710] shadow-[0_18px_45px_rgba(184,199,209,.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
               >
                 Demander mon devis →
               </a>
