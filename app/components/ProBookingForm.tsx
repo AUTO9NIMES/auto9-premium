@@ -2,21 +2,24 @@
 
 import { type FormEvent, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
+import {
+  PRO_ADDONS,
+  PRO_PACKS,
+  type ProPackId,
+  computeProTotal,
+  isAddonIncluded,
+  resolveProPack,
+  selectProAddons,
+} from "../lib/pro-offer";
+
 /*
  * Réservation professionnels — remplissage en 4 temps (véhicule, créneau, options, coordonnées).
- * Le contenu envoyé à /api/probooking est inchangé : mêmes champs, date « AAAA-MM-JJ » et
- * heure « HH:MM » (le serveur les combine en date de rendez-vous). L'immatriculation est
+ * Envoyé à /api/probooking : mêmes champs qu'avant + `pack` (standard / premium / signature),
+ * date « AAAA-MM-JJ » et heure « HH:MM » (le serveur les combine en date de rendez-vous).
+ * Packs, suppléments et prix viennent de lib/pro-offer.ts (le serveur recalcule le total). L'immatriculation est
  * envoyée en majuscules. Les coordonnées du garage peuvent être retenues sur l'appareil
  * (navigateur du pro uniquement, case à décocher).
  */
-
-const proService = { name: "Prépa livraison", price: 100 };
-
-const proAddons = [
-  { id: "sieges", name: "Sièges", price: 30 },
-  { id: "plastiques", name: "Rénovation plastiques", price: 15 },
-  { id: "polissage", name: "Polissage 1 élément", price: 30 },
-] as const;
 
 // Créneaux proposés (heure de début). Modifiable ici.
 const SLOT_HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
@@ -37,7 +40,7 @@ function formatPlate(raw: string) {
 }
 
 type Contact = { garage: string; phone: string; email: string };
-const emptyBooking = { vehicle: "", plate: "", date: "", time: "", addons: [] as string[] };
+const emptyBooking = { vehicle: "", plate: "", date: "", time: "", pack: "standard" as ProPackId, addons: [] as string[] };
 
 function readSavedContact(): Contact | null {
   try {
@@ -96,8 +99,9 @@ function BookingForm() {
     return hour <= now.getHours();
   };
 
-  const selectedAddons = proAddons.filter((addon) => booking.addons.includes(addon.id));
-  const totalPrice = proService.price + selectedAddons.reduce((sum, addon) => sum + addon.price, 0);
+  const selectedPack = resolveProPack(booking.pack);
+  const selectedAddons = selectProAddons(selectedPack, booking.addons);
+  const totalPrice = computeProTotal(selectedPack, booking.addons);
 
   const missing = [
     booking.vehicle.trim().length > 1 ? null : "le véhicule",
@@ -107,6 +111,14 @@ function BookingForm() {
     contact.phone.replace(/\D/g, "").length >= 8 ? null : "le téléphone",
   ].filter(Boolean) as string[];
   const ready = missing.length === 0;
+
+  // Changer de pack retire les suppléments désormais inclus dans ce pack.
+  const selectPack = (id: ProPackId) =>
+    setBooking((current) => ({
+      ...current,
+      pack: id,
+      addons: current.addons.filter((addon) => !isAddonIncluded(resolveProPack(id), addon)),
+    }));
 
   const toggleAddon = (id: string) =>
     setBooking((current) => ({
@@ -134,7 +146,8 @@ function BookingForm() {
           time: booking.time,
           vehicle: booking.vehicle.trim(),
           plate: booking.plate.trim().toUpperCase(),
-          service: `${proService.name} — ${proService.price} €`,
+          pack: selectedPack.id,
+          service: `${selectedPack.name} — ${selectedPack.price} €`,
           addons: selectedAddons.map((addon) => ({ id: addon.id, name: addon.name, price: addon.price })),
           totalPrice,
         }),
@@ -197,7 +210,7 @@ function BookingForm() {
         <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-accent text-3xl font-black text-on-metal">✓</span>
         <p className="mt-6 text-2xl font-black uppercase tracking-[-0.04em]">Réservation envoyée</p>
         <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-white/55">
-          {booking.vehicle} · {new Date(`${booking.date}T00:00`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} à {booking.time.replace(":", " h ")}.
+          {selectedPack.label} · {booking.vehicle} · {new Date(`${booking.date}T00:00`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} à {booking.time.replace(":", " h ")}.
           AUTO 9 vous confirme rapidement le créneau.
         </p>
         <button
@@ -332,34 +345,67 @@ function BookingForm() {
 
       {/* 3. Options */}
       <fieldset>
-        <legend className="contents">{stepTitle(3, "La prestation", "Suppléments cumulables")}</legend>
-        <div className="flex items-center justify-between rounded-2xl border border-white/12 bg-white/[0.04] px-5 py-4">
-          <div>
-            <p className="text-sm font-black uppercase tracking-[0.14em]">{proService.name}</p>
-            <p className="mt-1 text-xs text-white/40">Intérieur + extérieur · incluse</p>
-          </div>
-          <strong className="bg-price bg-clip-text text-2xl font-black tracking-[-0.04em] text-transparent">{proService.price} €</strong>
+        <legend className="contents">{stepTitle(3, "La prestation", "Choisissez un pack, puis vos suppléments")}</legend>
+        <div role="radiogroup" aria-label="Pack" className="grid gap-2 sm:grid-cols-3">
+          {PRO_PACKS.map((pack) => {
+            const active = booking.pack === pack.id;
+            return (
+              <button
+                key={pack.id}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                onClick={() => selectPack(pack.id)}
+                className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-4 sm:px-5 text-left transition duration-200 ${
+                  active
+                    ? "border-accent bg-accent/15 shadow-[0_0_22px_rgba(var(--accent-rgb),.16)]"
+                    : pack.id === "signature"
+                      ? "border-accent/45 bg-white/[0.04] hover:border-accent/80"
+                      : "border-white/12 bg-white/[0.04] hover:border-white/30"
+                }`}
+              >
+                <span className="flex min-w-0 items-center gap-3">
+                  <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border transition ${active ? "border-accent bg-accent" : "border-white/25"}`}>
+                    <span className={`h-2 w-2 rounded-full ${active ? "bg-on-metal" : "bg-transparent"}`} />
+                  </span>
+                  <span>
+                    <span className="block text-sm font-black uppercase tracking-[0.08em] sm:tracking-[0.14em]">{pack.label}</span>
+                    <span className="mt-1 block text-xs text-white/60">{pack.summary}</span>
+                  </span>
+                </span>
+                <strong className="shrink-0 bg-price bg-clip-text text-xl font-black tracking-[-0.04em] text-transparent sm:text-2xl">{pack.price} €</strong>
+              </button>
+            );
+          })}
         </div>
         <div className="mt-3 grid gap-2 sm:grid-cols-3">
-          {proAddons.map((addon) => {
-            const checked = booking.addons.includes(addon.id);
+          {PRO_ADDONS.map((addon) => {
+            const included = isAddonIncluded(selectedPack, addon.id);
+            const checked = !included && booking.addons.includes(addon.id);
             return (
               <button
                 key={addon.id}
                 type="button"
                 aria-pressed={checked}
+                disabled={included}
                 onClick={() => toggleAddon(addon.id)}
                 className={`flex items-center justify-between gap-3 rounded-2xl border px-5 py-4 text-left transition duration-200 ${
-                  checked
-                    ? "border-accent bg-accent/15 shadow-[0_0_22px_rgba(var(--accent-rgb),.16)]"
-                    : "border-white/12 bg-white/[0.04] hover:border-white/30"
+                  included
+                    ? "cursor-default border-white/8 bg-white/[0.02]"
+                    : checked
+                      ? "border-accent bg-accent/15 shadow-[0_0_22px_rgba(var(--accent-rgb),.16)]"
+                      : "border-white/12 bg-white/[0.04] hover:border-white/30"
                 }`}
               >
                 <span className="flex items-center gap-3">
-                  <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border text-xs font-black transition ${checked ? "border-accent bg-accent text-on-metal" : "border-white/25 text-transparent"}`}>✓</span>
-                  <span className="text-sm font-bold text-white/85">{addon.name}</span>
+                  <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border text-xs font-black transition ${checked ? "border-accent bg-accent text-on-metal" : included ? "border-white/20 text-white/60" : "border-white/25 text-transparent"}`}>✓</span>
+                  <span className={`text-sm font-bold ${included ? "text-white/60" : "text-white/85"}`}>{addon.name}</span>
                 </span>
-                <strong className="shrink-0 bg-price bg-clip-text text-sm font-black text-transparent">+{addon.price} €</strong>
+                {included ? (
+                  <span className="shrink-0 text-xs font-black uppercase tracking-[0.18em] text-white/60">Inclus</span>
+                ) : (
+                  <strong className="shrink-0 bg-price bg-clip-text text-sm font-black text-transparent">+{addon.price} €</strong>
+                )}
               </button>
             );
           })}
@@ -433,7 +479,7 @@ function BookingForm() {
       <div className="sticky bottom-3 z-20 -mx-2 rounded-[1.5rem] border border-white/12 bg-[#060908]/85 p-3 shadow-[0_20px_60px_rgba(0,0,0,.55)] backdrop-blur-xl sm:-mx-0 sm:p-4">
         <div className="flex items-center gap-3 sm:gap-5">
           <div className="min-w-0 flex-1 pl-2">
-            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/45">Total</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/60">Total · {selectedPack.label}</p>
             <p className="bg-price bg-clip-text text-2xl font-black tracking-[-0.04em] text-transparent">{totalPrice} €</p>
           </div>
           <button
