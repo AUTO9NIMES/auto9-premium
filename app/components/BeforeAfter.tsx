@@ -3,8 +3,6 @@ import { BeforeAfterSlider } from "./BeforeAfterSlider";
 export function BeforeAfter() {
   return (
     <section className="relative overflow-hidden px-5 py-20 text-white sm:px-6 lg:px-8 lg:py-28">
-      <div className="pointer-events-none absolute -left-32 top-24 h-[420px] w-[420px] rounded-full bg-accent/10 blur-[150px]" />
-      <div className="pointer-events-none absolute -right-32 bottom-8 h-[420px] w-[420px] rounded-full bg-accent-soft/[0.07] blur-[150px]" />
 
       <div className="relative mx-auto max-w-6xl">
         <div className="grid gap-8 lg:grid-cols-[0.75fr_1.25fr] lg:items-end">

@@ -32,7 +32,8 @@
     display: grid;
     min-height: 100vh;
     grid-template-columns: 0.95fr 1.05fr;
-    align-items: center;
+    align-items: start;
+    padding-top: 14vh;
     gap: 4.5rem;
   }
 

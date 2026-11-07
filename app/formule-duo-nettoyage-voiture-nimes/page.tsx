@@ -88,8 +88,6 @@ export default function FormuleDuoNettoyageVoitureNimesPage() {
       </div>
 
       <section className="relative overflow-hidden px-6 py-24 md:px-12">
-        <div className="absolute right-0 top-0 h-96 w-96 rounded-full bg-[#B8C7D1]/5 blur-[130px]" />
-        <div className="absolute bottom-0 left-0 h-96 w-96 rounded-full bg-[#B8C7D1]/5 blur-[130px]" />
 
         <div className="relative mx-auto max-w-7xl">
           <p className="text-xs font-black uppercase tracking-[0.55em] text-[#B8C7D1]">

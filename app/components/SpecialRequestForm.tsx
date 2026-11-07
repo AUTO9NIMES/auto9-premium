@@ -243,9 +243,7 @@ export function SpecialRequestForm() {
 
       {/* HALOS DE FOND */}
 
-      <div className="pointer-events-none absolute left-1/2 top-20 h-[32rem] w-[32rem] -translate-x-1/2 rounded-full bg-accent/10 blur-[150px]" />
 
-      <div className="pointer-events-none absolute -right-40 top-[40%] h-96 w-96 rounded-full bg-accent/7 blur-[130px]" />
 
       <div className="relative mx-auto max-w-5xl">
 

@@ -6,7 +6,6 @@ export function Reservation() {
       id="reservation"
       className="relative overflow-hidden px-5 py-16 text-white sm:px-6 lg:px-8 lg:py-24"
     >
-      <div className="pointer-events-none absolute left-1/2 top-10 h-[420px] w-[680px] -translate-x-1/2 rounded-full bg-accent/[0.08] blur-[150px]" />
 
       <div className="relative mx-auto max-w-6xl">
         <div className="overflow-hidden rounded-[30px] border border-accent-soft/20 bg-[linear-gradient(145deg,#11271e_0%,#0a1812_42%,#08090c_100%)] shadow-[0_30px_90px_rgba(0,0,0,.38)] sm:rounded-[36px]">

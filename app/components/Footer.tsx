@@ -33,7 +33,7 @@ export function Footer() {
   ];
 
   return (
-    <footer className="border-t border-white/10 px-6 py-20 text-white md:px-12">
+    <footer className="px-6 py-20 text-white md:px-12">
       <div className="mx-auto max-w-7xl">
         <div className="rounded-[2rem] border border-metal-mid/20 bg-metal-mid/5 p-8 md:p-12">
           <p className="text-xs font-black uppercase tracking-[0.45em] text-accent">

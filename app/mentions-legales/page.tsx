@@ -34,7 +34,6 @@ export default function MentionsLegalesPage() {
       </header>
 
       <section className="relative overflow-hidden px-6 py-16 md:px-12 md:py-24">
-        <div className="pointer-events-none absolute left-1/2 top-10 h-96 w-96 -translate-x-1/2 rounded-full bg-accent/10 blur-[130px]" />
 
         <div className="relative mx-auto max-w-6xl">
           <div className="max-w-4xl">

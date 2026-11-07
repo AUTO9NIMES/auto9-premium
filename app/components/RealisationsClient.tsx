@@ -169,9 +169,7 @@ export function RealisationsClient({
         id="realisations"
         className="relative scroll-mt-24 overflow-hidden px-6 pb-24 pt-10 text-white md:px-12 md:py-28"
       >
-        <div className="absolute right-0 top-24 h-[32rem] w-[32rem] rounded-full bg-metal-mid/5 blur-[160px]" />
 
-        <div className="absolute bottom-32 left-0 h-[26rem] w-[26rem] rounded-full bg-metal-mid/5 blur-[140px]" />
 
         <div className="relative mx-auto max-w-7xl">
           <p className="text-xs font-black uppercase tracking-[0.55em] text-accent">

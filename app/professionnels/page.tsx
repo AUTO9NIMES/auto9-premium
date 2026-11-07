@@ -150,8 +150,6 @@ export default function ProfessionnelsPage() {
       </div>
 
       <section className="relative px-6 pb-20 pt-10 md:px-12 md:pt-14">
-        <div className="pointer-events-none absolute -left-44 top-16 h-[520px] w-[520px] rounded-full bg-accent-deep/15 blur-[150px]" />
-        <div className="pointer-events-none absolute -right-44 top-[460px] h-[560px] w-[560px] rounded-full bg-accent/10 blur-[160px]" />
 
         <div className="relative mx-auto max-w-7xl">
           <section

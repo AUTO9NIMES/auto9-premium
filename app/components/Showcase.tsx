@@ -2,7 +2,6 @@ import Link from "next/link";
 export function Showcase() {
   return (
     <section className="relative overflow-hidden px-6 py-24 text-white md:px-12">
-      <div className="absolute right-0 top-24 h-[28rem] w-[28rem] rounded-full bg-[#B8C7D1]/5 blur-[150px]" />
 
       <div className="relative mx-auto max-w-7xl">
         <div className="grid gap-12 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">

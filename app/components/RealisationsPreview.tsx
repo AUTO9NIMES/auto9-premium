@@ -12,10 +12,8 @@ export function RealisationsPreview() {
   return (
     <section
       id="realisations"
-      className="relative scroll-mt-24 overflow-hidden border-t border-white/[0.06] px-5 py-20 text-white sm:px-6 md:px-12 md:py-32"
+      className="relative scroll-mt-24 overflow-hidden px-5 py-20 text-white sm:px-6 md:px-12 md:py-32"
     >
-      <div className="pointer-events-none absolute -right-28 top-20 h-[32rem] w-[32rem] rounded-full bg-accent/[0.07] blur-[160px]" />
-      <div className="pointer-events-none absolute -left-28 bottom-0 h-[28rem] w-[28rem] rounded-full bg-[#B8C7D1]/[0.045] blur-[150px]" />
 
       <div className="relative mx-auto max-w-7xl">
         <div className="grid gap-8 lg:grid-cols-[1.05fr_.95fr] lg:items-end">

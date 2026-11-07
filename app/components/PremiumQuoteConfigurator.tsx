@@ -167,7 +167,6 @@ export function PremiumQuoteConfigurator() {
 
   return (
     <section className="relative overflow-hidden px-6 py-16 md:px-12 md:py-24">
-      <div className="absolute left-1/2 top-20 h-96 w-96 -translate-x-1/2 rounded-full bg-accent/[0.04] blur-[120px]" />
 
       <div className="relative mx-auto max-w-7xl">
         <div className="flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
@@ -583,7 +582,6 @@ function HeadlightBooking() {
 
   return (
     <section className="relative overflow-hidden px-4 py-10 sm:px-6 md:px-12 md:py-16">
-      <div className="absolute left-1/2 top-16 h-80 w-80 -translate-x-1/2 rounded-full bg-accent/10 blur-[120px]" />
 
       <div className="relative mx-auto max-w-3xl">
         <p className="text-xs font-black uppercase tracking-[0.42em] text-accent-soft">

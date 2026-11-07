@@ -705,11 +705,8 @@ export function QuoteConfigurator() {
 
   return (
     <section className="relative min-h-screen overflow-hidden px-3 pb-32 pt-4 text-white sm:px-6 lg:px-8">
-      <div className="auto9-orb-one pointer-events-none absolute left-1/2 top-20 h-[28rem] w-[28rem] -translate-x-1/2 rounded-full bg-accent/[0.04] blur-[130px]" />
 
-      <div className="auto9-orb-two pointer-events-none absolute -right-40 top-[38rem] h-[30rem] w-[30rem] rounded-full bg-accent/[0.04] blur-[150px]" />
 
-      <div className="auto9-orb-three pointer-events-none absolute -left-48 top-[72rem] h-[32rem] w-[32rem] rounded-full bg-accent-soft/[0.03] blur-[160px]" />
 
       <div className="auto9-grid pointer-events-none absolute inset-0 opacity-[0.025]" />
 
