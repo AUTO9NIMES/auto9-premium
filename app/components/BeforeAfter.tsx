@@ -1,3 +1,5 @@
+import { BeforeAfterSlider } from "./BeforeAfterSlider";
+
 export function BeforeAfter() {
   return (
     <section className="relative overflow-hidden px-5 py-20 text-white sm:px-6 lg:px-8 lg:py-28">
@@ -24,31 +26,11 @@ export function BeforeAfter() {
           </p>
         </div>
 
-        <div className="mt-10 grid gap-4 md:grid-cols-2">
-          <figure className="group relative overflow-hidden rounded-[28px] border border-white/10 bg-[#0a0e14] p-3 shadow-[0_24px_70px_rgba(0,0,0,.3)]">
-            <div className="absolute left-6 top-6 z-10 rounded-full border border-white/12 bg-black/55 px-4 py-2 text-[10px] font-black uppercase tracking-[0.28em] text-white/65 backdrop-blur-md">
-              Avant
-            </div>
-            <img
-              src="/after-1.jpg"
-              alt="Véhicule avant préparation AUTO 9"
-              loading="lazy"
-              className="aspect-[4/3] w-full rounded-[20px] object-cover transition duration-700 group-hover:scale-[1.015]"
-            />
-          </figure>
-
-          <figure className="group relative overflow-hidden rounded-[28px] border border-accent-soft/30 bg-[linear-gradient(145deg,#101f19,#080b10)] p-3 shadow-[0_0_55px_rgba(var(--accent-rgb),.12),0_24px_70px_rgba(0,0,0,.34)]">
-            <div className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full bg-accent/14 blur-[65px]" />
-            <div className="absolute left-6 top-6 z-10 rounded-full border border-accent-soft/30 bg-[#182c1c]/70 px-4 py-2 text-[10px] font-black uppercase tracking-[0.28em] text-ivory backdrop-blur-md">
-              Après
-            </div>
-            <img
-              src="/before-1.jpg"
-              alt="Véhicule après préparation AUTO 9"
-              loading="lazy"
-              className="aspect-[4/3] w-full rounded-[20px] object-cover transition duration-700 group-hover:scale-[1.015]"
-            />
-          </figure>
+        <div className="mt-10">
+          <BeforeAfterSlider
+            before={{ src: "/after-1.jpg", alt: "Véhicule avant préparation AUTO 9", label: "Avant" }}
+            after={{ src: "/before-1.jpg", alt: "Véhicule après préparation AUTO 9", label: "Après" }}
+          />
         </div>
       </div>
     </section>
