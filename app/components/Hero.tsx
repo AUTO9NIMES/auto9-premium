@@ -22,7 +22,7 @@ export function Hero() {
             <br />
             la joie du
             <br />
-            <span className="bg-[linear-gradient(135deg,#d9efe2_0%,#97d2b4_35%,#66bf94_65%,#d1e8db_100%)] bg-clip-text text-transparent">
+            <span className="bg-price bg-clip-text text-transparent">
               neuf.
             </span>
           </h1>
@@ -59,7 +59,7 @@ export function Hero() {
           <div className="mt-12 flex flex-col gap-5 sm:flex-row sm:items-center">
             <Link
               href="/devis"
-              className="inline-flex min-w-[290px] items-center justify-center rounded-full border border-[#b3e8cb]/35 bg-[linear-gradient(135deg,#e8f1eb_0%,#b8d8c6_35%,#87c5a0_65%,#d6e9dd_100%)] px-10 py-6 text-sm font-black uppercase tracking-[0.28em] text-black shadow-[0_16px_48px_rgba(140,170,195,0.18)] transition hover:scale-[1.015] hover:brightness-105"
+              className="inline-flex min-w-[290px] items-center justify-center rounded-full border border-white/40 bg-metal px-10 py-6 text-sm font-black uppercase tracking-[0.28em] text-on-metal shadow-[0_16px_48px_rgba(195,200,203,0.18)] transition hover:scale-[1.015] hover:brightness-105"
             >
               Devis gratuit <span className="ml-4 text-xl">→</span>
             </Link>

@@ -48,7 +48,7 @@ export function Reviews() {
 
           <h2 data-motion-reveal className="mt-4 text-[38px] font-black leading-[0.96] tracking-[-0.05em] sm:text-[48px] lg:text-[64px]">
             Ils nous font{" "}
-            <span className="bg-[linear-gradient(135deg,#dcecff,#89e09a)] bg-clip-text text-transparent">
+            <span className="bg-accent-word bg-clip-text text-transparent">
               confiance.
             </span>
           </h2>
@@ -88,7 +88,7 @@ export function Reviews() {
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex min-w-0 items-center gap-3">
-                    <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[linear-gradient(145deg,#33c650,#63d67a)] text-[18px] font-bold text-white shadow-sm">
+                    <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-metal text-[18px] font-bold text-on-metal shadow-sm">
                       {review.initial}
                     </div>
 
@@ -164,7 +164,7 @@ export function Reviews() {
           href="https://share.google/pRkmz18Y7YlOHJPS2"
           target="_blank"
           rel="noreferrer"
-          className="mt-7 flex w-full items-center justify-center gap-3 rounded-full bg-[linear-gradient(135deg,#f5f8fb,#d1e6d5)] px-5 py-4.5 text-center text-[11px] font-black uppercase tracking-[0.18em] text-[#080a0d] shadow-[0_18px_50px_rgba(57,163,130,.14)] sm:mt-8 sm:w-fit sm:px-8"
+          className="mt-7 flex w-full items-center justify-center gap-3 rounded-full bg-metal px-5 py-4.5 text-center text-[11px] font-black uppercase tracking-[0.18em] text-on-metal shadow-[0_18px_50px_rgba(195,200,203,.14)] sm:mt-8 sm:w-fit sm:px-8"
         >
           <GoogleG small />
           Voir les avis Google

@@ -13,7 +13,7 @@ export function BeforeAfter() {
             <h2 data-motion-reveal className="mt-5 text-[42px] font-black uppercase leading-[0.96] tracking-[-0.055em] sm:text-[58px] lg:text-[68px]">
               Le résultat
               <br />
-              <span className="bg-[linear-gradient(135deg,#f2f7fb,#b6d5f2_52%,#83d694)] bg-clip-text text-transparent">
+              <span className="bg-accent-word bg-clip-text text-transparent">
                 parle de lui-même.
               </span>
             </h2>

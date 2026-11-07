@@ -24,7 +24,7 @@ export function Reservation() {
                 <br />
                 retrouver
                 <br />
-                <span className="bg-[linear-gradient(135deg,#eef5fb_0%,#c4d8ed_35%,#91b7df_70%,#e8f2fb_100%)] bg-clip-text text-transparent">
+                <span className="bg-price bg-clip-text text-transparent">
                   la joie du neuf ?
                 </span>
               </h2>
@@ -38,12 +38,12 @@ export function Reservation() {
               <div className="mt-9 grid max-w-3xl gap-3 sm:gap-4">
                 <Link
                   href="/devis"
-                  className="group relative flex min-h-[70px] items-center overflow-hidden rounded-full border border-[#c0dec6]/65 bg-[linear-gradient(105deg,#e9f1f7_0%,#b8cadb_23%,#e5edf3_47%,#8ea7bf_73%,#dbe7ef_100%)] px-5 text-[#0c160e] shadow-[0_12px_36px_rgba(53,161,125,.16),inset_0_1px_0_rgba(255,255,255,.85)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_44px_rgba(53,161,125,.24)] active:scale-[0.985] sm:min-h-[78px] sm:px-7"
+                  className="group relative flex min-h-[70px] items-center overflow-hidden rounded-full border border-white/50 bg-metal px-5 text-on-metal shadow-[0_12px_36px_rgba(195,200,203,.16),inset_0_1px_0_rgba(255,255,255,.85)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_44px_rgba(195,200,203,.24)] active:scale-[0.985] sm:min-h-[78px] sm:px-7"
                 >
                   <span className="pointer-events-none absolute inset-0 opacity-45 [background:repeating-linear-gradient(90deg,rgba(255,255,255,.13)_0px,rgba(255,255,255,.13)_1px,rgba(0,0,0,.025)_1px,rgba(0,0,0,.025)_3px)]" />
                   <span className="pointer-events-none absolute inset-x-10 top-0 h-px bg-white/90" />
 
-                  <span className="relative grid h-10 w-10 shrink-0 place-items-center border-r border-[#386842]/25 pr-4 text-[#172b1b] sm:h-11 sm:w-12">
+                  <span className="relative grid h-10 w-10 shrink-0 place-items-center border-r border-on-metal/20 pr-4 text-on-metal sm:h-11 sm:w-12">
                     <CalendarIcon />
                   </span>
 
@@ -51,7 +51,7 @@ export function Reservation() {
                     Configurer ma prestation
                   </span>
 
-                  <span className="relative grid h-11 w-11 shrink-0 place-items-center rounded-full border border-[#32c24f]/35 bg-[#172a1b]/10 text-[24px] transition-transform duration-300 group-hover:translate-x-1">
+                  <span className="relative grid h-11 w-11 shrink-0 place-items-center rounded-full border border-on-metal/25 bg-on-metal/10 text-[24px] transition-transform duration-300 group-hover:translate-x-1">
                     →
                   </span>
                 </Link>

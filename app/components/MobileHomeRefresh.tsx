@@ -31,7 +31,7 @@ export function MobileHomeRefresh() {
             <br />
             la joie du
             <br />
-            <span className="text-[#56d6a1]">neuf.</span>
+            <span className="bg-price bg-clip-text text-transparent">neuf.</span>
           </h1>
 
           <p className="mt-6 max-w-[325px] text-[18px] leading-7 text-white/80">
@@ -49,7 +49,7 @@ export function MobileHomeRefresh() {
           <div className="mt-7 space-y-3">
             <Link
               href="/devis"
-              className="flex w-full items-center justify-center gap-4 rounded-full bg-[linear-gradient(135deg,#f2f6f9,#a3e1cb)] px-5 py-5 text-[12px] font-black uppercase tracking-[0.19em] text-[#071710] shadow-[0_18px_50px_rgba(49,191,138,.18)]"
+              className="flex w-full items-center justify-center gap-4 rounded-full bg-metal px-5 py-5 text-[12px] font-black uppercase tracking-[0.19em] text-on-metal shadow-[0_18px_50px_rgba(195,200,203,.18)]"
             >
               Configurer ma prestation
               <span className="text-lg">→</span>

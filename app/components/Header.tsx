@@ -13,29 +13,29 @@ export function Header() {
       </Link>
 
       <div className="hidden items-center gap-9 text-xs font-black uppercase tracking-[0.2em] text-white/75 md:flex">
-        <a href="#services" className="transition hover:text-[#bbc9c4]">
+        <a href="#services" className="transition hover:text-metal-mid">
           Services
         </a>
 
-        <a href="#realisations" className="transition hover:text-[#bbc9c4]">
+        <a href="#realisations" className="transition hover:text-metal-mid">
           Réalisations
         </a>
 
-        <a href="/professionnels" className="transition hover:text-[#bbc9c4]">
+        <a href="/professionnels" className="transition hover:text-metal-mid">
           Professionnels
         </a>
 
-        <a href="#reservation" className="transition hover:text-[#bbc9c4]">
+        <a href="#reservation" className="transition hover:text-metal-mid">
           Réservation
         </a>
 
-        <a href={site.phoneHref} className="transition hover:text-[#bbc9c4]">
+        <a href={site.phoneHref} className="transition hover:text-metal-mid">
           {site.phone}
         </a>
 
         <Link
           href="/devis"
-          className="bg-[linear-gradient(135deg,#f0f3f0,#bbc9c4,#6e8b7b)] text-[#071710] shadow-[0_18px_45px_rgba(184,199,209,.18)] rounded-2xl px-6 py-4 text-[#071710] transition hover:scale-105"
+          className="bg-metal text-on-metal shadow-[0_18px_45px_rgba(195,200,203,.18)] rounded-2xl px-6 py-4 transition hover:scale-105"
         >
           Devis gratuit
         </Link>

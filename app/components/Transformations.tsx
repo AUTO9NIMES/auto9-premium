@@ -112,7 +112,7 @@ function ResultCard({
 
         <div className="absolute inset-0 bg-gradient-to-t from-[#071710] via-black/10 to-transparent" />
 
-        <div className="absolute left-6 top-6 rounded-full bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] px-4 py-2 text-[10px] font-black uppercase tracking-[0.25em] text-[#071710] shadow-[0_18px_45px_rgba(184,199,209,.18)]">
+        <div className="absolute left-6 top-6 rounded-full bg-metal px-4 py-2 text-[10px] font-black uppercase tracking-[0.25em] text-[#071710] shadow-[0_18px_45px_rgba(195,200,203,.18)]">
           {item.badge}
         </div>
 
@@ -123,7 +123,7 @@ function ResultCard({
 
           <p className="mt-4 text-lg text-white/65">{item.subtitle}</p>
 
-          <div className="mt-8 h-px w-14 bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] shadow-[0_18px_45px_rgba(184,199,209,.18)] transition-all duration-500 group-hover:w-28" />
+          <div className="mt-8 h-px w-14 bg-metal shadow-[0_18px_45px_rgba(195,200,203,.18)] transition-all duration-500 group-hover:w-28" />
 
           <span className="mt-8 inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.25em] text-white transition duration-300 group-hover:translate-x-2 group-hover:text-[#B8C7D1]">
             Voir les vidéos sur Instagram →

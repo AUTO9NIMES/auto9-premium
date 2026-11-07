@@ -106,7 +106,7 @@ export default function NettoyageInterieurVoitureNimesPage() {
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
                 <Link
                   href="/devis?service=interieur"
-                  className="w-fit rounded-full bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] text-[#071710] shadow-[0_18px_45px_rgba(184,199,209,.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
+                  className="w-fit rounded-full bg-metal text-on-metal shadow-[0_18px_45px_rgba(195,200,203,.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
                 >
                   Demander mon devis →
                 </Link>
@@ -248,7 +248,7 @@ export default function NettoyageInterieurVoitureNimesPage() {
 
               <Link
                 href="/devis?service=interieur"
-                className="mt-8 inline-flex rounded-full bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] text-[#071710] shadow-[0_18px_45px_rgba(184,199,209,.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
+                className="mt-8 inline-flex rounded-full bg-metal text-on-metal shadow-[0_18px_45px_rgba(195,200,203,.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
               >
                 Configurer ma prestation →
               </Link>
@@ -324,7 +324,7 @@ export default function NettoyageInterieurVoitureNimesPage() {
 
               <Link
                 href="/devis?service=interieur"
-                className="w-fit rounded-full bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] text-[#071710] shadow-[0_18px_45px_rgba(184,199,209,.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
+                className="w-fit rounded-full bg-metal text-on-metal shadow-[0_18px_45px_rgba(195,200,203,.18)] px-8 py-5 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
               >
                 Demander mon devis →
               </Link>

@@ -50,7 +50,7 @@ export function HomeConfidence() {
           <h2 data-motion-reveal className="mt-5 text-[42px] font-black uppercase leading-[0.96] tracking-[-0.055em] sm:text-[58px] lg:text-[72px]">
             Trois étapes.
             <br />
-            <span className="bg-[linear-gradient(135deg,#f3f7fb_0%,#b7d3ee_48%,#6fa9e8_100%)] bg-clip-text text-transparent">
+            <span className="bg-accent-word bg-clip-text text-transparent">
               Zéro prise de tête.
             </span>
           </h2>
@@ -81,7 +81,7 @@ export function HomeConfidence() {
               </h3>
               <Link
                 href="/devis"
-                className="mt-7 inline-flex items-center gap-4 rounded-full border border-[#92d8a0]/45 bg-[linear-gradient(135deg,#21ae3d,#2bda4e)] px-6 py-4 text-[11px] font-black uppercase tracking-[0.22em] shadow-[0_0_30px_rgba(30,139,131,.2)] transition hover:brightness-110"
+                className="mt-7 inline-flex items-center gap-4 rounded-full border border-white/40 bg-metal px-6 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-on-metal shadow-[0_0_30px_rgba(195,200,203,.18)] transition hover:brightness-110"
               >
                 Configurer ma prestation <span className="text-lg">→</span>
               </Link>

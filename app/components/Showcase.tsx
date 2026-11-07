@@ -48,7 +48,7 @@ export function Showcase() {
             <div className="mt-10 flex flex-wrap gap-4">
               <Link
                 href="/devis"
-                className="rounded-full bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] text-[#071710] shadow-[0_18px_45px_rgba(184,199,209,.18)] px-7 py-4 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
+                className="rounded-full bg-metal text-on-metal shadow-[0_18px_45px_rgba(195,200,203,.18)] px-7 py-4 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
               >
                 Configurer ma prestation →
               </Link>

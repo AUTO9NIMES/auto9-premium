@@ -537,7 +537,7 @@ export function PremiumQuoteConfigurator() {
                       href={whatsappLink}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-8 flex w-full items-center justify-center rounded-full bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] text-[#071710] shadow-[0_18px_45px_rgba(184,199,209,.18)] px-7 py-5 text-center text-xs font-black uppercase tracking-[0.25em] text-[#071710] transition hover:scale-105"
+                      className="mt-8 flex w-full items-center justify-center rounded-full bg-metal text-on-metal shadow-[0_18px_45px_rgba(195,200,203,.18)] px-7 py-5 text-center text-xs font-black uppercase tracking-[0.25em] text-[#071710] transition hover:scale-105"
                     >
                       Envoyer sur WhatsApp →
                     </a>
@@ -778,7 +778,7 @@ function StepButton({
       <span
         className={`grid h-10 w-10 shrink-0 place-items-center rounded-full text-sm font-black ${
           active || done
-            ? "bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] text-[#071710] shadow-[0_18px_45px_rgba(184,199,209,.18)] text-white"
+            ? "bg-metal text-on-metal shadow-[0_18px_45px_rgba(195,200,203,.18)]"
             : "bg-white/10 text-white/55"
         }`}
       >
@@ -848,7 +848,7 @@ function StepActions({
           <button
             type="button"
             onClick={onNext}
-            className="rounded-full bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] text-[#071710] shadow-[0_18px_45px_rgba(184,199,209,.18)] px-7 py-4 text-xs font-black uppercase tracking-[0.25em] text-[#071710] transition hover:scale-105"
+            className="rounded-full bg-metal text-on-metal shadow-[0_18px_45px_rgba(195,200,203,.18)] px-7 py-4 text-xs font-black uppercase tracking-[0.25em] text-[#071710] transition hover:scale-105"
           >
             {nextLabel} →
           </button>

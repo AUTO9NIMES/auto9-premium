@@ -42,7 +42,7 @@
 #auto9-home a,#auto9-home button{transition: filter .25s ease,border-color .25s ease,color .25s ease,box-shadow .25s ease,transform .25s ease;}
 #auto9-home a:focus-visible,#auto9-home button:focus-visible{outline:2px solid var(--accent);outline-offset:3px;}
 #auto9-home a[href="/devis"],#auto9-home a[href^="/devis?"]{
-  box-shadow: 0 10px 34px rgba(36, 159, 104,.17);
+  box-shadow: 0 10px 34px rgba(195, 200, 203, .17);
 }
 #auto9-home [id="services"],
 #auto9-home [id="realisations"],
