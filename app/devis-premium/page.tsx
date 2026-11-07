@@ -4,7 +4,7 @@ import { PremiumQuoteConfigurator } from "../components/PremiumQuoteConfigurator
 
 export default function DevisPremiumPage() {
   return (
-    <main className="min-h-screen bg-[#050608] text-white">
+    <main className="min-h-screen bg-[#071710] text-white">
       <div className="border-b border-white/10 px-6 py-6 md:px-12">
         <Link
           href="/"
