@@ -39,7 +39,7 @@ const trustItems = [
 
 export function HomeConfidence() {
   return (
-    <section className="relative overflow-hidden bg-forest px-5 py-20 text-white sm:px-6 lg:px-8 lg:py-28">
+    <section className="relative overflow-hidden px-5 py-20 text-white sm:px-6 lg:px-8 lg:py-28">
       <div className="pointer-events-none absolute left-1/2 top-20 h-[520px] w-[860px] -translate-x-1/2 rounded-full bg-accent/[0.08] blur-[170px]" />
 
       <div className="relative mx-auto max-w-6xl">

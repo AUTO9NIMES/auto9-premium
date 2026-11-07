@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 
 export default function MentionsLegalesPage() {
   return (
-    <main data-motion-site className="min-h-screen bg-[#050608] text-white">
+    <main data-motion-site className="min-h-screen bg-forest text-white">
       <SiteMotion />
       <header className="border-b border-white/10 px-6 py-6 md:px-12">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">

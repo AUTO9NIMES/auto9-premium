@@ -8,7 +8,66 @@
   --motion-ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/*
+ * Fond Signature : l'intérieur d'une émeraude, fixe derrière toute la page.
+ * Les sections sont transparentes et « flottent » dessus. Image générée pour AUTO 9
+ * (public/signature/emerald-*.avif|webp), version portrait sur mobile.
+ */
+[data-motion-site] {
+  position: relative;
+  isolation: isolate;
+}
+[data-motion-site]::before,
+[data-motion-site]::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+[data-motion-site]::before {
+  z-index: -2;
+  background-color: var(--bg-base);
+  background-image: image-set(
+    url("/signature/emerald-desktop.avif") type("image/avif"),
+    url("/signature/emerald-desktop.webp") type("image/webp")
+  );
+  background-position: center;
+  background-size: cover;
+}
+@media (max-width: 767px) {
+  [data-motion-site]::before {
+    background-image: image-set(
+      url("/signature/emerald-mobile.avif") type("image/avif"),
+      url("/signature/emerald-mobile.webp") type("image/webp")
+    );
+  }
+}
+/* Voile de lisibilité : assombrit légèrement le bas et les bords, là où le texte défile. */
+[data-motion-site]::after {
+  z-index: -1;
+  background:
+    radial-gradient(120% 90% at 70% 20%, transparent 40%, rgba(2, 8, 5, 0.55) 100%),
+    linear-gradient(180deg, rgba(2, 8, 5, 0) 0%, rgba(2, 8, 5, 0.25) 100%);
+}
+
 @media (prefers-reduced-motion: no-preference) {
+  /* 0. Le fond respire : très léger zoom/dérive au fil du défilement, et un reflet qui glisse lentement. */
+  @supports (animation-timeline: scroll()) {
+    [data-motion-site]::before {
+      animation: motion-gem-drift linear both;
+      animation-timeline: scroll(root);
+    }
+  }
+  [data-motion-site]::after {
+    background:
+      linear-gradient(115deg, transparent 38%, rgba(111, 217, 168, 0.06) 47%, rgba(255, 255, 255, 0.05) 50%, transparent 58%),
+      radial-gradient(120% 90% at 70% 20%, transparent 40%, rgba(2, 8, 5, 0.55) 100%),
+      linear-gradient(180deg, rgba(2, 8, 5, 0) 0%, rgba(2, 8, 5, 0.25) 100%);
+    background-size: 300% 100%, 100% 100%, 100% 100%;
+    background-repeat: no-repeat;
+    animation: motion-gem-glint 16s ease-in-out infinite;
+  }
+
   /* 1. Ouverture de page : kicker, titre puis ce qui suit, en cascade (hors hero de l'accueil). */
   [data-motion-site] :is(p, span):has(+ h1):not([data-motion-intro] *) {
     animation: motion-kicker-in 1.2s var(--motion-ease) 0.05s backwards;
@@ -70,6 +129,25 @@
     background-size: 250% 100%, 100% 100%;
     background-repeat: no-repeat;
     background-position: 0% 0, 0 0;
+  }
+}
+
+@keyframes motion-gem-drift {
+  from {
+    transform: scale(1.06) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.12) translate3d(-1.5%, -2.5%, 0);
+  }
+}
+
+@keyframes motion-gem-glint {
+  0%,
+  100% {
+    background-position: 100% 0, 0 0, 0 0;
+  }
+  50% {
+    background-position: 0% 0, 0 0, 0 0;
   }
 }
 

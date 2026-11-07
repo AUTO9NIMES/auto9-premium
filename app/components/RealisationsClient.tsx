@@ -167,7 +167,7 @@ export function RealisationsClient({
     <>
       <section
         id="realisations"
-        className="relative scroll-mt-24 overflow-hidden bg-forest px-6 py-24 text-white md:px-12 md:py-28"
+        className="relative scroll-mt-24 overflow-hidden px-6 py-24 text-white md:px-12 md:py-28"
       >
         <div className="absolute right-0 top-24 h-[32rem] w-[32rem] rounded-full bg-[#B8C7D1]/5 blur-[160px]" />
 

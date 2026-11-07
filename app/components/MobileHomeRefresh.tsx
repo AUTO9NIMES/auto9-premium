@@ -5,19 +5,19 @@ import type { ReactNode } from "react";
 
 export function MobileHomeRefresh() {
   return (
-    <div className="md:hidden bg-forest text-white">
+    <div className="md:hidden text-white">
       <section className="relative min-h-[760px] overflow-hidden px-5 pb-9 pt-8">
         <div
           data-hero-media
-          className="absolute inset-0 bg-cover bg-[58%_center] will-change-transform"
+          className="absolute inset-0 bg-cover bg-[58%_center] [mask-image:linear-gradient(to_bottom,black_45%,transparent_88%)] will-change-transform"
           style={{
             backgroundImage: "url('/realisations/audi-rs7-face.jpg')",
           }}
         />
 
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,4,6,.94)_0%,rgba(3,4,6,.80)_28%,rgba(3,4,6,.44)_58%,rgba(3,4,6,.10)_100%)]" />
+        <div className="absolute inset-0 [mask-image:linear-gradient(to_bottom,black_45%,transparent_88%)] bg-[linear-gradient(90deg,rgba(3,4,6,.94)_0%,rgba(3,4,6,.80)_28%,rgba(3,4,6,.44)_58%,rgba(3,4,6,.10)_100%)]" />
 
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,6,8,.16)_0%,rgba(5,6,8,.08)_38%,rgba(5,6,8,.46)_74%,var(--bg-base)_100%)]" />
+        <div className="absolute inset-0 [mask-image:linear-gradient(to_bottom,black_45%,transparent_88%)] bg-[linear-gradient(180deg,rgba(5,6,8,.16)_0%,rgba(5,6,8,.08)_38%,rgba(5,6,8,.46)_74%,transparent_100%)]" />
 
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_82%_30%,rgba(var(--accent-rgb),.16),transparent_42%)]" />
 

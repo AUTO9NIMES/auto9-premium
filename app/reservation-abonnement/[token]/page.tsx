@@ -76,7 +76,7 @@ export default async function SubscriptionBookingPage({
 
   if (sent) {
     return (
-      <main data-motion-site className="min-h-screen bg-[#060b11] px-5 py-12 text-white">
+      <main data-motion-site className="min-h-screen bg-forest px-5 py-12 text-white">
         <SiteMotion />
         <div className="mx-auto max-w-2xl">
           <div className="rounded-3xl border border-emerald-300/20 bg-emerald-300/[0.05] p-7 md:p-10">
@@ -92,7 +92,7 @@ export default async function SubscriptionBookingPage({
   }
 
   return (
-    <main data-motion-site className="min-h-screen bg-[#060b11] px-5 py-10 text-white md:py-16">
+    <main data-motion-site className="min-h-screen bg-forest px-5 py-10 text-white md:py-16">
       <SiteMotion />
       <div className="mx-auto max-w-2xl">
         <div className="mb-8">
@@ -106,7 +106,7 @@ export default async function SubscriptionBookingPage({
           </p>
         </div>
 
-        <section className="rounded-3xl border border-white/8 bg-[#0b121b] p-5 md:p-7">
+        <section className="rounded-3xl border border-white/8 bg-white/[0.035] backdrop-blur-md p-5 md:p-7">
           <div className="rounded-2xl border border-cyan-300/12 bg-cyan-300/[0.035] p-4">
             <p className="text-[10px] uppercase tracking-[0.18em] text-cyan-200/50">Ton abonnement</p>
             <p className="mt-2 text-lg font-semibold">{subscription.service_name}</p>

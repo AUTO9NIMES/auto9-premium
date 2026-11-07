@@ -4,24 +4,9 @@
   min-height: 860px;
   padding: 58px 18px 52px;
   color: #f6f8fb;
-  background:
-    radial-gradient(980px 560px at 50% 48%, rgba(19, 99, 63, .17), transparent 62%),
-    radial-gradient(720px 250px at 50% 100%, rgba(26, 104, 72, .12), transparent 65%),
-    linear-gradient(#06140e, #123b2a 62%, var(--bg-base));
+  /* Transparent : la section flotte sur le fond émeraude fixe (site-motion.css). */
+  background: transparent;
   scroll-margin-top: 88px;
-}
-
-.section::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: .48;
-  background:
-    linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
-    linear-gradient(rgba(255,255,255,.015) 1px, transparent 1px);
-  background-size: 90px 90px;
-  mask-image: linear-gradient(to bottom, transparent, #000 28%, transparent 92%);
 }
 
 .heading {
@@ -966,5 +951,4 @@
 .featureIcon{color:var(--accent-soft)}
 .action{border-color:rgba(var(--metal-rgb),.5);background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));color:var(--text)}
 .popularBadge{background:var(--gradient-metal);color:var(--on-metal)}
-.section{background:radial-gradient(ellipse at 46% 28%,rgba(var(--accent-rgb),.21),transparent 70%),var(--bg-base)}
 .heading h2,.secondaryTitle{letter-spacing:-.06em}

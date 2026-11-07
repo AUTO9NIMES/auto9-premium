@@ -33,7 +33,7 @@ export function Transformations() {
   return (
     <section
       id="transformations"
-      className="relative hidden border-t border-white/10 bg-forest px-6 py-28 md:block md:px-12"
+      className="relative hidden border-t border-white/10 px-6 py-28 md:block md:px-12"
     >
       <div className="mx-auto max-w-7xl">
         <p className="text-xs font-black uppercase tracking-[0.55em] text-[#B8C7D1]">

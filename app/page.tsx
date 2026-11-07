@@ -37,7 +37,7 @@ export default function Home() {
 
         <div
           data-hero-veil
-          className="pointer-events-none absolute inset-0 z-40 bg-[linear-gradient(180deg,transparent_28%,rgba(5,6,8,.10)_52%,var(--bg-base)_100%)] opacity-0"
+          className="pointer-events-none absolute inset-0 z-40 bg-[linear-gradient(180deg,transparent_28%,rgba(3,8,6,.5)_68%,transparent_100%)] opacity-0"
         />
       </div>
 
@@ -49,7 +49,7 @@ export default function Home() {
         <section className="relative min-h-screen overflow-hidden" data-home-hero>
           <DesktopVideo
             data-hero-media
-            className="absolute inset-0 h-full w-full object-cover opacity-75 brightness-110 contrast-110 saturate-110 will-change-transform"
+            className="absolute inset-0 h-full w-full object-cover opacity-75 [mask-image:linear-gradient(to_bottom,black_55%,transparent)] brightness-110 contrast-110 saturate-110 will-change-transform"
             src="/hero-video.mp4"
             autoPlay
             muted
@@ -59,7 +59,7 @@ export default function Home() {
             aria-hidden="true"
           />
 
-          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/55 to-forest" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/45 to-transparent" />
 
           <div className="relative z-10 will-change-transform" data-hero-fade>
             <Header />
@@ -68,7 +68,7 @@ export default function Home() {
 
           <div
             data-hero-veil
-            className="pointer-events-none absolute inset-0 z-[5] bg-[linear-gradient(180deg,transparent_22%,rgba(5,6,8,.08)_48%,var(--bg-base)_100%)] opacity-0"
+            className="pointer-events-none absolute inset-0 z-[5] bg-[linear-gradient(180deg,transparent_22%,rgba(3,8,6,.5)_66%,transparent_100%)] opacity-0"
           />
         </section>
 

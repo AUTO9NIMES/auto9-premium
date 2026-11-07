@@ -37,7 +37,7 @@ export function Reviews() {
   };
 
   return (
-    <section className="relative overflow-hidden bg-forest px-5 py-16 text-white sm:px-6 lg:px-8 lg:py-24">
+    <section className="relative overflow-hidden px-5 py-16 text-white sm:px-6 lg:px-8 lg:py-24">
       <div className="pointer-events-none absolute left-1/2 top-10 h-72 w-72 -translate-x-1/2 rounded-full bg-accent/10 blur-[120px]" />
 
       <div className="relative mx-auto max-w-6xl">

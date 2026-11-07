@@ -3,29 +3,16 @@
 /* AUTO 9 — Signature Emeraude. Design layer only; components and workflows unchanged. */
 #auto9-home {
   /* Couleurs : voir les tokens dans app/globals.css */
-  background-color: var(--bg-base);
   color: var(--text);
   font-family: "Manrope", Arial, sans-serif;
   isolation: isolate;
-}
-#auto9-home::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(ellipse 60% 38% at 83% 9%, rgba(29,112,75,.27),transparent 76%),
-    radial-gradient(ellipse 58% 42% at 6% 68%,rgba(23,91,64,.22),transparent 75%),
-    repeating-linear-gradient(119deg,transparent 0px,rgba(var(--accent-soft-rgb),.014) 2px,transparent 5px,transparent 38px),
-    var(--bg-base);
 }
 #auto9-home h1,#auto9-home h2,#auto9-home h3 {
   font-family: "Archivo Black","Manrope",Arial,sans-serif;
   letter-spacing: -.055em;
 }
 #auto9-home [data-home-hero]{
-  background: var(--bg-base);
+  background: transparent;
 }
 #auto9-home [data-home-hero]::after {
   content:"";
@@ -35,6 +22,9 @@
   pointer-events:none;
   background:radial-gradient(ellipse at 79% 55%,transparent 15%,rgba(3,22,15,.30) 74%);
   mix-blend-mode:screen;
+  /* fondu vers le fond émeraude, pas de limite nette en bas du hero */
+  -webkit-mask-image:linear-gradient(to bottom,#000 55%,transparent);
+  mask-image:linear-gradient(to bottom,#000 55%,transparent);
 }
 #auto9-home [data-home-hero] video {
   filter: saturate(.79) contrast(1.15);
@@ -52,7 +42,6 @@
 #auto9-home [data-motion-reveal] h2{
   text-transform:uppercase;
 }
-#auto9-home footer{background:var(--bg-base);}
 #auto9-home ::selection{color:var(--on-metal);background:var(--accent-soft);}
 @media(prefers-reduced-motion:reduce){
   #auto9-home a,#auto9-home button{transition:none!important;}
