@@ -1,3 +1,4 @@
+import "./signature-emerald.css";
 import { DesktopVideo } from "./components/DesktopVideo";
 import { Header } from "./components/Header";
 import { Hero } from "./components/Hero";
@@ -18,7 +19,7 @@ import motion from "./home-motion.module.css";
 
 export default function Home() {
   return (
-    <main id="auto9-home" className={`${motion.home} min-h-screen bg-[#050608] text-white`}>
+    <main id="auto9-home" className={`${motion.home} min-h-screen bg-[#071710] text-white`}>
       <HomeMotion />
 
       {/* ===================================================== */}
@@ -34,7 +35,7 @@ export default function Home() {
 
         <div
           data-hero-veil
-          className="pointer-events-none absolute inset-0 z-40 bg-[linear-gradient(180deg,transparent_28%,rgba(5,6,8,.10)_52%,#050608_100%)] opacity-0"
+          className="pointer-events-none absolute inset-0 z-40 bg-[linear-gradient(180deg,transparent_28%,rgba(5,6,8,.10)_52%,#071710_100%)] opacity-0"
         />
       </div>
 
@@ -56,7 +57,7 @@ export default function Home() {
             aria-hidden="true"
           />
 
-          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/55 to-[#050608]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/55 to-[#071710]" />
 
           <div className="relative z-10 will-change-transform" data-hero-fade>
             <Header />
@@ -65,7 +66,7 @@ export default function Home() {
 
           <div
             data-hero-veil
-            className="pointer-events-none absolute inset-0 z-[5] bg-[linear-gradient(180deg,transparent_22%,rgba(5,6,8,.08)_48%,#050608_100%)] opacity-0"
+            className="pointer-events-none absolute inset-0 z-[5] bg-[linear-gradient(180deg,transparent_22%,rgba(5,6,8,.08)_48%,#071710_100%)] opacity-0"
           />
         </section>
 
