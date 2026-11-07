@@ -42,7 +42,7 @@ export default function PolitiqueConfidentialitePage() {
               Protection de vos données
             </p>
 
-            <h1 className="mt-5 text-5xl font-black uppercase tracking-[-0.06em] md:text-7xl">
+            <h1 className="mt-5 text-[1.8rem] font-black uppercase leading-[0.95] tracking-[-0.06em] min-[400px]:text-[2.1rem] sm:text-5xl md:text-7xl">
               Politique de confidentialité
             </h1>
 

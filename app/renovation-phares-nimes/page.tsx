@@ -441,7 +441,7 @@ export default function RenovationPharesNimesPage() {
 
             <div className="mt-6 flex flex-col justify-between gap-8 md:flex-row md:items-end">
               <div>
-                <h2 className="max-w-4xl text-4xl font-black uppercase tracking-[-0.05em] md:text-6xl">
+                <h2 className="max-w-4xl text-[1.95rem] font-black uppercase leading-[0.98] tracking-[-0.05em] sm:text-4xl md:text-6xl">
                   Vos phares méritent mieux que le jaunissement.
                 </h2>
 

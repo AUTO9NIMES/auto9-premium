@@ -42,7 +42,7 @@ export default function MentionsLegalesPage() {
               Informations légales
             </p>
 
-            <h1 className="mt-5 text-5xl font-black uppercase tracking-[-0.06em] md:text-7xl">
+            <h1 className="mt-5 text-[2.35rem] font-black uppercase leading-[0.95] tracking-[-0.06em] sm:text-5xl md:text-7xl">
               Mentions légales
             </h1>
 
