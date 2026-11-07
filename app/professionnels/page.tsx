@@ -34,8 +34,8 @@ const benefits = [
 const upgradePacks = [
   {
     name: "Pack Premium",
-    price: "+70 €",
-    includes: "Pack Standard inclus",
+    price: "170 €",
+    includes: "Pack Standard inclus · +70 €",
     featured: false,
     items: [
       "Nettoyage sellerie (tissus, cuir…)",
@@ -47,8 +47,8 @@ const upgradePacks = [
   },
   {
     name: "Pack Signature",
-    price: "+150 €",
-    includes: "Pack Premium inclus",
+    price: "250 €",
+    includes: "Pack Premium inclus · +150 €",
     featured: true,
     items: [
       "Lustrage multi-éléments",
@@ -192,7 +192,11 @@ export default function ProfessionnelsPage() {
                   ))}
                 </div>
                 <p className="mt-4 text-sm leading-relaxed text-white/65">
-                  Pack Premium ou Signature : réservez votre créneau ci-dessus et précisez le pack souhaité à AUTO 9 lors de la confirmation.
+                  Les 3 packs se choisissent directement dans la{" "}
+                  <a href="#reservation" className="font-bold text-white/85 underline decoration-accent/60 underline-offset-4 transition hover:text-accent-soft">
+                    réservation
+                  </a>
+                  .
                 </p>
               </div>
 

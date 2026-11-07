@@ -4,17 +4,13 @@ import { NextResponse } from "next/server";
 import { Resend } from "resend";
 
 import { persistWebsiteLead } from "../../lib/crm-intake";
+import {
+  computeProTotal,
+  resolveProPack,
+  selectProAddons,
+} from "../../lib/pro-offer";
 
 export const runtime = "nodejs";
-
-const PRO_SERVICE_NAME = "Prépa livraison";
-const PRO_SERVICE_PRICE = 100;
-
-const PRO_ADDONS = [
-  { id: "sieges", name: "Sièges", price: 30 },
-  { id: "plastiques", name: "Rénovation plastiques", price: 15 },
-  { id: "polissage", name: "Polissage 1 élément", price: 30 },
-] as const;
 
 function escapeHtml(value: unknown) {
   return String(value ?? "")
@@ -70,6 +66,7 @@ export async function POST(request: Request) {
       time,
       vehicle,
       plate,
+      pack,
       addons,
     } = body;
 
@@ -141,20 +138,26 @@ export async function POST(request: Request) {
           .filter(Boolean)
       : [];
 
-    const selectedAddons = PRO_ADDONS.filter((addon) =>
-      requestedAddonIds.includes(addon.id)
+    // Pack et prix recalculés ici à partir du catalogue : le total envoyé
+    // par le navigateur n'est jamais repris tel quel.
+    const selectedPack = resolveProPack(pack);
+
+    const selectedAddons = selectProAddons(
+      selectedPack,
+      requestedAddonIds
     );
 
     const selectedAddonLabels = selectedAddons.map(
       (addon) => addon.name + " (+" + addon.price + " €)"
     );
 
-    const totalPrice =
-      PRO_SERVICE_PRICE +
-      selectedAddons.reduce((sum, addon) => sum + addon.price, 0);
+    const totalPrice = computeProTotal(
+      selectedPack,
+      requestedAddonIds
+    );
 
     const serviceLabel =
-      PRO_SERVICE_NAME + " — " + PRO_SERVICE_PRICE + " €";
+      selectedPack.name + " — " + selectedPack.price + " €";
 
     /* ===================================================== */
     /* IDENTIFIANT CANONIQUE                                 */
@@ -207,8 +210,8 @@ export async function POST(request: Request) {
         customerPhone: trimmedPhone,
         customerEmail: trimmedEmail || undefined,
         vehicleName: vehicle,
-        serviceName: PRO_SERVICE_NAME,
-        basePrice: PRO_SERVICE_PRICE,
+        serviceName: selectedPack.name,
+        basePrice: selectedPack.price,
         selectedOptions: selectedAddonLabels,
         availabilityDateTime:
           `${date.trim()}T${time.trim()}`,
