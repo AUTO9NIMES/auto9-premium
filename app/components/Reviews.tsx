@@ -37,18 +37,18 @@ export function Reviews() {
   };
 
   return (
-    <section className="relative overflow-hidden bg-[#050608] px-5 py-16 text-white sm:px-6 lg:px-8 lg:py-24">
-      <div className="pointer-events-none absolute left-1/2 top-10 h-72 w-72 -translate-x-1/2 rounded-full bg-[#0b6cff]/10 blur-[120px]" />
+    <section className="relative overflow-hidden bg-[#071710] px-5 py-16 text-white sm:px-6 lg:px-8 lg:py-24">
+      <div className="pointer-events-none absolute left-1/2 top-10 h-72 w-72 -translate-x-1/2 rounded-full bg-[#30da52]/10 blur-[120px]" />
 
       <div className="relative mx-auto max-w-6xl">
         <div className="max-w-2xl">
-          <p className="text-[10px] font-black uppercase tracking-[0.42em] text-[#56a0ff] sm:text-[11px]">
+          <p className="text-[10px] font-black uppercase tracking-[0.42em] text-[#72e389] sm:text-[11px]">
             Avis clients
           </p>
 
           <h2 data-motion-reveal className="mt-4 text-[38px] font-black leading-[0.96] tracking-[-0.05em] sm:text-[48px] lg:text-[64px]">
             Ils nous font{" "}
-            <span className="bg-[linear-gradient(135deg,#dcecff,#6aa8ff)] bg-clip-text text-transparent">
+            <span className="bg-[linear-gradient(135deg,#dcecff,#89e09a)] bg-clip-text text-transparent">
               confiance.
             </span>
           </h2>
@@ -88,7 +88,7 @@ export function Reviews() {
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex min-w-0 items-center gap-3">
-                    <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[linear-gradient(145deg,#3159c8,#5279e7)] text-[18px] font-bold text-white shadow-sm">
+                    <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[linear-gradient(145deg,#33c650,#63d67a)] text-[18px] font-bold text-white shadow-sm">
                       {review.initial}
                     </div>
 
@@ -131,7 +131,7 @@ export function Reviews() {
                   key={review.name}
                   className={
                     index === 0
-                      ? "h-2 w-2 rounded-full bg-[#4b9bff]"
+                      ? "h-2 w-2 rounded-full bg-[#66e47f]"
                       : "h-2 w-2 rounded-full bg-white/20"
                   }
                 />
@@ -164,7 +164,7 @@ export function Reviews() {
           href="https://share.google/pRkmz18Y7YlOHJPS2"
           target="_blank"
           rel="noreferrer"
-          className="mt-7 flex w-full items-center justify-center gap-3 rounded-full bg-[linear-gradient(135deg,#f5f8fb,#bcd9fb)] px-5 py-4.5 text-center text-[11px] font-black uppercase tracking-[0.18em] text-[#080a0d] shadow-[0_18px_50px_rgba(91,154,228,.14)] sm:mt-8 sm:w-fit sm:px-8"
+          className="mt-7 flex w-full items-center justify-center gap-3 rounded-full bg-[linear-gradient(135deg,#f5f8fb,#d1e6d5)] px-5 py-4.5 text-center text-[11px] font-black uppercase tracking-[0.18em] text-[#080a0d] shadow-[0_18px_50px_rgba(57,163,130,.14)] sm:mt-8 sm:w-fit sm:px-8"
         >
           <GoogleG small />
           Voir les avis Google
