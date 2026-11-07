@@ -15,6 +15,9 @@ import { HomeConfidence } from "./components/HomeConfidence";
 import { Reservation } from "./components/Reservation";
 import { Footer } from "./components/Footer";
 import { HomeMotion } from "./components/HomeMotion";
+import { EngagementsTicker } from "./components/EngagementsTicker";
+import { ZoneMap } from "./components/ZoneMap";
+import { HomeFaq } from "./components/HomeFaq";
 import motion from "./home-motion.module.css";
 import { SiteMotion } from "./components/SiteMotion";
 import { MobileActionBar } from "./components/MobileActionBar";
@@ -85,11 +88,14 @@ export default function Home() {
       {/* ===================================================== */}
 
       <Services />
+      <EngagementsTicker />
       <HomeConfidence />
       <Transformations />
       <BeforeAfter />
       <RealisationsPreview />
       <Reviews />
+      <ZoneMap />
+      <HomeFaq />
       <Reservation />
       <Footer />
     </main>

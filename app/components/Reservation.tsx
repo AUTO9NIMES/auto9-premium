@@ -8,7 +8,7 @@ export function Reservation() {
     >
 
       <div className="relative mx-auto max-w-6xl">
-        <div className="overflow-hidden rounded-[30px] border border-accent-soft/20 bg-[linear-gradient(145deg,#11271e_0%,#0a1812_42%,#08090c_100%)] shadow-[0_30px_90px_rgba(0,0,0,.38)] sm:rounded-[36px]">
+        <div className="overflow-hidden rounded-[30px] border border-accent/60 bg-[rgba(10,11,11,.62)] shadow-[0_30px_90px_rgba(0,0,0,.45),0_0_42px_rgba(var(--accent-rgb),.14),inset_0_1px_0_rgba(255,255,255,.06)] backdrop-blur-xl sm:rounded-[36px]">
           <div className="relative p-7 sm:p-10 lg:p-14">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_88%_4%,rgba(var(--accent-rgb),.12),transparent_36%)]" />
             <div className="pointer-events-none absolute inset-x-12 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(var(--metal-rgb),.45),transparent)]" />

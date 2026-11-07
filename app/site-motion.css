@@ -267,3 +267,37 @@
 .motion-word {
   transition: opacity 0.25s linear;
 }
+
+/* Bandeau d'engagements : défilement continu, pause au survol. */
+@media (prefers-reduced-motion: no-preference) {
+  .ticker-track {
+    animation: ticker 38s linear infinite;
+  }
+  .ticker:hover .ticker-track {
+    animation-play-state: paused;
+  }
+}
+@keyframes ticker {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* FAQ : ouverture en douceur (navigateurs récents) ; ailleurs, ouverture instantanée. */
+@supports selector(::details-content) {
+  @media (prefers-reduced-motion: no-preference) {
+    .faq-item {
+      interpolate-size: allow-keywords;
+    }
+    .faq-item::details-content {
+      block-size: 0;
+      overflow: hidden;
+      transition:
+        block-size 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+        content-visibility 0.5s allow-discrete;
+    }
+    .faq-item[open]::details-content {
+      block-size: auto;
+    }
+  }
+}
