@@ -51,6 +51,7 @@ export default function Home() {
             data-hero-media
             className="absolute inset-0 h-full w-full object-cover opacity-75 [mask-image:linear-gradient(to_bottom,black_55%,transparent)] brightness-110 contrast-110 saturate-110 will-change-transform"
             src="/hero-video.mp4"
+            poster="/hero-poster.webp"
             autoPlay
             muted
             loop

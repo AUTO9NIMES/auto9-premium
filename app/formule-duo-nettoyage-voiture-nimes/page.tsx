@@ -126,7 +126,7 @@ export default function FormuleDuoNettoyageVoitureNimesPage() {
 
             <div className="relative min-h-[520px] overflow-hidden rounded-[2rem] border border-[#B8C7D1]/20 bg-white/[0.03]">
               <img
-                src="/services/duo-card.png"
+                src="/services/duo-card.jpg"
                 alt="Formule Duo nettoyage voiture intérieur et extérieur à Nîmes par AUTO 9"
                 className="absolute inset-0 h-full w-full object-cover brightness-[0.78] contrast-110 saturate-110"
               />
