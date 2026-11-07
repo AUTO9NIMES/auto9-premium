@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { getPublicQuoteByToken } from "../../lib/crm";
 import { site } from "../../lib/site";
+import { SiteMotion } from "../../components/SiteMotion";
 
 export const dynamic = "force-dynamic";
 
@@ -40,7 +41,8 @@ function formatDate(value?: string | null): string | null {
 
 function UnavailableState() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#050608] px-6 text-white">
+    <main data-motion-site className="flex min-h-screen items-center justify-center bg-[#050608] px-6 text-white">
+      <SiteMotion />
       <div className="max-w-md text-center">
         <p className="text-xs font-black uppercase tracking-[0.3em] text-white/40">
           {site.name}
@@ -89,7 +91,8 @@ export default async function PublicQuotePage({
   const isAccepted = quote.status === "ACCEPTED";
 
   return (
-    <main className="min-h-screen bg-[#050608] px-5 py-10 text-white md:px-12 md:py-16">
+    <main data-motion-site className="min-h-screen bg-[#050608] px-5 py-10 text-white md:px-12 md:py-16">
+      <SiteMotion />
       <div className="mx-auto max-w-3xl">
         <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-[linear-gradient(145deg,rgba(var(--accent-rgb),.12),rgba(255,255,255,.03))]">
           <div className="border-b border-white/10 p-7 md:p-10">

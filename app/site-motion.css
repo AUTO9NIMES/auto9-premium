@@ -1,0 +1,122 @@
+/*
+ * AUTO 9 — Signature Motion
+ * Mouvements lents, courts, décélération douce. Uniquement transform / opacity / filter.
+ * Tout est limité aux pages marquées [data-motion-site] et coupé si l'utilisateur
+ * demande moins d'animations. Le script SiteMotion ne masque jamais un contenu déjà à l'écran.
+ */
+:root {
+  --motion-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* 1. Ouverture de page : kicker, titre puis ce qui suit, en cascade (hors hero de l'accueil). */
+  [data-motion-site] :is(p, span):has(+ h1):not([data-motion-intro] *) {
+    animation: motion-kicker-in 1.2s var(--motion-ease) 0.05s backwards;
+  }
+  [data-motion-site] h1:not([data-motion-intro] *) {
+    animation: motion-title-in 1.15s var(--motion-ease) 0.12s backwards;
+  }
+  [data-motion-site] h1:not([data-motion-intro] *) + * {
+    animation: motion-rise-in 1s var(--motion-ease) 0.32s backwards;
+  }
+  [data-motion-site] h1:not([data-motion-intro] *) + * + * {
+    animation: motion-rise-in 1s var(--motion-ease) 0.44s backwards;
+  }
+  [data-motion-site] h1:not([data-motion-intro] *) + * + * + * {
+    animation: motion-rise-in 1s var(--motion-ease) 0.56s backwards;
+  }
+
+  /* 2. Éléments révélés au défilement : masqués uniquement s'ils sont hors écran au chargement. */
+  [data-motion-site] [data-reveal-pending] {
+    opacity: 0;
+  }
+
+  /* 3. Images qui se dézooment en suivant le défilement (navigateurs compatibles uniquement). */
+  @supports (animation-timeline: view()) {
+    [data-motion-site] [data-motion-media] {
+      animation: motion-media linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 50%;
+    }
+  }
+
+  /* 4. Boutons métal : un reflet traverse le chrome au survol, légère pression au clic. */
+  [data-motion-site] :is(a, button).bg-metal {
+    background-image:
+      linear-gradient(105deg, transparent 0 42%, rgba(255, 255, 255, 0.7) 50%, transparent 58% 100%),
+      var(--gradient-metal);
+    background-size: 260% 100%, 100% 100%;
+    background-repeat: no-repeat;
+    background-position: 100% 0, 0 0;
+    transition:
+      background-position 0.9s var(--motion-ease),
+      scale 0.35s var(--motion-ease),
+      translate 0.35s var(--motion-ease),
+      box-shadow 0.35s var(--motion-ease),
+      filter 0.25s ease;
+  }
+  [data-motion-site] :is(a, button).bg-metal:is(:hover, :focus-visible) {
+    background-position: 0% 0, 0 0;
+  }
+  [data-motion-site] :is(a, button).bg-metal:active {
+    scale: 0.975;
+  }
+
+  /* 5. Mot clé émeraude : un reflet de lumière le balaie une fois (déclenché par SiteMotion). */
+  [data-motion-site] .bg-accent-word.bg-clip-text {
+    background-image:
+      linear-gradient(100deg, transparent 0 40%, rgba(255, 255, 255, 0.8) 50%, transparent 60% 100%),
+      var(--gradient-accent-word);
+    background-size: 250% 100%, 100% 100%;
+    background-repeat: no-repeat;
+    background-position: 0% 0, 0 0;
+  }
+}
+
+@keyframes motion-kicker-in {
+  from {
+    opacity: 0;
+    letter-spacing: 0.9em;
+  }
+}
+
+@keyframes motion-title-in {
+  from {
+    opacity: 0.001;
+    translate: 0 28px;
+    filter: blur(14px);
+  }
+}
+
+@keyframes motion-rise-in {
+  from {
+    opacity: 0;
+    translate: 0 20px;
+    filter: blur(6px);
+  }
+}
+
+@keyframes motion-media {
+  from {
+    transform: scale(1.12);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+/* Mobile : trajets plus courts, sans flou (plus fluide sur les petits processeurs). */
+@media (max-width: 767px) {
+  @keyframes motion-title-in {
+    from {
+      opacity: 0.001;
+      translate: 0 18px;
+    }
+  }
+  @keyframes motion-rise-in {
+    from {
+      opacity: 0;
+      translate: 0 14px;
+    }
+  }
+}

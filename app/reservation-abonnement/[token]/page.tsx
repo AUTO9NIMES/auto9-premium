@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { supabaseRest } from "../../lib/supabase";
 import { submitSubscriptionBookingRequest } from "./actions";
+import { SiteMotion } from "../../components/SiteMotion";
 
 export const dynamic = "force-dynamic";
 
@@ -75,7 +76,8 @@ export default async function SubscriptionBookingPage({
 
   if (sent) {
     return (
-      <main className="min-h-screen bg-[#060b11] px-5 py-12 text-white">
+      <main data-motion-site className="min-h-screen bg-[#060b11] px-5 py-12 text-white">
+        <SiteMotion />
         <div className="mx-auto max-w-2xl">
           <div className="rounded-3xl border border-emerald-300/20 bg-emerald-300/[0.05] p-7 md:p-10">
             <p className="text-[11px] uppercase tracking-[0.24em] text-emerald-200/60">AUTO 9 · Abonnement</p>
@@ -90,7 +92,8 @@ export default async function SubscriptionBookingPage({
   }
 
   return (
-    <main className="min-h-screen bg-[#060b11] px-5 py-10 text-white md:py-16">
+    <main data-motion-site className="min-h-screen bg-[#060b11] px-5 py-10 text-white md:py-16">
+      <SiteMotion />
       <div className="mx-auto max-w-2xl">
         <div className="mb-8">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-300/25 bg-cyan-300/10 text-sm font-black tracking-[0.18em] text-cyan-100">A9</div>

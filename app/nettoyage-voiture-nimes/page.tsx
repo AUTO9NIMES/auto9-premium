@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { Footer } from "../components/Footer";
+import { SiteMotion } from "../components/SiteMotion";
 
 export const metadata: Metadata = {
   title: "Nettoyage voiture Nîmes | AUTO 9 - Nettoyage auto premium",
@@ -80,7 +81,8 @@ const faq = [
 
 export default function NettoyageVoitureNimesPage() {
   return (
-    <main className="min-h-screen bg-forest text-white">
+    <main data-motion-site className="min-h-screen bg-forest text-white">
+      <SiteMotion />
       <div className="border-b border-white/10 px-6 py-6 md:px-12">
         <Link
           href="/"

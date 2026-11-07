@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { Footer } from "../components/Footer";
 import { Partners } from "../components/Partners";
+import { SiteMotion } from "../components/SiteMotion";
 
 const targets = [
   "Garages indépendants",
@@ -140,7 +141,8 @@ export default function ProfessionnelsPage() {
     "w-full rounded-2xl border border-accent/20 bg-forest/80 px-5 py-4 text-white outline-none transition placeholder:text-white/20 focus:border-accent/70 focus:shadow-[0_0_28px_rgba(var(--accent-rgb),.14)]";
 
   return (
-    <main className="min-h-screen overflow-hidden bg-forest text-white">
+    <main data-motion-site className="min-h-screen overflow-hidden bg-forest text-white">
+      <SiteMotion />
       <div className="border-b border-white/10 px-6 py-6 md:px-12">
         <Link href="/" className="text-xs font-black uppercase tracking-[0.3em] text-white/50 transition hover:text-accent-soft">
           ← Retour au site

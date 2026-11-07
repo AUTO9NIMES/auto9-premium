@@ -16,10 +16,12 @@ import { Reservation } from "./components/Reservation";
 import { Footer } from "./components/Footer";
 import { HomeMotion } from "./components/HomeMotion";
 import motion from "./home-motion.module.css";
+import { SiteMotion } from "./components/SiteMotion";
 
 export default function Home() {
   return (
-    <main id="auto9-home" className={`${motion.home} min-h-screen bg-forest text-white`}>
+    <main data-motion-site id="auto9-home" className={`${motion.home} min-h-screen bg-forest text-white`}>
+      <SiteMotion />
       <HomeMotion />
 
       {/* ===================================================== */}
