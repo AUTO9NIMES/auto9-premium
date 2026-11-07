@@ -333,7 +333,7 @@ export function PremiumQuoteConfigurator() {
                         className="h-full w-full object-cover opacity-75 brightness-[0.62] contrast-110 saturate-110 transition duration-700 group-hover:scale-105 group-hover:opacity-95"
                       />
 
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#071710] via-[#071710]/35 to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-forest via-forest/35 to-transparent" />
 
                       <div className="absolute bottom-8 left-8 right-8">
                         <p className="text-6xl leading-none text-white">
@@ -364,7 +364,7 @@ export function PremiumQuoteConfigurator() {
                   value={vehicleInfo}
                   onChange={(event) => setVehicleInfo(event.target.value)}
                   placeholder="Ex : Audi A3 2019, BMW Série 1, Mercedes Classe A..."
-                  className="mt-5 w-full rounded-2xl border border-white/10 bg-[#071710] px-5 py-4 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[#B8C7D1]/60"
+                  className="mt-5 w-full rounded-2xl border border-white/10 bg-forest px-5 py-4 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[#B8C7D1]/60"
                 />
               </div>
 
@@ -420,7 +420,7 @@ export function PremiumQuoteConfigurator() {
                     value={comment}
                     onChange={(event) => setComment(event.target.value)}
                     placeholder="Ex : phares jaunis, jante frottée avant droite, micro-rayures capot..."
-                    className="mt-6 min-h-44 w-full resize-none rounded-[1.5rem] border border-white/10 bg-[#071710] p-5 text-sm leading-relaxed text-white outline-none transition placeholder:text-white/35 focus:border-[#B8C7D1]/60"
+                    className="mt-6 min-h-44 w-full resize-none rounded-[1.5rem] border border-white/10 bg-forest p-5 text-sm leading-relaxed text-white outline-none transition placeholder:text-white/35 focus:border-[#B8C7D1]/60"
                   />
                 </div>
               </div>
@@ -537,7 +537,7 @@ export function PremiumQuoteConfigurator() {
                       href={whatsappLink}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-8 flex w-full items-center justify-center rounded-full bg-metal text-on-metal shadow-[0_18px_45px_rgba(var(--metal-rgb),.18)] px-7 py-5 text-center text-xs font-black uppercase tracking-[0.25em] text-[#071710] transition hover:scale-105"
+                      className="mt-8 flex w-full items-center justify-center rounded-full bg-metal text-on-metal shadow-[0_18px_45px_rgba(var(--metal-rgb),.18)] px-7 py-5 text-center text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
                     >
                       Envoyer sur WhatsApp →
                     </a>
@@ -848,7 +848,7 @@ function StepActions({
           <button
             type="button"
             onClick={onNext}
-            className="rounded-full bg-metal text-on-metal shadow-[0_18px_45px_rgba(var(--metal-rgb),.18)] px-7 py-4 text-xs font-black uppercase tracking-[0.25em] text-[#071710] transition hover:scale-105"
+            className="rounded-full bg-metal text-on-metal shadow-[0_18px_45px_rgba(var(--metal-rgb),.18)] px-7 py-4 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
           >
             {nextLabel} →
           </button>

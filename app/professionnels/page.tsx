@@ -137,10 +137,10 @@ export default function ProfessionnelsPage() {
   }
 
   const fieldClass =
-    "w-full rounded-2xl border border-accent/20 bg-[#071710]/80 px-5 py-4 text-white outline-none transition placeholder:text-white/20 focus:border-accent/70 focus:shadow-[0_0_28px_rgba(var(--accent-rgb),.14)]";
+    "w-full rounded-2xl border border-accent/20 bg-forest/80 px-5 py-4 text-white outline-none transition placeholder:text-white/20 focus:border-accent/70 focus:shadow-[0_0_28px_rgba(var(--accent-rgb),.14)]";
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#071710] text-white">
+    <main className="min-h-screen overflow-hidden bg-forest text-white">
       <div className="border-b border-white/10 px-6 py-6 md:px-12">
         <Link href="/" className="text-xs font-black uppercase tracking-[0.3em] text-white/50 transition hover:text-accent-soft">
           ← Retour au site
@@ -241,7 +241,7 @@ export default function ProfessionnelsPage() {
                         className={`group flex cursor-pointer items-center justify-between gap-4 rounded-2xl border px-5 py-4 transition duration-200 ${
                           checked
                             ? "border-accent/70 bg-accent-deep/15 shadow-[0_0_26px_rgba(var(--accent-rgb),.12)]"
-                            : "border-accent/20 bg-[#071710]/70 hover:border-accent/45"
+                            : "border-accent/20 bg-forest/70 hover:border-accent/45"
                         }`}
                       >
                         <span className="flex min-w-0 items-center gap-3">

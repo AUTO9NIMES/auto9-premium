@@ -201,7 +201,7 @@ ${form.message || "Non renseigné"}`;
           <div className="mt-4 flex flex-col gap-3 sm:flex-row">
             <button
               type="submit"
-              className="rounded-full bg-metal text-on-metal shadow-[0_18px_45px_rgba(var(--metal-rgb),.18)] px-7 py-4 text-xs font-black uppercase tracking-[0.25em] text-[#071710] transition hover:scale-105"
+              className="rounded-full bg-metal text-on-metal shadow-[0_18px_45px_rgba(var(--metal-rgb),.18)] px-7 py-4 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
             >
               Envoyer par email →
             </button>
@@ -272,7 +272,7 @@ function SelectField({
         <option value="">Sélectionner</option>
 
         {options.map((option) => (
-          <option key={option} value={option} className="bg-[#071710]">
+          <option key={option} value={option} className="bg-forest">
             {option}
           </option>
         ))}

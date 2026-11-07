@@ -85,7 +85,7 @@ const faq = [
 
 export default function PolissageVoitureNimesPage() {
   return (
-    <main className="min-h-screen bg-[#071710] text-white">
+    <main className="min-h-screen bg-forest text-white">
       <div className="border-b border-white/10 px-6 py-6 md:px-12">
         <Link
           href="/"
@@ -141,8 +141,8 @@ export default function PolissageVoitureNimesPage() {
                 className="absolute inset-0 h-full w-full object-cover brightness-[0.8] contrast-110 saturate-110"
               />
 
-              <div className="absolute inset-0 bg-gradient-to-t from-[#071710] via-[#071710]/25 to-transparent" />
-              <div className="absolute inset-0 bg-gradient-to-r from-[#071710]/55 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-forest via-forest/25 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-forest/55 via-transparent to-transparent" />
 
               <div className="absolute bottom-0 left-0 right-0 p-7">
                 <p className="text-xs font-black uppercase tracking-[0.35em] text-[#B8C7D1]">

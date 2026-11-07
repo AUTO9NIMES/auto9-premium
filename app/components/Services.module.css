@@ -7,7 +7,7 @@
   background:
     radial-gradient(980px 560px at 50% 48%, rgba(19, 99, 63, .17), transparent 62%),
     radial-gradient(720px 250px at 50% 100%, rgba(26, 104, 72, .12), transparent 65%),
-    linear-gradient(#06140e, #123b2a 62%, #071710);
+    linear-gradient(#06140e, #123b2a 62%, var(--bg-base));
   scroll-margin-top: 88px;
 }
 
@@ -966,5 +966,5 @@
 .featureIcon{color:var(--accent-soft)}
 .action{border-color:rgba(var(--metal-rgb),.5);background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));color:var(--text)}
 .popularBadge{background:var(--gradient-metal);color:var(--on-metal)}
-.section{background:radial-gradient(ellipse at 46% 28%,rgba(var(--accent-rgb),.21),transparent 70%),#071710}
+.section{background:radial-gradient(ellipse at 46% 28%,rgba(var(--accent-rgb),.21),transparent 70%),var(--bg-base)}
 .heading h2,.secondaryTitle{letter-spacing:-.06em}

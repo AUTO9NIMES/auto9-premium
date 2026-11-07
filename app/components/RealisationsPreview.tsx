@@ -12,7 +12,7 @@ export function RealisationsPreview() {
   return (
     <section
       id="realisations"
-      className="relative scroll-mt-24 overflow-hidden border-t border-white/[0.06] bg-[#071710] px-5 py-20 text-white sm:px-6 md:px-12 md:py-32"
+      className="relative scroll-mt-24 overflow-hidden border-t border-white/[0.06] bg-forest px-5 py-20 text-white sm:px-6 md:px-12 md:py-32"
     >
       <div className="pointer-events-none absolute -right-28 top-20 h-[32rem] w-[32rem] rounded-full bg-accent/[0.07] blur-[160px]" />
       <div className="pointer-events-none absolute -left-28 bottom-0 h-[28rem] w-[28rem] rounded-full bg-[#B8C7D1]/[0.045] blur-[150px]" />
@@ -50,7 +50,7 @@ export function RealisationsPreview() {
                 loading="lazy"
                 className="absolute inset-0 h-full w-full object-cover opacity-[.82] transition duration-700 ease-out group-hover:scale-[1.035] group-hover:opacity-100"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#071710]/90 via-[#071710]/8 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-forest/90 via-forest/8 to-transparent" />
               <div className="pointer-events-none absolute inset-0 opacity-0 transition duration-700 group-hover:opacity-100 bg-[linear-gradient(115deg,transparent_28%,rgba(var(--accent-rgb),.10)_48%,transparent_68%)]" />
 
               <div className="absolute inset-x-0 bottom-0 flex items-end justify-between p-5 sm:p-6">

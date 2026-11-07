@@ -704,7 +704,7 @@ export function QuoteConfigurator() {
   }
 
   return (
-    <section className="relative min-h-screen overflow-hidden bg-[#071710] px-3 pb-32 pt-4 text-white sm:px-6 lg:px-8">
+    <section className="relative min-h-screen overflow-hidden bg-forest px-3 pb-32 pt-4 text-white sm:px-6 lg:px-8">
       <div className="auto9-orb-one pointer-events-none absolute left-1/2 top-20 h-[28rem] w-[28rem] -translate-x-1/2 rounded-full bg-accent/10 blur-[130px]" />
 
       <div className="auto9-orb-two pointer-events-none absolute -right-40 top-[38rem] h-[30rem] w-[30rem] rounded-full bg-accent/10 blur-[150px]" />
@@ -1329,7 +1329,7 @@ export function QuoteConfigurator() {
                           className="h-full w-full object-cover"
                         />
 
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#071710]/80 via-transparent to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-forest/80 via-transparent to-transparent" />
 
                         <div className="absolute bottom-3 left-3 rounded-full border border-white/15 bg-black/65 px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.16em] text-white backdrop-blur">
                           Photo principale

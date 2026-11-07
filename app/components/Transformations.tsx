@@ -33,7 +33,7 @@ export function Transformations() {
   return (
     <section
       id="transformations"
-      className="relative hidden border-t border-white/10 bg-[#071710] px-6 py-28 md:block md:px-12"
+      className="relative hidden border-t border-white/10 bg-forest px-6 py-28 md:block md:px-12"
     >
       <div className="mx-auto max-w-7xl">
         <p className="text-xs font-black uppercase tracking-[0.55em] text-[#B8C7D1]">
@@ -110,9 +110,9 @@ function ResultCard({
           className="h-full w-full object-cover opacity-80 transition duration-700 group-hover:scale-110 group-hover:opacity-100"
         />
 
-        <div className="absolute inset-0 bg-gradient-to-t from-[#071710] via-black/10 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-forest via-black/10 to-transparent" />
 
-        <div className="absolute left-6 top-6 rounded-full bg-metal px-4 py-2 text-[10px] font-black uppercase tracking-[0.25em] text-[#071710] shadow-[0_18px_45px_rgba(var(--metal-rgb),.18)]">
+        <div className="absolute left-6 top-6 rounded-full bg-metal px-4 py-2 text-[10px] font-black uppercase tracking-[0.25em] text-on-metal shadow-[0_18px_45px_rgba(var(--metal-rgb),.18)]">
           {item.badge}
         </div>
 

@@ -4,7 +4,7 @@ export function Reservation() {
   return (
     <section
       id="reservation"
-      className="relative overflow-hidden bg-[#071710] px-5 py-16 text-white sm:px-6 lg:px-8 lg:py-24"
+      className="relative overflow-hidden bg-forest px-5 py-16 text-white sm:px-6 lg:px-8 lg:py-24"
     >
       <div className="pointer-events-none absolute left-1/2 top-10 h-[420px] w-[680px] -translate-x-1/2 rounded-full bg-accent/[0.08] blur-[150px]" />
 

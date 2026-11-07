@@ -239,7 +239,7 @@ export function SpecialRequestForm() {
   }
 
   return (
-    <section className="relative min-h-screen overflow-hidden bg-[#071710] px-5 py-10 text-white md:px-12 md:py-16">
+    <section className="relative min-h-screen overflow-hidden bg-forest px-5 py-10 text-white md:px-12 md:py-16">
 
       {/* HALOS DE FOND */}
 

@@ -18,7 +18,7 @@ export function FloatingContact() {
         href={site.phoneHref}
         aria-label="Appeler AUTO 9"
         title="Appeler"
-        className="group flex h-14 w-14 items-center justify-center rounded-full border border-white/15 bg-[#071710]/90 text-white/75 shadow-[0_0_30px_rgba(0,0,0,.35)] backdrop-blur transition hover:scale-110 hover:border-[#B8C7D1] hover:text-[#B8C7D1]"
+        className="group flex h-14 w-14 items-center justify-center rounded-full border border-white/15 bg-forest/90 text-white/75 shadow-[0_0_30px_rgba(0,0,0,.35)] backdrop-blur transition hover:scale-110 hover:border-[#B8C7D1] hover:text-[#B8C7D1]"
       >
         <PhoneIcon />
       </a>
