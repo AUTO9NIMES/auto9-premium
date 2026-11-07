@@ -179,7 +179,156 @@ export function SiteMotion() {
       });
     }
 
+    /* ------------------------------------------------------------------
+     * Effets liés au défilement (une seule boucle requestAnimationFrame) :
+     * jauge de lecture, cartes qui s'empilent (mobile), texte qui s'allume
+     * mot à mot, et repli du dézoom des images pour les navigateurs sans
+     * animation-timeline (iPhone non à jour).
+     * ------------------------------------------------------------------ */
+    const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
+    const deep = roots.some((root) => root.getAttribute("data-backdrop") === "deep");
+
+    // 1. Jauge de lecture émeraude (pas sur le configurateur, qui a sa propre progression)
+    const bar = deep ? null : document.createElement("div");
+    if (bar) {
+      bar.setAttribute("aria-hidden", "true");
+      bar.className = "motion-progress";
+      document.body.appendChild(bar);
+    }
+
+    // 2. Cartes qui s'empilent sur mobile : chacune se fige en haut, la suivante glisse dessus
+    const stackQuery = window.matchMedia("(max-width: 1023px)");
+    const stacks = roots.flatMap((root) =>
+      Array.from(root.querySelectorAll<HTMLElement>("[data-motion-stack]")),
+    );
+    const stackCards = () =>
+      stacks.flatMap((stack) =>
+        (Array.from(stack.children) as HTMLElement[]).filter((card) => card.getClientRects().length),
+      );
+    const applyStacks = () => {
+      stacks.forEach((stack) => {
+        const cards = (Array.from(stack.children) as HTMLElement[]).filter((card) => card.getClientRects().length);
+        cards.forEach((card, index) => {
+          if (stackQuery.matches) {
+            card.style.position = "sticky";
+            card.style.top = `${16 + index * 12}px`;
+            card.style.transformOrigin = "50% 0";
+          } else {
+            card.style.removeProperty("position");
+            card.style.removeProperty("top");
+            card.style.removeProperty("scale");
+            card.style.removeProperty("transform-origin");
+          }
+        });
+      });
+    };
+    applyStacks();
+    stackQuery.addEventListener("change", applyStacks);
+
+    // 3. Texte qui s'allume mot à mot (le HTML rendu reste identique ; découpage côté navigateur)
+    const wordGroups = roots.flatMap((root) =>
+      Array.from(root.querySelectorAll<HTMLElement>("[data-motion-words]")).map((element) => {
+        const units: HTMLElement[] = [];
+        const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+        const nodes: Text[] = [];
+        while (walker.nextNode()) nodes.push(walker.currentNode as Text);
+        nodes.forEach((node) => {
+          const parent = node.parentElement;
+          if (!parent || !node.textContent?.trim()) return;
+          // Texte en dégradé découpé (bg-clip-text) : l'élément entier s'allume d'un bloc
+          const clipped = parent.closest(".bg-clip-text");
+          if (clipped && element.contains(clipped)) {
+            if (!units.includes(clipped as HTMLElement)) units.push(clipped as HTMLElement);
+            return;
+          }
+          const fragment = document.createDocumentFragment();
+          node.textContent.split(/(\s+)/).forEach((part) => {
+            if (!part) return;
+            if (/^\s+$/.test(part)) {
+              fragment.appendChild(document.createTextNode(part));
+              return;
+            }
+            const span = document.createElement("span");
+            span.className = "motion-word";
+            span.textContent = part;
+            fragment.appendChild(span);
+            units.push(span);
+          });
+          node.replaceWith(fragment);
+        });
+        return { element, units };
+      }),
+    );
+
+    // 4. Repli du dézoom des images (sans animation-timeline)
+    const timelineSupported =
+      typeof CSS !== "undefined" && CSS.supports?.("animation-timeline: view()");
+    const fallbackMedia = timelineSupported
+      ? []
+      : Array.from(document.querySelectorAll<HTMLElement>("[data-motion-media]"));
+
+    let scrollFrame = 0;
+    const onScrollFrame = () => {
+      scrollFrame = 0;
+      const vh = window.innerHeight;
+
+      if (bar) {
+        const max = document.documentElement.scrollHeight - vh;
+        bar.style.transform = `scaleX(${max > 0 ? clamp01(window.scrollY / max) : 0})`;
+      }
+
+      if (stackQuery.matches) {
+        stacks.forEach((stack) => {
+          const cards = (Array.from(stack.children) as HTMLElement[]).filter((card) => card.getClientRects().length);
+          cards.forEach((card, index) => {
+            const next = cards[index + 1];
+            if (!next) return;
+            const rect = card.getBoundingClientRect();
+            const covered = clamp01((rect.bottom - next.getBoundingClientRect().top) / rect.height);
+            card.style.scale = String(1 - covered * 0.07);
+          });
+        });
+      }
+
+      wordGroups.forEach(({ element, units }) => {
+        const rect = element.getBoundingClientRect();
+        if (rect.bottom < 0 || rect.top > vh) return;
+        const progress = clamp01((vh * 0.88 - rect.top) / (vh * 0.88 - vh * 0.32));
+        const lit = progress * units.length;
+        units.forEach((unit, index) => {
+          unit.style.opacity = String(0.16 + 0.84 * clamp01(lit - index));
+        });
+      });
+
+      fallbackMedia.forEach((media) => {
+        const rect = media.getBoundingClientRect();
+        if (rect.bottom < 0 || rect.top > vh) return;
+        const progress = clamp01((vh - rect.top) / (vh * 0.5 + rect.height * 0.5));
+        media.style.transform = `scale(${1.12 - 0.12 * progress})`;
+      });
+    };
+    const requestScrollFrame = () => {
+      if (!scrollFrame) scrollFrame = requestAnimationFrame(onScrollFrame);
+    };
+    onScrollFrame();
+    window.addEventListener("scroll", requestScrollFrame, { passive: true });
+    window.addEventListener("resize", requestScrollFrame, { passive: true });
+
     return () => {
+      window.removeEventListener("scroll", requestScrollFrame);
+      window.removeEventListener("resize", requestScrollFrame);
+      stackQuery.removeEventListener("change", applyStacks);
+      if (scrollFrame) cancelAnimationFrame(scrollFrame);
+      bar?.remove();
+      stackCards().forEach((card) => {
+        ["position", "top", "scale", "transform-origin"].forEach((property) => card.style.removeProperty(property));
+      });
+      wordGroups.forEach(({ element, units }) => {
+        units.forEach((unit) => unit.style.removeProperty("opacity"));
+        element.querySelectorAll(".motion-word").forEach((span) => span.replaceWith(span.textContent ?? ""));
+        element.normalize();
+      });
+      fallbackMedia.forEach((media) => media.style.removeProperty("transform"));
       observer.disconnect();
       pending.forEach((_, element) => element.removeAttribute("data-reveal-pending"));
       pending.clear();

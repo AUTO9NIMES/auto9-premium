@@ -249,3 +249,21 @@
     }
   }
 }
+
+/* Jauge de lecture : fin trait émeraude en haut de l'écran (créée par SiteMotion). */
+.motion-progress {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 60;
+  height: 2px;
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  background: linear-gradient(90deg, var(--accent-deep), var(--accent), var(--accent-soft));
+  box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.6);
+  pointer-events: none;
+}
+
+/* Texte qui s'allume mot à mot : transition douce entre deux images. */
+.motion-word {
+  transition: opacity 0.25s linear;
+}

@@ -423,7 +423,7 @@ export function Services() {
       </div>
 
       <div ref={stage} className={styles.fixedStage}>
-        <div className={styles.primaryGrid}>
+        <div className={styles.primaryGrid} data-motion-stack>
           {primaryServices.map((service) =>
             renderCard(service, service.id === "duo"),
           )}

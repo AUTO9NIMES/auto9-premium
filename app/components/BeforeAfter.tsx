@@ -21,7 +21,7 @@ export function BeforeAfter() {
             </h2>
           </div>
 
-          <p className="max-w-xl text-[15px] leading-7 text-white/48 lg:justify-self-end lg:text-right">
+          <p data-motion-words className="max-w-xl text-[15px] leading-7 text-white/48 lg:justify-self-end lg:text-right">
             Deux images, aucun discours inutile : le soin apporté aux détails se voit directement sur le résultat final.
           </p>
         </div>

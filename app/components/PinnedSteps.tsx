@@ -81,7 +81,7 @@ export function PinnedSteps({ steps, heading }: { steps: Step[]; heading: ReactN
           </div>
         </div>
 
-        <div className={styles.deck}>
+        <div className={styles.deck} data-motion-stack>
           {steps.map((step, index) => (
             <article
               key={step.number}
