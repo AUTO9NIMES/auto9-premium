@@ -6,7 +6,7 @@ import { SiteMotion } from "../components/SiteMotion";
 
 export default function DemandeSpecialePage() {
   return (
-    <main data-motion-site className="min-h-screen bg-forest text-white">
+    <main data-motion-site data-backdrop="deep" className="min-h-screen bg-forest text-white">
       <SiteMotion />
       <Suspense
         fallback={

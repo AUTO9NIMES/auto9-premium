@@ -264,7 +264,7 @@ export function SpecialRequestForm() {
 
           {/* HALO INTERNE */}
 
-          <div className="pointer-events-none absolute -right-32 -top-32 h-80 w-80 rounded-full bg-accent/15 blur-[100px]" />
+          <div className="pointer-events-none absolute -right-32 -top-32 h-80 w-80 rounded-full bg-accent/[0.05] blur-[100px]" />
 
           <div className="relative">
 

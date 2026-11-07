@@ -41,7 +41,7 @@ function formatDate(value?: string | null): string | null {
 
 function UnavailableState() {
   return (
-    <main data-motion-site className="flex min-h-screen items-center justify-center bg-forest px-6 text-white">
+    <main data-motion-site data-backdrop="deep" className="flex min-h-screen items-center justify-center bg-forest px-6 text-white">
       <SiteMotion />
       <div className="max-w-md text-center">
         <p className="text-xs font-black uppercase tracking-[0.3em] text-white/40">
@@ -91,7 +91,7 @@ export default async function PublicQuotePage({
   const isAccepted = quote.status === "ACCEPTED";
 
   return (
-    <main data-motion-site className="min-h-screen bg-forest px-5 py-10 text-white md:px-12 md:py-16">
+    <main data-motion-site data-backdrop="deep" className="min-h-screen bg-forest px-5 py-10 text-white md:px-12 md:py-16">
       <SiteMotion />
       <div className="mx-auto max-w-3xl">
         <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-[linear-gradient(145deg,rgba(var(--accent-rgb),.12),rgba(255,255,255,.03))]">

@@ -76,7 +76,7 @@ export default async function SubscriptionBookingPage({
 
   if (sent) {
     return (
-      <main data-motion-site className="min-h-screen bg-forest px-5 py-12 text-white">
+      <main data-motion-site data-backdrop="deep" className="min-h-screen bg-forest px-5 py-12 text-white">
         <SiteMotion />
         <div className="mx-auto max-w-2xl">
           <div className="rounded-3xl border border-emerald-300/20 bg-emerald-300/[0.05] p-7 md:p-10">
@@ -92,7 +92,7 @@ export default async function SubscriptionBookingPage({
   }
 
   return (
-    <main data-motion-site className="min-h-screen bg-forest px-5 py-10 text-white md:py-16">
+    <main data-motion-site data-backdrop="deep" className="min-h-screen bg-forest px-5 py-10 text-white md:py-16">
       <SiteMotion />
       <div className="mx-auto max-w-2xl">
         <div className="mb-8">
