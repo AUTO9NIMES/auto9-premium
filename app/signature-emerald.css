@@ -2,12 +2,9 @@
 
 /* AUTO 9 — Signature Emeraude. Design layer only; components and workflows unchanged. */
 #auto9-home {
-  --auto9-forest: #071710;
-  --auto9-deep: #103b2a;
-  --auto9-emerald: #31bf8a;
-  --auto9-silver: #cbd7cf;
-  background-color: var(--auto9-forest);
-  color: #f2f6f1;
+  /* Couleurs : voir les tokens dans app/globals.css */
+  background-color: var(--bg-base);
+  color: var(--text);
   font-family: "Manrope", Arial, sans-serif;
   isolation: isolate;
 }
@@ -21,14 +18,14 @@
     radial-gradient(ellipse 60% 38% at 83% 9%, rgba(29,112,75,.27),transparent 76%),
     radial-gradient(ellipse 58% 42% at 6% 68%,rgba(23,91,64,.22),transparent 75%),
     repeating-linear-gradient(119deg,transparent 0px,rgba(108,210,160,.014) 2px,transparent 5px,transparent 38px),
-    #071710;
+    var(--bg-base);
 }
 #auto9-home h1,#auto9-home h2,#auto9-home h3 {
   font-family: "Archivo Black","Manrope",Arial,sans-serif;
   letter-spacing: -.055em;
 }
 #auto9-home [data-home-hero]{
-  background: #071710;
+  background: var(--bg-base);
 }
 #auto9-home [data-home-hero]::after {
   content:"";
@@ -43,7 +40,7 @@
   filter: saturate(.79) contrast(1.15);
 }
 #auto9-home a,#auto9-home button{transition: filter .25s ease,border-color .25s ease,color .25s ease,box-shadow .25s ease,transform .25s ease;}
-#auto9-home a:focus-visible,#auto9-home button:focus-visible{outline:2px solid #49dba2;outline-offset:3px;}
+#auto9-home a:focus-visible,#auto9-home button:focus-visible{outline:2px solid var(--accent);outline-offset:3px;}
 #auto9-home a[href="/devis"],#auto9-home a[href^="/devis?"]{
   box-shadow: 0 10px 34px rgba(36, 159, 104,.17);
 }
@@ -55,8 +52,8 @@
 #auto9-home [data-motion-reveal] h2{
   text-transform:uppercase;
 }
-#auto9-home footer{background:#071710;}
-#auto9-home ::selection{color:#06170e;background:#83e7b6;}
+#auto9-home footer{background:var(--bg-base);}
+#auto9-home ::selection{color:var(--on-metal);background:var(--accent-soft);}
 @media(prefers-reduced-motion:reduce){
   #auto9-home a,#auto9-home button{transition:none!important;}
 }
