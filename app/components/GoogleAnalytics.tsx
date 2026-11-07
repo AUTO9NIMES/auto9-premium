@@ -105,7 +105,7 @@ export default function GoogleAnalytics() {
               }}
             >
               <div
-                className="mx-auto max-w-4xl rounded-3xl border border-white/15 bg-[#080a0f]/95 p-5 text-white shadow-2xl backdrop-blur-2xl sm:p-6"
+                className="mx-auto max-w-4xl rounded-3xl border border-white/15 bg-[#080f0c]/95 p-5 text-white shadow-2xl backdrop-blur-2xl sm:p-6"
                 style={{
                   pointerEvents: "auto",
                   touchAction: "manipulation",
@@ -113,7 +113,7 @@ export default function GoogleAnalytics() {
               >
                 <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                   <div className="max-w-2xl">
-                    <p className="text-xs font-black uppercase tracking-[0.28em] text-[#7DB7FF]">
+                    <p className="text-xs font-black uppercase tracking-[0.28em] text-accent-soft">
                       Vos préférences
                     </p>
 
@@ -129,7 +129,7 @@ export default function GoogleAnalytics() {
 
                     <Link
                       href="/politique-confidentialite"
-                      className="mt-3 inline-block text-xs font-bold text-[#7DB7FF] underline underline-offset-4"
+                      className="mt-3 inline-block text-xs font-bold text-accent-soft underline underline-offset-4"
                     >
                       Consulter la politique de confidentialité
                     </Link>
@@ -152,7 +152,7 @@ export default function GoogleAnalytics() {
                     <button
                       type="button"
                       onClick={acceptCookies}
-                      className="rounded-full bg-[#0057FF] px-5 py-3 text-xs font-black uppercase tracking-[0.14em] text-white shadow-[0_12px_30px_rgba(0,87,255,.35)] transition hover:bg-[#1767ff]"
+                      className="rounded-full bg-metal px-5 py-3 text-xs font-black uppercase tracking-[0.14em] text-on-metal shadow-[0_12px_30px_rgba(var(--metal-rgb),.22)] transition hover:brightness-105"
                       style={{
                         pointerEvents: "auto",
                         touchAction: "manipulation",
@@ -171,7 +171,7 @@ export default function GoogleAnalytics() {
             <button
               type="button"
               onClick={reopenSettings}
-              className="fixed rounded-full border border-white/10 bg-[#080a0f]/85 px-3 py-2 text-[10px] font-bold text-white/50 backdrop-blur-xl transition hover:text-white"
+              className="fixed rounded-full border border-white/10 bg-[#080f0c]/85 px-3 py-2 text-[10px] font-bold text-white/50 backdrop-blur-xl transition hover:text-white"
               style={{
                 bottom: "110px",
                 left: "12px",

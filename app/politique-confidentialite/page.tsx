@@ -20,7 +20,7 @@ export default function PolitiqueConfidentialitePage() {
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
           <Link
             href="/"
-            className="text-xs font-black uppercase tracking-[0.3em] text-white/50 transition hover:text-[#7DB7FF]"
+            className="text-xs font-black uppercase tracking-[0.3em] text-white/50 transition hover:text-accent-soft"
           >
             ← Retour au site
           </Link>
@@ -32,11 +32,11 @@ export default function PolitiqueConfidentialitePage() {
       </header>
 
       <section className="relative overflow-hidden px-6 py-16 md:px-12 md:py-24">
-        <div className="pointer-events-none absolute left-1/2 top-10 h-96 w-96 -translate-x-1/2 rounded-full bg-[#0057FF]/10 blur-[130px]" />
+        <div className="pointer-events-none absolute left-1/2 top-10 h-96 w-96 -translate-x-1/2 rounded-full bg-accent/10 blur-[130px]" />
 
         <div className="relative mx-auto max-w-6xl">
           <div className="max-w-4xl">
-            <p className="text-xs font-black uppercase tracking-[0.45em] text-[#7DB7FF]">
+            <p className="text-xs font-black uppercase tracking-[0.45em] text-accent-soft">
               Protection de vos données
             </p>
 
@@ -85,7 +85,7 @@ export default function PolitiqueConfidentialitePage() {
                   value={
                     <a
                       href="mailto:contact.nicolas.auto9@gmail.com"
-                      className="break-all transition hover:text-[#7DB7FF]"
+                      className="break-all transition hover:text-accent-soft"
                     >
                       contact.nicolas.auto9@gmail.com
                     </a>
@@ -97,7 +97,7 @@ export default function PolitiqueConfidentialitePage() {
                   value={
                     <a
                       href="tel:+33659762992"
-                      className="transition hover:text-[#7DB7FF]"
+                      className="transition hover:text-accent-soft"
                     >
                       06 59 76 29 92
                     </a>
@@ -158,7 +158,7 @@ export default function PolitiqueConfidentialitePage() {
                 />
               </div>
 
-              <div className="mt-6 rounded-2xl border border-[#0057FF]/25 bg-[#0057FF]/10 p-5">
+              <div className="mt-6 rounded-2xl border border-accent/25 bg-accent/10 p-5">
                 <p className="text-sm leading-7 text-white/70">
                   Les photos du véhicule sont facultatives. Il est recommandé
                   de ne pas transmettre de photographie montrant une personne,
@@ -307,7 +307,7 @@ export default function PolitiqueConfidentialitePage() {
                   href="https://vercel.com/legal/privacy-policy"
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center justify-center rounded-full border border-white/15 px-6 py-4 text-xs font-black uppercase tracking-[0.18em] text-white/70 transition hover:border-[#7DB7FF] hover:text-[#7DB7FF]"
+                  className="flex items-center justify-center rounded-full border border-white/15 px-6 py-4 text-xs font-black uppercase tracking-[0.18em] text-white/70 transition hover:border-accent-soft hover:text-accent-soft"
                 >
                   Confidentialité Vercel
                 </a>
@@ -316,7 +316,7 @@ export default function PolitiqueConfidentialitePage() {
                   href="https://resend.com/legal/privacy-policy"
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center justify-center rounded-full border border-white/15 px-6 py-4 text-xs font-black uppercase tracking-[0.18em] text-white/70 transition hover:border-[#7DB7FF] hover:text-[#7DB7FF]"
+                  className="flex items-center justify-center rounded-full border border-white/15 px-6 py-4 text-xs font-black uppercase tracking-[0.18em] text-white/70 transition hover:border-accent-soft hover:text-accent-soft"
                 >
                   Confidentialité Resend
                 </a>
@@ -402,14 +402,14 @@ export default function PolitiqueConfidentialitePage() {
                 />
               </div>
 
-              <div className="mt-7 rounded-2xl border border-[#0057FF]/25 bg-[#0057FF]/10 p-6">
+              <div className="mt-7 rounded-2xl border border-accent/25 bg-accent/10 p-6">
                 <p className="text-sm leading-7 text-white/70">
                   Pour exercer vos droits, envoyez votre demande à :
                 </p>
 
                 <a
                   href="mailto:contact.nicolas.auto9@gmail.com"
-                  className="mt-3 inline-flex break-all text-lg font-black text-[#7DB7FF] transition hover:text-white"
+                  className="mt-3 inline-flex break-all text-lg font-black text-accent-soft transition hover:text-white"
                 >
                   contact.nicolas.auto9@gmail.com
                 </a>
@@ -435,7 +435,7 @@ export default function PolitiqueConfidentialitePage() {
                 href="https://www.cnil.fr/fr/plaintes"
                 target="_blank"
                 rel="noreferrer"
-                className="mt-7 inline-flex rounded-full border border-[#0057FF]/40 bg-[#0057FF]/10 px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-[#7DB7FF] transition hover:border-[#0057FF] hover:bg-[#0057FF]/20 hover:text-white"
+                className="mt-7 inline-flex rounded-full border border-accent/40 bg-accent/10 px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-accent-soft transition hover:border-accent hover:bg-accent/20 hover:text-white"
               >
                 Accéder au site de la CNIL →
               </a>
@@ -499,8 +499,8 @@ export default function PolitiqueConfidentialitePage() {
               </p>
             </PrivacySection>
 
-            <div className="rounded-[2rem] border border-[#0057FF]/25 bg-[#0057FF]/10 p-6 md:p-8">
-              <p className="text-xs font-black uppercase tracking-[0.3em] text-[#7DB7FF]">
+            <div className="rounded-[2rem] border border-accent/25 bg-accent/10 p-6 md:p-8">
+              <p className="text-xs font-black uppercase tracking-[0.3em] text-accent-soft">
                 Besoin d’une précision ?
               </p>
 
@@ -517,14 +517,14 @@ export default function PolitiqueConfidentialitePage() {
               <div className="mt-7 flex flex-col gap-3 sm:flex-row">
                 <a
                   href="mailto:contact.nicolas.auto9@gmail.com"
-                  className="flex items-center justify-center rounded-full bg-[#0057FF] px-7 py-4 text-xs font-black uppercase tracking-[0.2em] text-white transition hover:scale-[1.02] hover:bg-[#1768FF]"
+                  className="flex items-center justify-center rounded-full bg-metal px-7 py-4 text-xs font-black uppercase tracking-[0.2em] text-on-metal transition hover:scale-[1.02] hover:brightness-105"
                 >
                   Envoyer un e-mail
                 </a>
 
                 <a
                   href="tel:+33659762992"
-                  className="flex items-center justify-center rounded-full border border-white/15 px-7 py-4 text-xs font-black uppercase tracking-[0.2em] text-white/75 transition hover:border-[#7DB7FF] hover:text-[#7DB7FF]"
+                  className="flex items-center justify-center rounded-full border border-white/15 px-7 py-4 text-xs font-black uppercase tracking-[0.2em] text-white/75 transition hover:border-accent-soft hover:text-accent-soft"
                 >
                   Appeler AUTO 9
                 </a>
@@ -551,7 +551,7 @@ function PrivacySection({
   return (
     <section className="rounded-[2rem] border border-white/10 bg-[linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.018))] p-6 md:p-9">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-[#0057FF]/35 bg-[#0057FF]/10 text-xs font-black text-[#7DB7FF]">
+        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-accent/35 bg-accent/10 text-xs font-black text-accent-soft">
           {number}
         </span>
 
@@ -576,7 +576,7 @@ function InfoRow({
 }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-black/20 p-5">
-      <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[#7DB7FF]">
+      <p className="text-[10px] font-black uppercase tracking-[0.25em] text-accent-soft">
         {label}
       </p>
 
@@ -608,7 +608,7 @@ function DataCard({
           >
             <span
               aria-hidden="true"
-              className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#7DB7FF]"
+              className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent-soft"
             />
 
             <span>{item}</span>
@@ -645,7 +645,7 @@ function PurposeRow({
       </div>
 
       <div>
-        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#7DB7FF]">
+        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-accent-soft">
           Base juridique
         </p>
 
@@ -666,7 +666,7 @@ function ProviderCard({
 }) {
   return (
     <article className="rounded-2xl border border-white/10 bg-black/20 p-5">
-      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#7DB7FF]">
+      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-accent-soft">
         Prestataire
       </p>
 
@@ -701,7 +701,7 @@ function RetentionRow({
       </div>
 
       <div>
-        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#7DB7FF]">
+        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-accent-soft">
           Durée
         </p>
 
@@ -722,7 +722,7 @@ function RightCard({
 }) {
   return (
     <article className="rounded-2xl border border-white/10 bg-black/20 p-5">
-      <h3 className="text-base font-black uppercase tracking-[-0.02em] text-[#7DB7FF]">
+      <h3 className="text-base font-black uppercase tracking-[-0.02em] text-accent-soft">
         {title}
       </h3>
 

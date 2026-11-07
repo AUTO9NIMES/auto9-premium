@@ -91,9 +91,9 @@ export default async function PublicQuotePage({
   return (
     <main className="min-h-screen bg-[#050608] px-5 py-10 text-white md:px-12 md:py-16">
       <div className="mx-auto max-w-3xl">
-        <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-[linear-gradient(145deg,rgba(0,87,255,.12),rgba(255,255,255,.03))]">
+        <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-[linear-gradient(145deg,rgba(var(--accent-rgb),.12),rgba(255,255,255,.03))]">
           <div className="border-b border-white/10 p-7 md:p-10">
-            <p className="text-xs font-black uppercase tracking-[0.35em] text-[#7DB7FF]">
+            <p className="text-xs font-black uppercase tracking-[0.35em] text-accent-soft">
               {quote.businessName || site.name}
             </p>
             <h1 className="mt-4 text-4xl font-black uppercase tracking-[-0.04em] md:text-5xl">
@@ -133,9 +133,9 @@ export default async function PublicQuotePage({
               </div>
             )}
 
-            <div className="flex flex-wrap items-end justify-between gap-4 rounded-2xl border border-[#0057FF]/30 bg-[#0057FF]/10 p-6">
+            <div className="flex flex-wrap items-end justify-between gap-4 rounded-2xl border border-accent/30 bg-accent/10 p-6">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#7DB7FF]">
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-accent-soft">
                   Total
                 </p>
                 <p className="mt-2 text-4xl font-black tracking-tight">
@@ -166,7 +166,7 @@ export default async function PublicQuotePage({
               >
                 <button
                   type="submit"
-                  className="w-full rounded-full border border-[#0057FF] bg-[#0057FF] px-7 py-5 text-xs font-black uppercase tracking-[0.25em] text-white shadow-[0_0_28px_rgba(0,87,255,.35)] transition hover:brightness-110"
+                  className="w-full rounded-full border border-white/40 bg-metal px-7 py-5 text-xs font-black uppercase tracking-[0.25em] text-on-metal shadow-[0_0_28px_rgba(var(--metal-rgb),.22)] transition hover:brightness-110"
                 >
                   Accepter le devis
                 </button>
@@ -181,7 +181,7 @@ export default async function PublicQuotePage({
 
             <p className="text-center text-xs leading-relaxed text-white/35">
               Une question ?{" "}
-              <a href={site.phoneHref} className="text-[#7DB7FF] hover:text-white">
+              <a href={site.phoneHref} className="text-accent-soft hover:text-white">
                 {site.phone}
               </a>{" "}
               · {site.name}

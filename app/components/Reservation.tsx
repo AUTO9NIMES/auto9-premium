@@ -9,10 +9,10 @@ export function Reservation() {
       <div className="pointer-events-none absolute left-1/2 top-10 h-[420px] w-[680px] -translate-x-1/2 rounded-full bg-accent/[0.08] blur-[150px]" />
 
       <div className="relative mx-auto max-w-6xl">
-        <div className="overflow-hidden rounded-[30px] border border-accent-soft/20 bg-[linear-gradient(145deg,#111a27_0%,#0a1018_42%,#08090c_100%)] shadow-[0_30px_90px_rgba(0,0,0,.38)] sm:rounded-[36px]">
+        <div className="overflow-hidden rounded-[30px] border border-accent-soft/20 bg-[linear-gradient(145deg,#11271e_0%,#0a1812_42%,#08090c_100%)] shadow-[0_30px_90px_rgba(0,0,0,.38)] sm:rounded-[36px]">
           <div className="relative p-7 sm:p-10 lg:p-14">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_88%_4%,rgba(var(--accent-rgb),.12),transparent_36%)]" />
-            <div className="pointer-events-none absolute inset-x-12 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(185,216,250,.45),transparent)]" />
+            <div className="pointer-events-none absolute inset-x-12 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(var(--metal-rgb),.45),transparent)]" />
 
             <div className="relative">
               <p className="text-[11px] font-black uppercase tracking-[0.42em] text-accent sm:text-xs">
