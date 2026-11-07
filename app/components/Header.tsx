@@ -6,7 +6,7 @@ export function Header() {
     <nav className="relative z-20 flex items-center justify-between px-6 py-5 md:px-12">
       <Link href="/" aria-label="Retour à l'accueil AUTO 9">
         <img
-          src="/brand/auto9-logo.png"
+          src="/brand/auto9-logo.webp"
           alt="AUTO 9"
           className="h-[72px] w-auto object-contain md:h-20"
         />

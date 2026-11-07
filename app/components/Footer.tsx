@@ -57,7 +57,7 @@ export function Footer() {
         <div className="mt-16 grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
           <div>
             <img
-              src="/brand/auto9-logo.png"
+              src="/brand/auto9-logo.webp"
               alt="AUTO 9"
               className="h-16 w-auto opacity-95"
             />
