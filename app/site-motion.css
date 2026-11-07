@@ -56,11 +56,11 @@
 }
 
 /*
- * Fond Signature : fibre de carbone tissée (sergé 2x2), fixe derrière toute la page, éclairée
- * d'une lumière douce et d'une lueur émeraude diffuse : l'habitacle d'une automobile de luxe.
- * Les sections sont transparentes et « flottent » dessus. Tuile générée pour AUTO 9
- * (public/signature/carbon-tile.png, 96 px affichée à 32 px, 24 px sur mobile : nette sur écrans haute densité).
- * [data-backdrop="deep"] (configurateur, devis) : carbone beaucoup plus sombre, sans lueur.
+ * Fond Signature : cuir Nappa noir, fixe derrière toute la page, éclairé d'une lumière douce
+ * et d'une lueur émeraude diffuse : l'habitacle d'une automobile de luxe.
+ * Les sections sont transparentes et « flottent » dessus. Tuile de grain générée pour AUTO 9
+ * (public/signature/leather-tile.webp|png, 256 px affichée à 128 px : nette sur écrans haute densité).
+ * [data-backdrop="deep"] (configurateur, devis) : cuir beaucoup plus sombre, sans lueur.
  */
 [data-motion-site] {
   position: relative;
@@ -82,24 +82,17 @@
     radial-gradient(ellipse 48% 42% at 80% 14%, rgba(var(--accent-rgb), 0.13), transparent 72%),
     /* lumière douce venue d'en haut à droite */
     radial-gradient(ellipse 75% 65% at 72% 8%, rgba(255, 255, 255, 0.05), transparent 70%),
-    /* ombre : le carbone s'éteint loin de la lumière */
-    radial-gradient(ellipse 115% 95% at 70% 6%, transparent 30%, rgba(0, 0, 0, 0.72) 100%),
-    /* le carbone se devine plus qu'il ne se voit */
-    linear-gradient(rgba(5, 9, 8, 0.5), rgba(5, 9, 8, 0.5)),
-    url("/signature/carbon-tile.png");
-  background-size: auto, auto, auto, auto, 32px 32px;
-}
-@media (max-width: 767px) {
-  [data-motion-site]::before {
-    background-size: auto, auto, auto, auto, 24px 24px;
-  }
+    /* ombre : le cuir s'éteint loin de la lumière */
+    radial-gradient(ellipse 115% 95% at 70% 6%, transparent 30%, rgba(0, 0, 0, 0.7) 100%),
+    image-set(url("/signature/leather-tile.webp") type("image/webp"), url("/signature/leather-tile.png") type("image/png"));
+  background-size: auto, auto, auto, 128px 128px;
 }
 [data-backdrop="deep"]::before {
   background-image:
     radial-gradient(ellipse 80% 70% at 70% 0%, rgba(255, 255, 255, 0.025), transparent 70%),
-    linear-gradient(rgba(0, 0, 0, 0.74), rgba(0, 0, 0, 0.74)),
-    url("/signature/carbon-tile.png");
-  background-size: auto, auto, 32px 32px;
+    linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
+    image-set(url("/signature/leather-tile.webp") type("image/webp"), url("/signature/leather-tile.png") type("image/png"));
+  background-size: auto, auto, 128px 128px;
 }
 /* Voile de lisibilité : assombrit légèrement le bas et les bords, là où le texte défile. */
 [data-motion-site]::after {
@@ -115,7 +108,7 @@
       animation-timeline: scroll(root);
     }
   }
-  /* Reflet chrome neutre qui glisse lentement sur le carbone (pas sur le configurateur). */
+  /* Reflet chrome neutre qui glisse lentement sur le cuir (pas sur le configurateur). */
   [data-motion-site]:not([data-backdrop="deep"])::after {
     background:
       linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.035) 50%, transparent 60%),
@@ -189,7 +182,7 @@
   }
 }
 
-/* Dérive verticale seule (pas de zoom) : le tissage reste net, sans moiré. */
+/* Dérive verticale seule (pas de zoom) : le grain reste net, sans moiré. */
 @keyframes motion-gem-drift {
   from {
     transform: translate3d(0, 0, 0);
