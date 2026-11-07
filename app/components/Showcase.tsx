@@ -1,7 +1,7 @@
 import Link from "next/link";
 export function Showcase() {
   return (
-    <section className="relative overflow-hidden bg-[#050608] px-6 py-24 text-white md:px-12">
+    <section className="relative overflow-hidden bg-[#071710] px-6 py-24 text-white md:px-12">
       <div className="absolute right-0 top-24 h-[28rem] w-[28rem] rounded-full bg-[#B8C7D1]/5 blur-[150px]" />
 
       <div className="relative mx-auto max-w-7xl">
@@ -48,7 +48,7 @@ export function Showcase() {
             <div className="mt-10 flex flex-wrap gap-4">
               <Link
                 href="/devis"
-                className="rounded-full bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] text-[#050608] shadow-[0_18px_45px_rgba(184,199,209,.18)] px-7 py-4 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
+                className="rounded-full bg-[linear-gradient(135deg,#F4F7F8,#B8C7D1,#6F7F89)] text-[#071710] shadow-[0_18px_45px_rgba(184,199,209,.18)] px-7 py-4 text-xs font-black uppercase tracking-[0.25em] transition hover:scale-105"
               >
                 Configurer ma prestation →
               </Link>
