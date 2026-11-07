@@ -84,7 +84,7 @@
   border: 1px solid rgba(67, 183, 134, .27);
   border-radius: 30px;
   background:
-    linear-gradient(180deg, rgba(6,16,25,.98), rgba(2,8,14,.99));
+    linear-gradient(180deg, rgba(12,72,28,.98), rgba(11,66,22,.99));
   box-shadow:
     0 30px 85px rgba(0,0,0,.58),
     inset 0 1px 0 rgba(255,255,255,.025);
@@ -154,7 +154,7 @@
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(to bottom, rgba(0,0,0,.02) 0%, rgba(0,0,0,0) 48%, rgba(0,0,0,.1) 68%, rgba(1,6,12,.8) 94%, rgba(1,6,12,.97) 100%);
+    linear-gradient(to bottom, rgba(0,0,0,.02) 0%, rgba(0,0,0,0) 48%, rgba(0,0,0,.1) 68%, rgba(10,65,21,.8) 94%, rgba(10,65,21,.97) 100%);
   pointer-events: none;
 }
 
@@ -169,7 +169,7 @@
   padding: 5px 12px 5px 14px;
   border: 1px solid rgba(49, 191, 138, .66);
   border-radius: 999px;
-  background: rgba(5,18,29,.72);
+  background: rgba(12,74,30,.72);
   color: #7addb3;
   font-size: 10px;
   font-weight: 850;
@@ -193,7 +193,7 @@
   padding: 0 0 0 3px;
   border: 1px solid rgba(49,191,138,.75);
   border-radius: 50%;
-  background: rgba(4,15,25,.67);
+  background: rgba(11,71,28,.67);
   color: #fff;
   font: inherit;
   font-size: 17px;
@@ -212,7 +212,7 @@
   padding: 5px 8px;
   border: 1px solid rgba(255,255,255,.10);
   border-radius: 8px;
-  background: rgba(4,10,16,.70);
+  background: rgba(11,68,23,.70);
   color: #f4f8fb;
   font-size: 11px;
   font-weight: 700;
@@ -263,7 +263,7 @@
 
 .priceLabel {
   display: block;
-  color: #67c1ff;
+  color: #35d698;
   font-size: 13px;
   font-weight: 700;
   line-height: 1.1;
@@ -286,8 +286,8 @@
   letter-spacing: -.055em;
   white-space: nowrap;
   text-shadow:
-    0 0 12px rgba(113,203,255,.58),
-    0 0 28px rgba(38,151,255,.26);
+    0 0 12px rgba(50,212,143,.58),
+    0 0 28px rgba(23,173,143,.26);
 }
 
 .priceLine {
@@ -295,8 +295,8 @@
   height: 2px;
   margin-top: 7px;
   border-radius: 999px;
-  background: linear-gradient(90deg, rgba(91,198,255,.95), rgba(91,198,255,.18) 72%, transparent);
-  box-shadow: 0 0 10px rgba(64,184,255,.22);
+  background: linear-gradient(90deg, rgba(42,209,143,.95), rgba(42,209,143,.18) 72%, transparent);
+  box-shadow: 0 0 10px rgba(32,198,143,.22);
 }
 
 .card[data-service="polissage"] .priceValue,
@@ -305,8 +305,8 @@
   font-size: 38px;
   letter-spacing: -.04em;
   text-shadow:
-    0 0 10px rgba(113,203,255,.36),
-    0 0 22px rgba(38,151,255,.16);
+    0 0 10px rgba(50,212,143,.36),
+    0 0 22px rgba(23,173,143,.16);
 }
 
 .features {
@@ -323,13 +323,13 @@
   align-items: center;
   gap: 7px;
   padding: 8px 8px;
-  border: 1px solid rgba(112,192,255,.23);
+  border: 1px solid rgba(49,204,143,.23);
   border-radius: 14px;
   background:
-    linear-gradient(180deg, rgba(8,24,38,.82), rgba(3,11,19,.88));
+    linear-gradient(180deg, rgba(13,78,34,.82), rgba(11,68,25,.88));
   color: #e5f0f8;
   box-shadow:
-    inset 0 0 18px rgba(33,145,255,.035),
+    inset 0 0 18px rgba(22,169,143,.035),
     0 5px 16px rgba(0,0,0,.12);
 }
 
@@ -338,7 +338,7 @@
   width: 24px;
   height: 24px;
   place-items: center;
-  color: #78c9ff;
+  color: #3cdd98;
 }
 
 .featureIcon svg {
@@ -362,10 +362,10 @@
   height: 56px;
   margin-top: auto;
   padding: 0 18px;
-  border: 1px solid rgba(79,189,255,.83);
+  border: 1px solid rgba(38,202,143,.83);
   border-radius: 999px;
   background:
-    linear-gradient(180deg, rgba(7,27,44,.88), rgba(2,10,18,.96));
+    linear-gradient(180deg, rgba(12,80,37,.88), rgba(11,68,24,.96));
   color: #fff;
   font: inherit;
   font-size: 14px;
@@ -373,28 +373,28 @@
   letter-spacing: .015em;
   text-transform: uppercase;
   box-shadow:
-    inset 0 0 28px rgba(26,138,255,.13),
-    0 0 24px rgba(26,138,255,.09);
+    inset 0 0 28px rgba(19,164,143,.13),
+    0 0 24px rgba(19,164,143,.09);
   cursor: pointer;
   transition: background .25s ease, box-shadow .25s ease, transform .25s ease;
 }
 
 .active .action {
   box-shadow:
-    inset 0 0 30px rgba(26,138,255,.18),
-    0 0 30px rgba(26,138,255,.16);
+    inset 0 0 30px rgba(19,164,143,.18),
+    0 0 30px rgba(19,164,143,.16);
 }
 
 .card:not(.active) .badge {
-  border-color: rgba(128,184,223,.38);
-  color: #87bde4;
+  border-color: rgba(55,198,127,.38);
+  color: #43d389;
 }
 
 .card:not(.active) .playButton {
   width: 44px;
   height: 44px;
-  border-color: rgba(111,177,223,.42);
-  background: rgba(6,15,24,.62);
+  border-color: rgba(49,193,127,.42);
+  background: rgba(12,71,27,.62);
 }
 
 .card:not(.active) .priceValue {
@@ -416,12 +416,12 @@
 }
 
 .card:not(.active) .featureIcon {
-  color: #8ba9bd;
+  color: #91bda5;
 }
 
 .card:not(.active) .action {
   height: 50px;
-  border-color: rgba(95,171,223,.48);
+  border-color: rgba(43,188,127,.48);
   font-size: 12px;
   box-shadow: none;
 }
@@ -434,14 +434,14 @@
   width: 56px;
   height: 56px;
   place-items: center;
-  border: 1px solid rgba(72,184,255,.72);
+  border: 1px solid rgba(35,198,143,.72);
   border-radius: 50%;
-  background: rgba(3,10,17,.84);
+  background: rgba(11,68,24,.84);
   color: #fff;
   font-size: 32px;
   box-shadow:
     inset 0 0 18px rgba(49,191,138,.06),
-    0 0 27px rgba(20,140,255,.20);
+    0 0 27px rgba(17,165,143,.20);
   cursor: pointer;
   touch-action: manipulation;
   pointer-events: auto;
@@ -464,7 +464,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  color: #8291a0;
+  color: #a2b9ac;
   font-size: 11px;
 }
 
@@ -475,8 +475,8 @@
   place-items: center;
   border: 1px solid rgba(255,255,255,.18);
   border-radius: 999px;
-  color: #c2d2df;
-  background: rgba(5,13,20,.48);
+  color: #d0e4d7;
+  background: rgba(12,70,25,.48);
 }
 
 .dots {
@@ -491,15 +491,15 @@
   padding: 0;
   border: 0;
   border-radius: 999px;
-  background: #314150;
+  background: #2a5140;
   cursor: pointer;
   transition: width .28s ease, background .28s ease, box-shadow .28s ease;
 }
 
 .dotActive {
   width: 28px;
-  background: #4eb1ff;
-  box-shadow: 0 0 12px #4eb1ff;
+  background: #31bf8a;
+  box-shadow: 0 0 12px #31bf8a;
 }
 
 .action:focus-visible,
@@ -512,21 +512,21 @@
 
 @media (hover: hover) {
   .arrow:hover {
-    background: rgba(10,34,56,.96);
-    box-shadow: 0 0 34px rgba(20,140,255,.28);
+    background: rgba(14,86,43,.96);
+    box-shadow: 0 0 34px rgba(17,165,143,.28);
   }
 
   .playButton:hover {
-    background: rgba(10,36,58,.86);
-    box-shadow: 0 0 26px rgba(20,140,255,.22);
+    background: rgba(14,87,44,.86);
+    box-shadow: 0 0 26px rgba(17,165,143,.22);
   }
 
   .action:hover {
     transform: translateY(-1px);
-    background: linear-gradient(180deg, rgba(13,45,72,.92), rgba(3,15,26,.98));
+    background: linear-gradient(180deg, rgba(15,94,51,.92), rgba(11,71,28,.98));
     box-shadow:
-      inset 0 0 28px rgba(26,138,255,.22),
-      0 0 34px rgba(26,138,255,.18);
+      inset 0 0 28px rgba(19,164,143,.22),
+      0 0 34px rgba(19,164,143,.18);
   }
 }
 
@@ -801,18 +801,18 @@
   left: 50%;
   transform: translateX(-50%);
   padding: 7px 13px;
-  border: 1px solid rgba(94, 196, 255, .7);
+  border: 1px solid rgba(43,207,143,.7);
   border-radius: 999px;
-  background: rgba(6, 37, 62, .88);
-  color: #a9dcff;
+  background: rgba(12,88,46,.88);
+  color: #51ed98;
   font-size: 9px;
   font-weight: 900;
   letter-spacing: .16em;
   text-transform: uppercase;
   white-space: nowrap;
   box-shadow:
-    0 0 24px rgba(20, 151, 255, .25),
-    inset 0 0 18px rgba(40, 158, 255, .10);
+    0 0 24px rgba(17,173,143,.25),
+    inset 0 0 18px rgba(24,179,143,.10);
   backdrop-filter: blur(10px);
 }
 
@@ -955,3 +955,15 @@
     height: 510px;
   }
 }
+
+/* Emerald cards: all service types (mobile and desktop) */
+.fixedCard{background:linear-gradient(164deg,#123428,#081911 88%);border-color:rgba(75,170,123,.32);box-shadow:0 24px 70px rgba(0,0,0,.52),inset 0 1px 0 rgba(169,239,196,.07)}
+.fixedCard.active{border-color:rgba(54,207,141,.62);box-shadow:0 28px 80px rgba(0,0,0,.56),0 0 34px rgba(37,173,112,.11)}
+.cardContent{background:transparent;color:#f2f5f1}
+.priceValue{color:#e7eee8}
+.priceLabel,.feature>span:last-child{color:#b3cabc}
+.featureIcon{color:#64d7a0}
+.action{border-color:rgba(67,198,139,.48);background:linear-gradient(140deg,#1c6545,#0b3423);color:#f1fff5}
+.popularBadge{background:#31bf8a;color:#04180e}
+.section{background:radial-gradient(ellipse at 46% 28%,rgba(42,134,87,.21),transparent 70%),#071710}
+.heading h2,.secondaryTitle{letter-spacing:-.06em}
