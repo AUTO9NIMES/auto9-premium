@@ -199,8 +199,9 @@ const premiumAddons: {
   {
     id: "phares",
     name: "Rénovation de phares",
-    price: 69,
-    label: "+69€",
+    // Prix de base = 1 optique ; le choix 1 / 2 optiques ajuste le prix (headlightPrices).
+    price: 40,
+    label: "Dès 40€",
     description:
       "Restauration des optiques ternis, jaunis ou opaques avec protection.",
   },
@@ -213,6 +214,83 @@ const premiumAddons: {
       "Remise en état esthétique via partenaire spécialisé selon les dégâts.",
   },
 ];
+
+// Rénovation de phares : même tarif que /devis-premium.
+const headlightPrices: Record<1 | 2, number> = { 1: 40, 2: 69 };
+
+const QUOTE_CONTACT_KEY = "auto9_quote_contact";
+
+type SavedQuoteContact = {
+  name: string;
+  phone: string;
+  email: string;
+  city: string;
+};
+
+// Coordonnées retenues sur l'appareil du client (case « Se souvenir »).
+// Lues à l'initialisation : les champs ne sont affichés qu'à la dernière
+// étape, jamais dans le HTML pré-rendu, donc pas d'écart d'hydratation.
+function readSavedQuoteContact(): SavedQuoteContact | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const saved = JSON.parse(
+      window.localStorage.getItem(QUOTE_CONTACT_KEY) ?? "null",
+    ) as Partial<SavedQuoteContact> | null;
+    return saved?.name && saved.phone
+      ? {
+          name: saved.name,
+          phone: saved.phone,
+          email: saved.email ?? "",
+          city: saved.city ?? "",
+        }
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+const PHOTO_MAX_SIDE = 1600;
+const PHOTO_QUALITY = 0.82;
+
+// Réduit une photo dans le navigateur avant l'envoi (les photos de téléphone
+// font souvent 3 à 6 Mo et l'envoi total est plafonné côté hébergeur).
+// En cas d'échec de lecture, la photo d'origine est conservée.
+async function compressPhoto(file: File): Promise<File> {
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(
+      1,
+      PHOTO_MAX_SIDE / Math.max(bitmap.width, bitmap.height),
+    );
+    const width = Math.round(bitmap.width * scale);
+    const height = Math.round(bitmap.height * scale);
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    if (!context) return file;
+    context.drawImage(bitmap, 0, 0, width, height);
+    bitmap.close();
+
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", PHOTO_QUALITY),
+    );
+    if (!blob) return file;
+
+    const alreadyAccepted = ["image/jpeg", "image/png", "image/webp"].includes(
+      file.type,
+    );
+    if (alreadyAccepted && blob.size >= file.size) return file;
+
+    const baseName = file.name.replace(/\.[^.]+$/, "") || "photo";
+    return new File([blob], `${baseName}.jpg`, {
+      type: "image/jpeg",
+      lastModified: file.lastModified,
+    });
+  } catch {
+    return file;
+  }
+}
 
 const servicePlaceLabel: Record<ServicePlace, string> = {
   domicile: "À domicile",
@@ -247,15 +325,27 @@ export function QuoteConfigurator() {
   const [selectedPremiumAddons, setSelectedPremiumAddons] = useState<
     PremiumAddonId[]
   >([]);
+  const [headlightCount, setHeadlightCount] = useState<1 | 2>(1);
 
   const [customerPhotos, setCustomerPhotos] = useState<CustomerPhoto[]>([]);
+  const [isPreparingPhotos, setIsPreparingPhotos] = useState(false);
   const [mainPhotoIndex, setMainPhotoIndex] = useState(0);
   const [customerComment, setCustomerComment] = useState("");
 
-  const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
-  const [customerCity, setCustomerCity] = useState("");
-  const [customerEmail, setCustomerEmail] = useState("");
+  const [savedContact, setSavedContact] = useState(readSavedQuoteContact);
+  const [rememberContact, setRememberContact] = useState(true);
+  const [customerName, setCustomerName] = useState(
+    () => savedContact?.name ?? "",
+  );
+  const [customerPhone, setCustomerPhone] = useState(
+    () => savedContact?.phone ?? "",
+  );
+  const [customerCity, setCustomerCity] = useState(
+    () => savedContact?.city ?? "",
+  );
+  const [customerEmail, setCustomerEmail] = useState(
+    () => savedContact?.email ?? "",
+  );
 
   const [vehicleBrand, setVehicleBrand] = useState("");
   const [vehicleModel, setVehicleModel] = useState("");
@@ -296,10 +386,21 @@ export function QuoteConfigurator() {
 
   const selectedPremiumAddonItems = useMemo(
     () =>
-      premiumAddons.filter((addon) =>
-        selectedPremiumAddons.includes(addon.id),
-      ),
-    [selectedPremiumAddons],
+      premiumAddons
+        .filter((addon) => selectedPremiumAddons.includes(addon.id))
+        .map((addon) => {
+          if (addon.id !== "phares") return addon;
+          const price = headlightPrices[headlightCount];
+          return {
+            ...addon,
+            name: `${addon.name} (${headlightCount} optique${
+              headlightCount === 2 ? "s" : ""
+            })`,
+            price,
+            label: `+${price}€`,
+          };
+        }),
+    [selectedPremiumAddons, headlightCount],
   );
 
   const basePrice = currentVehicle.prices[selectedService];
@@ -575,15 +676,35 @@ export function QuoteConfigurator() {
     );
   }
 
-  function handlePhotoUpload(event: ChangeEvent<HTMLInputElement>) {
+  function forgetSavedContact() {
+    try {
+      window.localStorage.removeItem(QUOTE_CONTACT_KEY);
+    } catch {
+      /* stockage indisponible : sans conséquence */
+    }
+    setSavedContact(null);
+    setCustomerName("");
+    setCustomerPhone("");
+    setCustomerEmail("");
+    setCustomerCity("");
+  }
+
+  async function handlePhotoUpload(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? []);
+    event.target.value = "";
 
     const imageFiles = files.filter((file) =>
       file.type.startsWith("image/"),
     );
 
     const remainingSlots = 4 - customerPhotos.length;
-    const selectedFiles = imageFiles.slice(0, remainingSlots);
+    const pickedFiles = imageFiles.slice(0, remainingSlots);
+
+    if (pickedFiles.length === 0) return;
+
+    setIsPreparingPhotos(true);
+    const selectedFiles = await Promise.all(pickedFiles.map(compressPhoto));
+    setIsPreparingPhotos(false);
 
     const newPhotos = selectedFiles.map((file) => {
       const url = URL.createObjectURL(file);
@@ -600,8 +721,7 @@ export function QuoteConfigurator() {
       setMainPhotoIndex(0);
     }
 
-    setCustomerPhotos((current) => [...current, ...newPhotos]);
-    event.target.value = "";
+    setCustomerPhotos((current) => [...current, ...newPhotos].slice(0, 4));
   }
 
   function removePhoto(indexToRemove: number) {
@@ -706,6 +826,25 @@ export function QuoteConfigurator() {
 
       trackLeadClick("mail");
       submissionIdRef.current = null;
+
+      try {
+        if (rememberContact) {
+          window.localStorage.setItem(
+            QUOTE_CONTACT_KEY,
+            JSON.stringify({
+              name: customerName.trim(),
+              phone: customerPhone.trim(),
+              email: customerEmail.trim(),
+              city: customerCity.trim(),
+            }),
+          );
+        } else {
+          window.localStorage.removeItem(QUOTE_CONTACT_KEY);
+        }
+      } catch {
+        /* stockage indisponible : sans conséquence */
+      }
+
       setSubmitSuccess(true);
     } catch (error) {
       setSubmitError(
@@ -1020,10 +1159,47 @@ export function QuoteConfigurator() {
                       >
                         <ChoiceRow
                           title={addon.name}
-                          price={addon.label}
+                          price={
+                            active && addon.id === "phares"
+                              ? `+${headlightPrices[headlightCount]}€`
+                              : addon.label
+                          }
                           active={active}
                           onClick={() => togglePremiumAddon(addon.id)}
                         />
+
+                        {active && addon.id === "phares" && (
+                          <div
+                            role="radiogroup"
+                            aria-label="Nombre d’optiques à rénover"
+                            className="auto9-message-enter mt-2 grid grid-cols-2 gap-2 pl-4 lg:pl-5"
+                          >
+                            {([1, 2] as const).map((count) => {
+                              const selected = headlightCount === count;
+                              return (
+                                <button
+                                  key={count}
+                                  type="button"
+                                  role="radio"
+                                  aria-checked={selected}
+                                  onClick={() => setHeadlightCount(count)}
+                                  className={`rounded-xl border px-3 py-3 text-left transition duration-300 hover:-translate-y-0.5 ${
+                                    selected
+                                      ? "border-accent bg-accent/15 shadow-[0_0_18px_rgba(var(--accent-rgb),.2)]"
+                                      : "border-white/10 bg-black/25 hover:border-accent/45"
+                                  }`}
+                                >
+                                  <span className="block text-sm font-black">
+                                    {count} optique{count === 2 ? "s" : ""}
+                                  </span>
+                                  <span className="mt-0.5 block text-xs text-white/65">
+                                    {headlightPrices[count]}€
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -1064,14 +1240,16 @@ export function QuoteConfigurator() {
 
                       <label
                         className={`inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-[10px] font-black uppercase tracking-[0.14em] text-black transition duration-300 lg:text-xs ${
-                          customerPhotos.length >= 4
+                          customerPhotos.length >= 4 || isPreparingPhotos
                             ? "cursor-not-allowed opacity-35"
                             : "cursor-pointer hover:scale-[1.03] hover:bg-[#DDEBFF]"
                         }`}
                       >
-                        {customerPhotos.length >= 4
-                          ? "4 photos ajoutées"
-                          : "Ajouter des photos"}
+                        {isPreparingPhotos
+                          ? "Préparation…"
+                          : customerPhotos.length >= 4
+                            ? "4 photos ajoutées"
+                            : "Ajouter des photos"}
 
                         <input
                           type="file"
@@ -1079,7 +1257,7 @@ export function QuoteConfigurator() {
                           multiple
                           onChange={handlePhotoUpload}
                           className="hidden"
-                          disabled={customerPhotos.length >= 4}
+                          disabled={customerPhotos.length >= 4 || isPreparingPhotos}
                         />
                       </label>
                     </div>
@@ -1280,6 +1458,18 @@ export function QuoteConfigurator() {
                     >
                       <div className="sm:col-span-2">
                         <FinalSectionTitle number={2} title="Vos coordonnées" />
+                        {savedContact && (
+                          <p className="auto9-message-enter mt-3 text-sm text-white/65">
+                            Pré-remplies pour {savedContact.name}.{" "}
+                            <button
+                              type="button"
+                              onClick={forgetSavedContact}
+                              className="font-bold text-white/85 underline decoration-accent/60 underline-offset-4 transition hover:text-accent-soft"
+                            >
+                              Ce n’est pas vous ?
+                            </button>
+                          </p>
+                        )}
                       </div>
                       <label htmlFor="quote-name" className="grid gap-2 text-sm text-white/65">
                         Nom et prénom *
@@ -1332,6 +1522,17 @@ export function QuoteConfigurator() {
                           enterKeyHint="done"
                           className="w-full rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-base text-white outline-none transition placeholder:text-white/30 focus:border-accent focus:shadow-[0_0_22px_rgba(var(--accent-rgb),.12)] lg:text-sm"
                         />
+                      </label>
+                      <label className="flex cursor-pointer items-center gap-3 text-sm text-white/65 sm:col-span-2">
+                        <input
+                          type="checkbox"
+                          checked={rememberContact}
+                          onChange={(event) =>
+                            setRememberContact(event.target.checked)
+                          }
+                          className="h-5 w-5 shrink-0 accent-accent"
+                        />
+                        Se souvenir de mes coordonnées sur cet appareil
                       </label>
                     </section>
                   </div>
