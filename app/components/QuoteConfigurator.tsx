@@ -6,10 +6,17 @@ import {
   useRef,
   useState,
   type ChangeEvent,
+  type CSSProperties,
   type ReactNode,
 } from "react";
+import Image, { type StaticImageData } from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+
+import berlineImage from "../../public/berline.jpg";
+import citadineImage from "../../public/citadine.jpg";
+import suvImage from "../../public/suv.jpg";
+import utilitaireImage from "../../public/utilitaire.jpg";
 
 type ServiceId = "duo" | "interieur" | "exterieur";
 type VehicleId = "citadine" | "berline" | "suv" | "utilitaire";
@@ -91,14 +98,14 @@ const services: {
 const vehicles: {
   id: VehicleId;
   name: string;
-  image: string;
+  image: StaticImageData;
   prices: Record<ServiceId, number>;
   estimatedTime: Record<ServiceId, string>;
 }[] = [
   {
     id: "citadine",
     name: "Citadine",
-    image: "/citadine.jpg",
+    image: citadineImage,
     prices: {
       interieur: 89,
       exterieur: 89,
@@ -113,7 +120,7 @@ const vehicles: {
   {
     id: "berline",
     name: "Berline",
-    image: "/berline.jpg",
+    image: berlineImage,
     prices: {
       interieur: 89,
       exterieur: 89,
@@ -128,7 +135,7 @@ const vehicles: {
   {
     id: "suv",
     name: "SUV",
-    image: "/suv.jpg",
+    image: suvImage,
     prices: {
       interieur: 99,
       exterieur: 99,
@@ -143,7 +150,7 @@ const vehicles: {
   {
     id: "utilitaire",
     name: "Utilitaire",
-    image: "/utilitaire.jpg",
+    image: utilitaireImage,
     prices: {
       interieur: 109,
       exterieur: 99,
@@ -310,6 +317,7 @@ export function QuoteConfigurator() {
   const submissionIdRef = useRef<string | null>(null);
 
   const [step, setStep] = useState(1);
+  const [stepDirection, setStepDirection] = useState<1 | -1>(1);
 
   const [selectedService, setSelectedService] = useState<ServiceId>(
     initialService && ["duo", "interieur", "exterieur"].includes(initialService)
@@ -582,6 +590,7 @@ export function QuoteConfigurator() {
     .join("\n");
 
   function goToStep(nextStep: number) {
+    setStepDirection(nextStep >= step ? 1 : -1);
     setStep(nextStep);
 
     window.setTimeout(() => {
@@ -875,7 +884,7 @@ export function QuoteConfigurator() {
         </div>
 
         <div className="mb-4 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <div className="flex min-w-max items-center gap-2 lg:min-w-0 lg:justify-between">
+          <div className="flex items-center gap-2 sm:min-w-max lg:min-w-0 lg:justify-between">
             {stepLabels.map((label, index) => {
               const number = index + 1;
               const active = step === number;
@@ -887,6 +896,7 @@ export function QuoteConfigurator() {
                   type="button"
                   onClick={() => goToStep(number)}
                   aria-current={active ? "step" : undefined}
+                  aria-label={`Étape ${number} : ${label}`}
                   className={`group flex items-center gap-2 rounded-full border px-3 py-2 transition duration-300 hover:-translate-y-0.5 lg:gap-3 lg:px-4 lg:py-2.5 ${
                     active
                       ? "auto9-active-step border-accent/70 bg-accent/15"
@@ -907,6 +917,8 @@ export function QuoteConfigurator() {
 
                   <span
                     className={`text-[10px] font-black uppercase tracking-[0.14em] transition lg:text-sm ${
+                      active ? "" : "hidden sm:inline"
+                    } ${
                       active
                         ? "text-white"
                         : done
@@ -928,7 +940,11 @@ export function QuoteConfigurator() {
         >
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(var(--accent-rgb),.65),transparent)]" />
 
-          <div key={step} className="auto9-step-enter relative">
+          <div
+            key={step}
+            className="auto9-step-enter relative"
+            style={{ "--auto9-step-dir": stepDirection } as CSSProperties}
+          >
             {step === 1 && (
               <AssistantStep
                 eyebrow="Étape 1 sur 4"
@@ -1016,7 +1032,7 @@ export function QuoteConfigurator() {
                 title="Quel véhicule souhaitez-vous nous confier ?"
                 subtitle={`${currentService.name} sélectionnée — choisissez le gabarit le plus proche de votre véhicule.`}
               >
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                   {vehicles.map((vehicle, index) => {
                     const active = selectedVehicle === vehicle.id;
                     const price = vehicle.prices[selectedService];
@@ -1039,21 +1055,22 @@ export function QuoteConfigurator() {
                       >
                         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(var(--accent-rgb),.12),transparent_48%)] opacity-0 transition duration-500 group-hover:opacity-100" />
 
-                        <div className="relative flex items-center gap-3 lg:block">
-                          <img
+                        <div className="relative">
+                          <Image
                             src={vehicle.image}
                             alt={vehicle.name}
-                            className="h-16 w-24 shrink-0 object-contain transition duration-500 group-hover:scale-105 lg:h-36 lg:w-full xl:h-40"
+                            sizes="(min-width: 1024px) 22vw, 45vw"
+                            className="h-20 w-full object-contain transition duration-500 group-hover:scale-105 lg:h-36 xl:h-40"
                           />
 
-                          <div className="min-w-0 lg:mt-2">
+                          <div className="mt-2 min-w-0">
                             <div className="flex items-center justify-between gap-2">
-                              <p className="text-lg font-black uppercase tracking-[-0.03em] lg:text-3xl">
+                              <p className="min-w-0 truncate text-base font-black uppercase tracking-[-0.03em] sm:text-lg lg:text-3xl">
                                 {vehicle.name}
                               </p>
 
                               <span
-                                className={`grid h-7 w-7 place-items-center rounded-full text-xs font-black transition duration-300 ${
+                                className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-black transition duration-300 lg:h-7 lg:w-7 ${
                                   active
                                     ? "bg-accent text-on-metal shadow-[0_0_18px_rgba(var(--accent-rgb),.55)]"
                                     : "border border-white/15 text-transparent"
@@ -1063,8 +1080,12 @@ export function QuoteConfigurator() {
                               </span>
                             </div>
 
-                            <p className="mt-1 text-xs text-white/45 lg:text-lg">
-                              {price}€ · {currentService.name}
+                            <p className="mt-1 text-sm font-bold text-white/70 lg:text-lg lg:font-normal">
+                              {price}€
+                              <span className="hidden font-normal text-white/50 lg:inline">
+                                {" "}
+                                · {currentService.name}
+                              </span>
                             </p>
                           </div>
                         </div>
@@ -1664,10 +1685,9 @@ export function QuoteConfigurator() {
                           <span className="pointer-events-none absolute inset-0 -z-10 rounded-2xl bg-metal-mid/10 blur-xl" />
 
                           <span
-                            key={totalPrice}
-                            className="auto9-price-pop block text-4xl font-black bg-price bg-clip-text text-transparent drop-shadow-[0_0_14px_rgba(var(--metal-rgb),.35)]"
+                            className="block text-4xl font-black bg-price bg-clip-text text-transparent drop-shadow-[0_0_14px_rgba(var(--metal-rgb),.35)]"
                           >
-                            {totalPrice}€
+                            <AnimatedPrice value={totalPrice} />€
                           </span>
                         </div>
                       </div>
@@ -1702,6 +1722,7 @@ export function QuoteConfigurator() {
                   )}
 
                   <button
+                    id="quote-submit"
                     type="button"
                     onClick={handleQuoteRequest}
                     disabled={missingItems.length > 0 || isSubmitting}
@@ -1770,10 +1791,9 @@ export function QuoteConfigurator() {
             </p>
 
             <p
-              key={totalPrice}
-              className="auto9-price-pop text-xl font-black bg-price bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(var(--metal-rgb),.35)] lg:text-3xl"
+              className="text-xl font-black bg-price bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(var(--metal-rgb),.35)] lg:text-3xl"
             >
-              {totalPrice}€
+              <AnimatedPrice value={totalPrice} />€
             </p>
           </div>
 
@@ -1801,15 +1821,30 @@ export function QuoteConfigurator() {
           ) : (
             <button
               type="button"
-              onClick={handleQuoteRequest}
-              disabled={missingItems.length > 0 || isSubmitting || submitSuccess}
-              className="rounded-full bg-white px-5 py-3 text-[10px] font-black uppercase tracking-[0.14em] text-black shadow-[0_12px_30px_rgba(255,255,255,.1)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#DDEBFF] disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:translate-y-0 lg:px-9 lg:py-5 lg:text-sm"
+              onClick={() => {
+                if (missingItems.length > 0) {
+                  missingItems[0].action();
+                  return;
+                }
+                const submit = document.getElementById("quote-submit");
+                submit?.scrollIntoView({ behavior: "smooth", block: "center" });
+                window.setTimeout(
+                  () => submit?.focus({ preventScroll: true }),
+                  400,
+                );
+              }}
+              disabled={isSubmitting || submitSuccess}
+              className="rounded-full border border-white/40 bg-metal px-5 py-3 text-[10px] font-black uppercase tracking-[0.14em] text-on-metal shadow-[0_12px_30px_rgba(var(--metal-rgb),.22)] transition duration-300 hover:-translate-y-0.5 hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:translate-y-0 lg:px-9 lg:py-5 lg:text-sm"
             >
-              {isSubmitting
-                ? "Envoi..."
-                : submitSuccess
-                  ? "Envoyée ✓"
-                  : "Envoyer"}
+              {submitSuccess
+                ? "Envoyée ✓"
+                : isSubmitting
+                  ? "Envoi…"
+                  : missingItems.length > 0
+                    ? `Il manque ${missingItems.length} info${
+                        missingItems.length > 1 ? "s" : ""
+                      }`
+                    : "Prêt à envoyer ↓"}
             </button>
           )}
         </div>
@@ -1819,14 +1854,12 @@ export function QuoteConfigurator() {
         @keyframes auto9StepEnter {
           0% {
             opacity: 0;
-            transform: translateY(18px) scale(0.992);
-            filter: blur(5px);
+            transform: translateX(calc(var(--auto9-step-dir, 1) * 28px));
           }
 
           100% {
             opacity: 1;
-            transform: translateY(0) scale(1);
-            filter: blur(0);
+            transform: translateX(0);
           }
         }
 
@@ -2109,6 +2142,36 @@ function ChoiceRow({
       )}
     </button>
   );
+}
+
+// Total qui défile jusqu'à la nouvelle valeur (désactivé si l'appareil
+// demande moins d'animations).
+function AnimatedPrice({ value }: { value: number }) {
+  const [displayed, setDisplayed] = useState(value);
+  const fromRef = useRef(value);
+
+  useEffect(() => {
+    const from = fromRef.current;
+    fromRef.current = value;
+    if (from === value) return;
+
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const duration = reduce ? 0 : 450;
+    const start = performance.now();
+    let frame = 0;
+
+    const tick = (now: number) => {
+      const progress = duration === 0 ? 1 : Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplayed(Math.round(from + (value - from) * eased));
+      if (progress < 1) frame = requestAnimationFrame(tick);
+    };
+
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [value]);
+
+  return <>{displayed}</>;
 }
 
 function FinalSectionTitle({
