@@ -1,6 +1,7 @@
 import "./signature-emerald.css";
-import { DesktopVideo } from "./components/DesktopVideo";
 import { Header } from "./components/Header";
+import { HeroEclipse } from "./components/HeroEclipse";
+import eclipse from "./components/HeroEclipse.module.css";
 import { Hero } from "./components/Hero";
 import { Stats } from "./components/Stats";
 import { Partners } from "./components/Partners";
@@ -33,7 +34,7 @@ export default function Home() {
       {/* VERSION MOBILE                                        */}
       {/* ===================================================== */}
 
-      <div className="relative md:hidden" data-home-hero>
+      <div className={`relative md:hidden ${eclipse.headerLogoIntro}`} data-home-hero>
         <div className="absolute inset-x-0 top-0 z-50" data-hero-fade>
           <Header />
         </div>
@@ -52,20 +53,7 @@ export default function Home() {
 
       <div className="hidden md:block">
         <section className="relative min-h-screen overflow-hidden" data-home-hero>
-          <DesktopVideo
-            data-hero-media
-            className="absolute inset-0 h-full w-full object-cover opacity-75 [mask-image:linear-gradient(to_bottom,black_55%,transparent)] brightness-110 contrast-110 saturate-110 will-change-transform"
-            src="/hero-video.mp4"
-            poster="/hero-poster.webp"
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="auto"
-            aria-hidden="true"
-          />
-
-          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/45 to-transparent" />
+          <HeroEclipse />
 
           <div className="relative z-10 will-change-transform" data-hero-fade>
             <Header />

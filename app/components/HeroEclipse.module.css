@@ -1,0 +1,275 @@
+/*
+ * AUTO 9 — Hero « Éclipse émeraude ».
+ * Anneau de lumière (moitié basse visible), grille discrète, puis intro :
+ * anneau → logo → slogan qui se resserre → reste en cascade.
+ * Réglages par écran : --ring-size (diamètre) et --ring-y (hauteur du centre).
+ */
+
+.stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 30%, rgba(var(--accent-rgb), 0.1), transparent 70%),
+    linear-gradient(180deg, rgba(3, 8, 6, 0.55), transparent 35%, rgba(3, 8, 6, 0.6) 100%);
+}
+
+.grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 88px 88px;
+  background-position: center top;
+  -webkit-mask-image: radial-gradient(ellipse 65% 60% at 50% 40%, #000 20%, transparent 75%);
+  mask-image: radial-gradient(ellipse 65% 60% at 50% 40%, #000 20%, transparent 75%);
+}
+
+/*
+ * L'anneau est accroché au bloc logo + slogan (parent en position relative,
+ * isolate) : son fil lumineux passe toujours sur la dernière ligne du titre,
+ * quelle que soit la taille de l'écran.
+ * --ring-lift : hauteur du fil au-dessus du bas du titre.
+ * Le fil net est à 93,3 % du rayon, soit 6,7 % du diamètre / 2 au-dessus du bord.
+ */
+.ring {
+  --ring-size: 150vw;
+  --ring-lift: 36px;
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--ring-lift) - var(--ring-size) * 0.0335);
+  z-index: -1;
+  width: var(--ring-size);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+/* Bande de lumière épaisse et diffuse (le « halo » de l'éclipse). */
+.ring::before,
+.ring::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+
+.ring::before {
+  background: radial-gradient(
+    closest-side,
+    transparent 70%,
+    rgba(var(--accent-rgb), 0.12) 78%,
+    rgba(var(--accent-rgb), 0.5) 86%,
+    rgba(var(--accent-soft-rgb), 0.85) 91%,
+    rgba(255, 255, 255, 0.9) 93.5%,
+    rgba(var(--accent-rgb), 0.55) 96.5%,
+    transparent 100%
+  );
+  filter: blur(22px);
+}
+
+/* Fil net : blanc métal au cœur. */
+.ring::after {
+  background: radial-gradient(
+    closest-side,
+    transparent 91.6%,
+    rgba(var(--metal-rgb), 0.85) 92.6%,
+    #ffffff 93.3%,
+    rgba(var(--accent-soft-rgb), 0.7) 94.2%,
+    transparent 95.6%
+  );
+  filter: drop-shadow(0 0 12px rgba(var(--accent-rgb), 0.9));
+}
+
+/* Tablette : anneau plus large que l'écran, pour ne pas couper l'accroche. */
+@media (min-width: 768px) {
+  .ring {
+    --ring-size: 1420px;
+    --ring-lift: 44px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .ring {
+    --ring-size: clamp(1180px, 80vw, 1360px);
+  }
+}
+
+/* ---------- Intro ---------- */
+
+/* Le Hero garde data-motion-intro (qui écarte l'intro générique du site) ;
+   on neutralise ici l'entrée appliquée à son enfant direct. */
+.introHost {
+  width: 100%;
+}
+
+.introHost > * {
+  animation: none !important;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ring {
+    animation:
+      ringIn 1.7s cubic-bezier(0.16, 1, 0.3, 1) 0.1s backwards,
+      ringBreathe 7s ease-in-out 2.2s infinite;
+  }
+
+  .logo {
+    animation: logoIn 1.3s cubic-bezier(0.16, 1, 0.3, 1) 0.45s backwards;
+  }
+
+  .converge {
+    animation: converge 1.25s cubic-bezier(0.16, 1, 0.3, 1) var(--d, 0.9s) backwards;
+  }
+
+  .rise {
+    animation: rise 1s cubic-bezier(0.16, 1, 0.3, 1) var(--d, 1.6s) backwards;
+  }
+
+  .sheen {
+    animation: sheen 1.4s cubic-bezier(0.22, 1, 0.36, 1) 2s 1 both;
+  }
+}
+
+/* Logo de l'en-tête (mobile) : même entrée que le logo central.
+   Le halo est sur le lien, l'animation (qui utilise filter) sur l'image. */
+.headerLogoIntro nav > a:first-child {
+  filter: drop-shadow(0 0 18px rgba(var(--accent-rgb), 0.35));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .headerLogoIntro nav img {
+    animation: logoIn 1.3s cubic-bezier(0.16, 1, 0.3, 1) 0.45s backwards;
+  }
+}
+
+.logoGlow {
+  display: block;
+  filter: drop-shadow(0 0 28px rgba(var(--accent-rgb), 0.35)) drop-shadow(0 10px 30px rgba(0, 0, 0, 0.55));
+}
+
+/* Ligne du slogan qui se resserre : reste sur une ligne pendant l'animation. */
+.converge {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+/* Reflet métallique sur « neuf. ». */
+.sheen {
+  background-image:
+    linear-gradient(
+      110deg,
+      transparent 38%,
+      rgba(255, 255, 255, 0.95) 48%,
+      rgba(var(--accent-soft-rgb), 0.85) 52%,
+      transparent 62%
+    ),
+    var(--gradient-price);
+  background-size:
+    250% 100%,
+    100% 100%;
+  background-repeat: no-repeat;
+  background-position:
+    150% 0,
+    0 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@keyframes ringIn {
+  from {
+    opacity: 0;
+    scale: 0.82;
+    filter: blur(30px);
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+    filter: blur(0);
+  }
+}
+
+@keyframes ringBreathe {
+  0%,
+  100% {
+    opacity: 1;
+    scale: 1;
+  }
+  50% {
+    opacity: 0.82;
+    scale: 1.015;
+  }
+}
+
+@keyframes logoIn {
+  from {
+    opacity: 0;
+    scale: 0.7;
+    filter: blur(16px);
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+@keyframes converge {
+  from {
+    opacity: 0;
+    letter-spacing: 0.42em;
+    filter: blur(12px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    translate: 0 18px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes sheen {
+  from {
+    background-position:
+      150% 0,
+      0 0;
+  }
+  to {
+    background-position:
+      -60% 0,
+      0 0;
+  }
+}
+
+/* Accroche émeraude : se détache du halo émeraude de l'anneau. */
+.kicker {
+  text-shadow:
+    0 0 10px rgba(3, 8, 6, 0.95),
+    0 0 22px rgba(3, 8, 6, 0.85);
+}
+
+/* Tablette et ordinateur : pastille sombre (même style que les étiquettes). */
+@media (min-width: 768px) {
+  .kicker {
+    display: inline-block;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 999px;
+    background: rgba(3, 8, 6, 0.72);
+    padding: 0.85em 1.1em 0.85em 1.7em;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+}

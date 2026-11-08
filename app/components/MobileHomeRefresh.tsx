@@ -1,52 +1,68 @@
 "use client";
 
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
+
+import { EclipseRing, HeroEclipse } from "./HeroEclipse";
+import eclipse from "./HeroEclipse.module.css";
+
+const delay = (seconds: number) => ({ "--d": `${seconds}s` }) as CSSProperties;
 
 export function MobileHomeRefresh() {
   return (
     <div className="md:hidden text-white">
       <section className="relative min-h-[760px] overflow-hidden px-5 pb-9 pt-8">
-        <div
-          data-hero-media
-          className="absolute inset-0 bg-cover bg-[58%_center] [mask-image:linear-gradient(to_bottom,transparent_0%,black_14%,black_45%,transparent_88%)] will-change-transform"
-          style={{
-            backgroundImage: "url('/realisations/audi-rs7-face.jpg')",
-          }}
-        />
+        <HeroEclipse />
 
-        <div className="absolute inset-0 [mask-image:linear-gradient(to_bottom,black_45%,transparent_88%)] bg-[linear-gradient(90deg,rgba(3,4,6,.94)_0%,rgba(3,4,6,.80)_28%,rgba(3,4,6,.44)_58%,rgba(3,4,6,.10)_100%)]" />
-
-        <div className="absolute inset-0 [mask-image:linear-gradient(to_bottom,black_45%,transparent_88%)] bg-[linear-gradient(180deg,rgba(5,6,8,.16)_0%,rgba(5,6,8,.08)_38%,rgba(5,6,8,.46)_74%,transparent_100%)]" />
-
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_82%_30%,rgba(var(--accent-rgb),.16),transparent_42%)]" />
-
-        <div className="relative z-10 will-change-transform" data-motion-intro data-hero-fade>
-          <p className="pt-24 text-[11px] font-black uppercase tracking-[0.38em] text-accent">
+        {/* data-motion-intro : écarte l'intro générique ; l'intro du Hero est dans HeroEclipse.module.css. */}
+        <div className={`relative z-10 will-change-transform ${eclipse.introHost}`} data-motion-intro data-hero-fade>
+          <div className="text-center">
+          <div className="relative isolate">
+          <EclipseRing />
+          <p
+            className={`${eclipse.rise} ${eclipse.kicker} pt-28 text-[11px] font-black uppercase tracking-[0.38em] text-accent`}
+            style={delay(1.05)}
+          >
             Detailing premium à domicile · Nîmes
           </p>
 
-          <h1 className="mt-5 max-w-[340px] text-[48px] font-black uppercase leading-[0.88] tracking-[-0.065em]">
-            Retrouvez
+          <h1 className="mx-auto mt-5 max-w-[340px] text-[48px] font-black uppercase leading-[0.88] tracking-[-0.065em]">
+            <span className={eclipse.converge} style={delay(0.75)}>
+              Retrouvez
+            </span>
             <br />
-            la joie du
+            <span className={eclipse.converge} style={delay(0.9)}>
+              la joie du
+            </span>
             <br />
-            <span className="bg-price bg-clip-text text-transparent">neuf.</span>
+            <span className={eclipse.converge} style={delay(1.05)}>
+              <span className={eclipse.sheen}>neuf.</span>
+            </span>
           </h1>
+          </div>
 
-          <p className="mt-6 max-w-[325px] text-[18px] leading-7 text-white/80">
+          <p
+            className={`${eclipse.rise} mx-auto mt-6 max-w-[325px] text-[18px] leading-7 text-white/80`}
+            style={delay(1.5)}
+          >
             Un véhicule propre, sain et soigné, à domicile ou sur votre lieu de
             travail.
           </p>
 
-          <div className="mt-7 grid grid-cols-4 gap-2">
+          <div
+            className={`${eclipse.rise} mt-7 grid grid-cols-4 gap-2`}
+            style={delay(1.65)}
+          >
             <MiniFeature icon={<HomeIcon />} label="À domicile" />
             <MiniFeature icon={<WorkIcon />} label="Au travail" />
             <MiniFeature icon={<GarageIcon />} label="Professionnels" />
             <MiniFeature icon={<PinIcon />} label={"30 km\nNîmes"} />
           </div>
 
-          <div className="mt-7 space-y-3">
+          <div
+            className={`${eclipse.rise} mt-7 space-y-3 text-left`}
+            style={delay(1.8)}
+          >
             <Link
               href="/devis"
               className="flex w-full items-center justify-center gap-4 rounded-full bg-metal px-5 py-5 text-[12px] font-black uppercase tracking-[0.19em] text-on-metal shadow-[0_18px_50px_rgba(var(--metal-rgb),.18)]"
@@ -73,6 +89,7 @@ export function MobileHomeRefresh() {
                 →
               </span>
             </Link>
+          </div>
           </div>
         </div>
       </section>
