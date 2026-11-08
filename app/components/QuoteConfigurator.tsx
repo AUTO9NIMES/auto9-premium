@@ -8,6 +8,7 @@ import {
   type ChangeEvent,
   type ReactNode,
 } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
 type ServiceId = "duo" | "interieur" | "exterieur";
@@ -220,14 +221,7 @@ const servicePlaceLabel: Record<ServicePlace, string> = {
   autre: "Autre lieu",
 };
 
-const stepLabels = [
-  "Prestation",
-  "Véhicule",
-  "Suppléments",
-  "Photos",
-  "Créneau",
-  "Coordonnées",
-];
+const stepLabels = ["Prestation", "Véhicule", "Options", "Finaliser"];
 
 export function QuoteConfigurator() {
   const searchParams = useSearchParams();
@@ -341,6 +335,44 @@ export function QuoteConfigurator() {
 
   const canRequestAvailability = availabilityDateTime.trim().length > 0;
 
+  function focusField(id: string) {
+    const element = document.getElementById(id);
+    element?.scrollIntoView({ behavior: "smooth", block: "center" });
+    window.setTimeout(() => element?.focus({ preventScroll: true }), 350);
+  }
+
+  // Ce qui bloque encore l'envoi, avec un raccourci vers le bon champ.
+  const missingItems: { label: string; action: () => void }[] = [
+    !vehicleReady && {
+      label: "Marque et modèle",
+      action: () => {
+        goToStep(2);
+        window.setTimeout(
+          () =>
+            focusField(
+              vehicleBrand.trim() ? "quote-vehicle-model" : "quote-vehicle-brand",
+            ),
+          450,
+        );
+      },
+    },
+    !canRequestAvailability && {
+      label: selectedAvailabilityDate ? "L’heure" : "La date",
+      action: () =>
+        document
+          .getElementById("quote-when")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+    },
+    customerName.trim().length <= 1 && {
+      label: "Votre nom",
+      action: () => focusField("quote-name"),
+    },
+    customerPhone.trim().length < 8 && {
+      label: "Votre téléphone",
+      action: () => focusField("quote-phone"),
+    },
+  ].filter(Boolean) as { label: string; action: () => void }[];
+
   const minAvailabilityDateTime = useMemo(() => {
     const date = new Date();
 
@@ -354,30 +386,13 @@ export function QuoteConfigurator() {
     )}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
   }, []);
 
+  // Créneaux à l'heure, de 8 h à 18 h (même format « HH:MM » qu'avant).
   const availabilityTimes = useMemo(
-    () => [
-      "08:00",
-      "08:30",
-      "09:00",
-      "09:30",
-      "10:00",
-      "10:30",
-      "11:00",
-      "11:30",
-      "12:00",
-      "12:30",
-      "13:00",
-      "13:30",
-      "14:00",
-      "14:30",
-      "15:00",
-      "15:30",
-      "16:00",
-      "16:30",
-      "17:00",
-      "17:30",
-      "18:00",
-    ],
+    () =>
+      Array.from(
+        { length: 11 },
+        (_, index) => `${String(8 + index).padStart(2, "0")}:00`,
+      ),
     [],
   );
 
@@ -777,7 +792,7 @@ export function QuoteConfigurator() {
           <div key={step} className="auto9-step-enter relative">
             {step === 1 && (
               <AssistantStep
-                eyebrow="Étape 1 sur 6"
+                eyebrow="Étape 1 sur 4"
                 title="Quelle prestation recherchez-vous ?"
                 subtitle="Commencez par choisir le niveau de soin souhaité pour votre véhicule."
               >
@@ -858,7 +873,7 @@ export function QuoteConfigurator() {
 
             {step === 2 && (
               <AssistantStep
-                eyebrow="Étape 2 sur 6"
+                eyebrow="Étape 2 sur 4"
                 title="Quel véhicule souhaitez-vous nous confier ?"
                 subtitle={`${currentService.name} sélectionnée — choisissez le gabarit le plus proche de votre véhicule.`}
               >
@@ -918,14 +933,56 @@ export function QuoteConfigurator() {
                     );
                   })}
                 </div>
+
+                <div
+                  className="auto9-card-enter mt-4 grid gap-3 rounded-2xl border border-white/10 bg-black/25 p-4 sm:grid-cols-2 lg:p-6"
+                  style={{ animationDelay: "300ms" }}
+                >
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-accent-soft sm:col-span-2">
+                    Votre véhicule
+                  </p>
+                  <label className="grid gap-2 text-sm text-white/65">
+                    Marque du véhicule *
+                    <input
+                      id="quote-vehicle-brand"
+                      value={vehicleBrand}
+                      onChange={(event) => setVehicleBrand(event.target.value)}
+                      required
+                      placeholder="Ex. BMW"
+                      className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-base text-white lg:text-sm outline-none transition placeholder:text-white/30 focus:border-accent focus:shadow-[0_0_22px_rgba(var(--accent-rgb),.12)]"
+                    />
+                  </label>
+
+                  <label className="grid gap-2 text-sm text-white/65">
+                    Modèle du véhicule *
+                    <input
+                      id="quote-vehicle-model"
+                      value={vehicleModel}
+                      onChange={(event) => setVehicleModel(event.target.value)}
+                      required
+                      placeholder="Ex. Série 3"
+                      className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-base text-white lg:text-sm outline-none transition placeholder:text-white/30 focus:border-accent focus:shadow-[0_0_22px_rgba(var(--accent-rgb),.12)]"
+                    />
+                  </label>
+
+                  <label className="grid gap-2 text-sm text-white/65 sm:col-span-2">
+                    Immatriculation (optionnel)
+                    <input
+                      value={vehiclePlate}
+                      onChange={(event) => setVehiclePlate(event.target.value)}
+                      placeholder="Ex. AB-123-CD"
+                      className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-base text-white lg:text-sm outline-none transition placeholder:text-white/30 focus:border-accent focus:shadow-[0_0_22px_rgba(var(--accent-rgb),.12)]"
+                    />
+                  </label>
+                </div>
               </AssistantStep>
             )}
 
             {step === 3 && (
               <AssistantStep
-                eyebrow="Étape 3 sur 6"
-                title="Souhaitez-vous ajouter un supplément ?"
-                subtitle="Ces compléments sont facultatifs. Vous pourrez ensuite ajouter des photos du véhicule."
+                eyebrow="Étape 3 sur 4"
+                title="Des options à ajouter ?"
+                subtitle="Suppléments et photos sont facultatifs. Les photos nous aident à confirmer le tarif."
               >
                 <div className="mx-auto max-w-4xl space-y-2">
                   {availableOptions.map((option, index) => {
@@ -990,330 +1047,297 @@ export function QuoteConfigurator() {
                     </div>
                   )}
                 </div>
-              </AssistantStep>
-            )}
 
-            {step === 4 && (
-              <AssistantStep
-                eyebrow="Étape 4 sur 6"
-                title="Montrez-nous votre véhicule."
-                subtitle="Ajoutez jusqu’à 4 photos et un commentaire. Cela nous aide à confirmer le tarif et le temps nécessaire."
-              >
-                <div className="auto9-card-enter mx-auto max-w-4xl rounded-2xl border border-white/10 bg-black/25 p-4 sm:p-6 lg:p-8">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="text-lg font-black lg:text-2xl">
-                        Photos du véhicule
-                      </p>
+                <div className="mt-6">
+                  <div className="auto9-card-enter mx-auto max-w-4xl rounded-2xl border border-white/10 bg-black/25 p-4 sm:p-6 lg:p-8">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-lg font-black lg:text-2xl">
+                          Photos du véhicule
+                        </p>
 
-                      <p className="mt-1 text-sm text-white/45 lg:text-base">
-                        Facultatif, mais fortement recommandé pour une
-                        estimation plus précise.
-                      </p>
+                        <p className="mt-1 text-sm text-white/45 lg:text-base">
+                          Facultatif, mais fortement recommandé pour une
+                          estimation plus précise.
+                        </p>
+                      </div>
+
+                      <label
+                        className={`inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-[10px] font-black uppercase tracking-[0.14em] text-black transition duration-300 lg:text-xs ${
+                          customerPhotos.length >= 4
+                            ? "cursor-not-allowed opacity-35"
+                            : "cursor-pointer hover:scale-[1.03] hover:bg-[#DDEBFF]"
+                        }`}
+                      >
+                        {customerPhotos.length >= 4
+                          ? "4 photos ajoutées"
+                          : "Ajouter des photos"}
+
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handlePhotoUpload}
+                          className="hidden"
+                          disabled={customerPhotos.length >= 4}
+                        />
+                      </label>
                     </div>
 
-                    <label
-                      className={`inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-[10px] font-black uppercase tracking-[0.14em] text-black transition duration-300 lg:text-xs ${
-                        customerPhotos.length >= 4
-                          ? "cursor-not-allowed opacity-35"
-                          : "cursor-pointer hover:scale-[1.03] hover:bg-[#DDEBFF]"
-                      }`}
-                    >
-                      {customerPhotos.length >= 4
-                        ? "4 photos ajoutées"
-                        : "Ajouter des photos"}
-
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handlePhotoUpload}
-                        className="hidden"
-                        disabled={customerPhotos.length >= 4}
-                      />
-                    </label>
-                  </div>
-
-                  {customerPhotos.length > 0 ? (
-                    <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                      {customerPhotos.map((photo, index) => (
-                        <div
-                          key={photo.url}
-                          className="auto9-card-enter relative"
-                          style={{
-                            animationDelay: `${index * 70}ms`,
-                          }}
-                        >
-                          <button
-                            type="button"
-                            onClick={() => setMainPhotoIndex(index)}
-                            className={`group relative block w-full overflow-hidden rounded-xl border transition duration-300 hover:-translate-y-1 ${
-                              mainPhotoIndex === index
-                                ? "border-accent shadow-[0_0_24px_rgba(var(--accent-rgb),.35)]"
-                                : "border-white/10 hover:border-accent/45"
-                            }`}
+                    {customerPhotos.length > 0 ? (
+                      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                        {customerPhotos.map((photo, index) => (
+                          <div
+                            key={photo.url}
+                            className="auto9-card-enter relative"
+                            style={{
+                              animationDelay: `${index * 70}ms`,
+                            }}
                           >
-                            <img
-                              src={photo.url}
-                              alt={`Photo du véhicule ${index + 1}`}
-                              className="h-32 w-full object-cover transition duration-500 group-hover:scale-105 sm:h-28 lg:h-36"
-                            />
+                            <button
+                              type="button"
+                              onClick={() => setMainPhotoIndex(index)}
+                              className={`group relative block w-full overflow-hidden rounded-xl border transition duration-300 hover:-translate-y-1 ${
+                                mainPhotoIndex === index
+                                  ? "border-accent shadow-[0_0_24px_rgba(var(--accent-rgb),.35)]"
+                                  : "border-white/10 hover:border-accent/45"
+                              }`}
+                            >
+                              <img
+                                src={photo.url}
+                                alt={`Photo du véhicule ${index + 1}`}
+                                className="h-32 w-full object-cover transition duration-500 group-hover:scale-105 sm:h-28 lg:h-36"
+                              />
 
-                            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
+                              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
 
-                            {mainPhotoIndex === index && (
-                              <span className="absolute bottom-2 left-2 rounded-full bg-metal px-2 py-1 text-[8px] font-black uppercase tracking-[0.12em] text-on-metal">
-                                Principale
-                              </span>
-                            )}
-                          </button>
+                              {mainPhotoIndex === index && (
+                                <span className="absolute bottom-2 left-2 rounded-full bg-metal px-2 py-1 text-[8px] font-black uppercase tracking-[0.12em] text-on-metal">
+                                  Principale
+                                </span>
+                              )}
+                            </button>
 
-                          <button
-                            type="button"
-                            onClick={() => removePhoto(index)}
-                            aria-label={`Supprimer la photo ${index + 1}`}
-                            className="absolute right-2 top-2 z-10 grid h-7 w-7 place-items-center rounded-full border border-white/10 bg-black/80 text-sm text-white transition hover:scale-110 hover:bg-red-500"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="mt-5 rounded-2xl border border-dashed border-white/15 bg-white/[0.025] p-6 text-center text-sm text-white/40">
-                      Aucune photo ajoutée pour le moment.
-                    </div>
-                  )}
-
-                  <div className="mt-6">
-                    <label
-                      htmlFor="customer-comment"
-                      className="text-sm font-black lg:text-base"
-                    >
-                      Commentaire
-                    </label>
-
-                    <textarea
-                      id="customer-comment"
-                      value={customerComment}
-                      onChange={(event) =>
-                        setCustomerComment(event.target.value)
-                      }
-                      placeholder="Taches, poils d’animaux, rayures, odeurs, besoins particuliers…"
-                      className="mt-3 min-h-32 w-full resize-none rounded-xl border border-white/10 bg-black/30 p-4 text-sm outline-none transition placeholder:text-white/30 focus:border-accent focus:shadow-[0_0_22px_rgba(var(--accent-rgb),.12)] lg:text-base"
-                    />
-                  </div>
-                </div>
-              </AssistantStep>
-            )}
-
-            {step === 5 && (
-              <AssistantStep
-                eyebrow="Étape 5 sur 6"
-                title="Quand et où souhaitez-vous la prestation ?"
-                subtitle="Choisissez un lieu, une date et une heure souhaitée."
-              >
-                <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
-                  <div className="grid grid-cols-2 gap-2 lg:grid-cols-1">
-                    {(Object.keys(servicePlaceLabel) as ServicePlace[]).map(
-                      (place, index) => (
-                        <div
-                          key={place}
-                          className="auto9-card-enter"
-                          style={{
-                            animationDelay: `${index * 60}ms`,
-                          }}
-                        >
-                          <ChoiceRow
-                            title={servicePlaceLabel[place]}
-                            price=""
-                            active={servicePlace === place}
-                            onClick={() => setServicePlace(place)}
-                          />
-                        </div>
-                      ),
+                            <button
+                              type="button"
+                              onClick={() => removePhoto(index)}
+                              aria-label={`Supprimer la photo ${index + 1}`}
+                              className="absolute right-2 top-2 z-10 grid h-7 w-7 place-items-center rounded-full border border-white/10 bg-black/80 text-sm text-white transition hover:scale-110 hover:bg-red-500"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="mt-5 rounded-2xl border border-dashed border-white/15 bg-white/[0.025] p-6 text-center text-sm text-white/40">
+                        Aucune photo ajoutée pour le moment.
+                      </div>
                     )}
-                  </div>
 
-                  <div
-                    className="auto9-card-enter space-y-4 rounded-2xl border border-white/10 bg-black/25 p-4"
-                    style={{
-                      animationDelay: "130ms",
-                    }}
-                  >
-                    <div>
-                      <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-accent-soft">
-                        Date souhaitée
-                      </p>
+                    <div className="mt-6">
+                      <label
+                        htmlFor="customer-comment"
+                        className="text-sm font-black lg:text-base"
+                      >
+                        Commentaire
+                      </label>
 
-                      <div className="grid grid-cols-3 gap-2 sm:grid-cols-5 lg:grid-cols-7">
-                        {availabilityDays.map((day) => {
-                          const disabled = isDateDisabled(day.value);
-                          const active =
-                            selectedAvailabilityDate === day.value;
-
-                          return (
-                            <button
-                              key={day.value}
-                              type="button"
-                              disabled={disabled}
-                              onClick={() =>
-                                handleAvailabilityDateSelect(day.value)
-                              }
-                              className={`rounded-xl border px-2 py-2.5 text-center text-[10px] font-black uppercase transition duration-300 ${
-                                active
-                                  ? "border-accent bg-accent/15 text-white shadow-[0_0_18px_rgba(var(--accent-rgb),.25)]"
-                                  : disabled
-                                    ? "cursor-not-allowed border-white/5 text-white/15"
-                                    : "border-white/10 text-white/60 hover:-translate-y-0.5 hover:border-accent/50 hover:text-white"
-                              }`}
-                            >
-                              <span className="block">{day.dayName}</span>
-
-                              <span className="mt-1 block text-xs">
-                                {day.dayNumber}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div>
-                      <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-accent-soft">
-                        Heure souhaitée
-                      </p>
-
-                      <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-7">
-                        {availabilityTimes.map((time) => {
-                          const disabled =
-                            !selectedAvailabilityDate ||
-                            isSlotDisabled(selectedAvailabilityDate, time);
-
-                          const active =
-                            selectedAvailabilityTime === time;
-
-                          return (
-                            <button
-                              key={time}
-                              type="button"
-                              disabled={disabled}
-                              onClick={() =>
-                                handleAvailabilityTimeSelect(time)
-                              }
-                              className={`rounded-full border px-2 py-2.5 text-xs font-black transition duration-300 ${
-                                active
-                                  ? "border-accent bg-accent/15 text-white shadow-[0_0_18px_rgba(var(--accent-rgb),.25)]"
-                                  : disabled
-                                    ? "cursor-not-allowed border-white/5 text-white/15"
-                                    : "border-white/10 text-white/60 hover:-translate-y-0.5 hover:border-accent/50 hover:text-white"
-                              }`}
-                            >
-                              {time.replace(":", "h")}
-                            </button>
-                          );
-                        })}
-                      </div>
+                      <textarea
+                        id="customer-comment"
+                        value={customerComment}
+                        onChange={(event) =>
+                          setCustomerComment(event.target.value)
+                        }
+                        placeholder="Taches, poils d’animaux, rayures, odeurs, besoins particuliers…"
+                        className="mt-3 min-h-32 w-full resize-none rounded-xl border border-white/10 bg-black/30 p-4 text-sm outline-none transition placeholder:text-white/30 focus:border-accent focus:shadow-[0_0_22px_rgba(var(--accent-rgb),.12)] lg:text-base"
+                      />
                     </div>
                   </div>
                 </div>
               </AssistantStep>
             )}
 
-            {step === 6 && (
+            {step === 4 && !submitSuccess && (
               <AssistantStep
-                eyebrow="Étape 6 sur 6"
-                title="À qui devons-nous répondre ?"
-                subtitle="Dernière étape : vos coordonnées et le récapitulatif."
+                eyebrow="Étape 4 sur 4"
+                title="Finalisez votre demande."
+                subtitle="Le lieu, le créneau et vos coordonnées : tout se règle ici."
               >
-                <div className="grid gap-4 lg:grid-cols-[1fr_0.9fr]">
-                  <div className="auto9-card-enter grid gap-3 sm:grid-cols-2">
-                    <input
-                      value={customerName}
-                      onChange={(event) =>
-                        setCustomerName(event.target.value)
-                      }
-                      placeholder="Nom et prénom *"
-                      autoComplete="name"
-                      className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm outline-none transition placeholder:text-white/30 focus:border-accent focus:shadow-[0_0_22px_rgba(var(--accent-rgb),.12)]"
-                    />
+                <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
+                  <div className="grid gap-4">
+                    <section
+                      id="quote-when"
+                      className="auto9-card-enter grid scroll-mt-28 gap-4 rounded-2xl border border-white/10 bg-black/25 p-4 lg:p-6"
+                    >
+                      <FinalSectionTitle number={1} title="Où et quand ?" />
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                        {(Object.keys(servicePlaceLabel) as ServicePlace[]).map(
+                          (place, index) => (
+                            <div
+                              key={place}
+                              className="auto9-card-enter"
+                              style={{
+                                animationDelay: `${index * 60}ms`,
+                              }}
+                            >
+                              <ChoiceRow
+                                title={servicePlaceLabel[place]}
+                                price=""
+                                active={servicePlace === place}
+                                onClick={() => setServicePlace(place)}
+                              />
+                            </div>
+                          ),
+                        )}
+                      </div>
+                    <div
+                      className="space-y-4"
+                      style={{
+                        animationDelay: "130ms",
+                      }}
+                    >
+                      <div>
+                        <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-accent-soft">
+                          Date souhaitée
+                        </p>
 
-                    <input
-                      value={customerPhone}
-                      onChange={(event) =>
-                        setCustomerPhone(event.target.value)
-                      }
-                      placeholder="Téléphone *"
-                      inputMode="tel"
-                      autoComplete="tel"
-                      className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm outline-none transition placeholder:text-white/30 focus:border-accent focus:shadow-[0_0_22px_rgba(var(--accent-rgb),.12)]"
-                    />
+                        <div className="grid grid-cols-3 gap-2 sm:grid-cols-5 lg:grid-cols-7">
+                          {availabilityDays.map((day) => {
+                            const disabled = isDateDisabled(day.value);
+                            const active =
+                              selectedAvailabilityDate === day.value;
 
-                    <input
-                      value={customerEmail}
-                      onChange={(event) =>
-                        setCustomerEmail(event.target.value)
-                      }
-                      type="email"
-                      placeholder="Email (pour recevoir votre devis)"
-                      inputMode="email"
-                      autoComplete="email"
-                      className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm outline-none transition placeholder:text-white/30 focus:border-accent focus:shadow-[0_0_22px_rgba(var(--accent-rgb),.12)] sm:col-span-2"
-                    />
+                            return (
+                              <button
+                                key={day.value}
+                                type="button"
+                                disabled={disabled}
+                                onClick={() =>
+                                  handleAvailabilityDateSelect(day.value)
+                                }
+                                className={`rounded-xl border px-2 py-2.5 text-center text-[10px] font-black uppercase transition duration-300 ${
+                                  active
+                                    ? "border-accent bg-accent/15 text-white shadow-[0_0_18px_rgba(var(--accent-rgb),.25)]"
+                                    : disabled
+                                      ? "cursor-not-allowed border-white/5 text-white/15"
+                                      : "border-white/10 text-white/60 hover:-translate-y-0.5 hover:border-accent/50 hover:text-white"
+                                }`}
+                              >
+                                <span className="block">{day.dayName}</span>
 
-                    <input
-                      value={customerCity}
-                      onChange={(event) =>
-                        setCustomerCity(event.target.value)
-                      }
-                      placeholder="Ville"
-                      autoComplete="address-level2"
-                      className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm outline-none transition placeholder:text-white/30 focus:border-accent focus:shadow-[0_0_22px_rgba(var(--accent-rgb),.12)] sm:col-span-2"
-                    />
+                                <span className="mt-1 block text-xs">
+                                  {day.dayNumber}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
 
-                    <label className="grid gap-2 text-sm text-white/60">
-                      Marque du véhicule *
-                      <input
-                        value={vehicleBrand}
-                        onChange={(event) => setVehicleBrand(event.target.value)}
-                        required
-                        placeholder="Ex. BMW"
-                        className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-accent focus:shadow-[0_0_22px_rgba(var(--accent-rgb),.12)]"
-                      />
-                    </label>
+                      <div>
+                        <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-accent-soft">
+                          Heure souhaitée
+                        </p>
 
-                    <label className="grid gap-2 text-sm text-white/60">
-                      Modèle du véhicule *
-                      <input
-                        value={vehicleModel}
-                        onChange={(event) => setVehicleModel(event.target.value)}
-                        required
-                        placeholder="Ex. Série 3"
-                        className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-accent focus:shadow-[0_0_22px_rgba(var(--accent-rgb),.12)]"
-                      />
-                    </label>
+                        <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-7">
+                          {availabilityTimes.map((time) => {
+                            const disabled =
+                              !selectedAvailabilityDate ||
+                              isSlotDisabled(selectedAvailabilityDate, time);
 
-                    <label className="grid gap-2 text-sm text-white/60 sm:col-span-2">
-                      Immatriculation (optionnel)
-                      <input
-                        value={vehiclePlate}
-                        onChange={(event) => setVehiclePlate(event.target.value)}
-                        placeholder="Ex. AB-123-CD"
-                        className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-accent focus:shadow-[0_0_22px_rgba(var(--accent-rgb),.12)]"
-                      />
-                    </label>
+                            const active =
+                              selectedAvailabilityTime === time;
 
-                    <div className="rounded-xl border border-white/10 bg-black/25 p-4 text-sm sm:col-span-2">
-                      <p className="text-white/45">Créneau demandé</p>
-
-                      <p className="mt-1 font-bold">
-                        {formattedAvailabilityDateTime}
-                      </p>
+                            return (
+                              <button
+                                key={time}
+                                type="button"
+                                disabled={disabled}
+                                onClick={() =>
+                                  handleAvailabilityTimeSelect(time)
+                                }
+                                className={`rounded-full border px-2 py-2.5 text-xs font-black transition duration-300 ${
+                                  active
+                                    ? "border-accent bg-accent/15 text-white shadow-[0_0_18px_rgba(var(--accent-rgb),.25)]"
+                                    : disabled
+                                      ? "cursor-not-allowed border-white/5 text-white/15"
+                                      : "border-white/10 text-white/60 hover:-translate-y-0.5 hover:border-accent/50 hover:text-white"
+                                }`}
+                              >
+                                {time.replace(":", "h")}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
                     </div>
+                    </section>
+
+                    <section
+                      className="auto9-card-enter grid gap-3 rounded-2xl border border-white/10 bg-black/25 p-4 sm:grid-cols-2 lg:p-6"
+                      style={{ animationDelay: "120ms" }}
+                    >
+                      <div className="sm:col-span-2">
+                        <FinalSectionTitle number={2} title="Vos coordonnées" />
+                      </div>
+                      <label htmlFor="quote-name" className="grid gap-2 text-sm text-white/65">
+                        Nom et prénom *
+                        <input
+                          id="quote-name"
+                          value={customerName}
+                          onChange={(event) => setCustomerName(event.target.value)}
+                          placeholder="Ex. Camille Martin"
+                          autoComplete="name"
+                          enterKeyHint="next"
+                          className="w-full rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-base text-white outline-none transition placeholder:text-white/30 focus:border-accent focus:shadow-[0_0_22px_rgba(var(--accent-rgb),.12)] lg:text-sm"
+                        />
+                      </label>
+                      <label htmlFor="quote-phone" className="grid gap-2 text-sm text-white/65">
+                        Téléphone *
+                        <input
+                          id="quote-phone"
+                          value={customerPhone}
+                          onChange={(event) => setCustomerPhone(event.target.value)}
+                          placeholder="06 12 34 56 78"
+                          type="tel"
+                          inputMode="tel"
+                          autoComplete="tel"
+                          enterKeyHint="next"
+                          className="w-full rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-base text-white outline-none transition placeholder:text-white/30 focus:border-accent focus:shadow-[0_0_22px_rgba(var(--accent-rgb),.12)] lg:text-sm"
+                        />
+                      </label>
+                      <label htmlFor="quote-email" className="grid gap-2 text-sm text-white/65">
+                        Email (pour recevoir votre devis)
+                        <input
+                          id="quote-email"
+                          value={customerEmail}
+                          onChange={(event) => setCustomerEmail(event.target.value)}
+                          placeholder="vous@exemple.fr"
+                          type="email"
+                          inputMode="email"
+                          autoComplete="email"
+                          enterKeyHint="next"
+                          className="w-full rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-base text-white outline-none transition placeholder:text-white/30 focus:border-accent focus:shadow-[0_0_22px_rgba(var(--accent-rgb),.12)] lg:text-sm"
+                        />
+                      </label>
+                      <label htmlFor="quote-city" className="grid gap-2 text-sm text-white/65">
+                        Ville
+                        <input
+                          id="quote-city"
+                          value={customerCity}
+                          onChange={(event) => setCustomerCity(event.target.value)}
+                          placeholder="Ex. Nîmes"
+                          autoComplete="address-level2"
+                          enterKeyHint="done"
+                          className="w-full rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-base text-white outline-none transition placeholder:text-white/30 focus:border-accent focus:shadow-[0_0_22px_rgba(var(--accent-rgb),.12)] lg:text-sm"
+                        />
+                      </label>
+                    </section>
                   </div>
 
                   <div
-                    className="auto9-card-enter overflow-hidden rounded-2xl border border-accent/30 bg-accent/10 shadow-[0_0_45px_rgba(var(--accent-rgb),.08)]"
+                    className="auto9-card-enter overflow-hidden rounded-2xl border border-accent/30 lg:sticky lg:top-6 bg-accent/10 shadow-[0_0_45px_rgba(var(--accent-rgb),.08)]"
                     style={{
                       animationDelay: "100ms",
                     }}
@@ -1371,6 +1395,14 @@ export function QuoteConfigurator() {
                         <SummaryLine
                           label="Lieu"
                           value={servicePlaceLabel[servicePlace]}
+                        />
+                        <SummaryLine
+                          label="Créneau"
+                          value={
+                            availabilityDateTime
+                              ? formattedAvailabilityDateTime
+                              : "À choisir"
+                          }
                         />
 
                         <SummaryLine
@@ -1448,18 +1480,70 @@ export function QuoteConfigurator() {
                   </div>
                 </div>
 
-                {submitError && (
-                  <p className="auto9-message-enter mt-4 rounded-xl border border-red-400/25 bg-red-400/10 p-3 text-sm font-bold text-red-200">
-                    {submitError}
-                  </p>
-                )}
+                <div className="auto9-card-enter mt-5 grid gap-3" style={{ animationDelay: "200ms" }}>
+                  {missingItems.length > 0 && (
+                    <div
+                      className="auto9-message-enter flex flex-wrap items-center gap-2 text-sm text-white/65"
+                      aria-live="polite"
+                    >
+                      <span>Il manque :</span>
+                      {missingItems.map((item) => (
+                        <button
+                          key={item.label}
+                          type="button"
+                          onClick={item.action}
+                          className="rounded-full border border-accent/35 bg-accent/10 px-3 py-1.5 text-xs font-black text-white transition duration-300 hover:-translate-y-0.5 hover:border-accent"
+                        >
+                          {item.label} →
+                        </button>
+                      ))}
+                    </div>
+                  )}
 
-                {submitSuccess && (
-                  <p className="auto9-message-enter mt-4 rounded-xl border border-emerald-400/25 bg-emerald-400/10 p-3 text-sm font-bold text-emerald-200">
-                    Votre demande a bien été envoyée à AUTO 9.
-                  </p>
-                )}
+                  <button
+                    type="button"
+                    onClick={handleQuoteRequest}
+                    disabled={missingItems.length > 0 || isSubmitting}
+                    className="group w-full rounded-full bg-metal px-6 py-4 text-xs font-black uppercase tracking-[0.18em] text-on-metal shadow-[0_18px_45px_rgba(var(--metal-rgb),.2)] transition duration-300 hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-40 lg:text-sm"
+                  >
+                    {isSubmitting ? "Envoi en cours…" : `Envoyer ma demande · ${totalPrice}€`}{" "}
+                    {!isSubmitting && (
+                      <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">
+                        →
+                      </span>
+                    )}
+                  </button>
+
+                  {submitError && (
+                    <p className="auto9-message-enter rounded-xl border border-red-400/25 bg-red-400/10 p-3 text-sm font-bold text-red-200" role="alert">
+                      {submitError}
+                    </p>
+                  )}
+                </div>
               </AssistantStep>
+            )}
+
+            {step === 4 && submitSuccess && (
+              <div className="mx-auto max-w-2xl py-6 text-center lg:py-12" role="status">
+                <span className="auto9-success-pop mx-auto grid h-20 w-20 place-items-center rounded-full bg-accent text-4xl font-black text-on-metal shadow-[0_0_45px_rgba(var(--accent-rgb),.45)]">
+                  ✓
+                </span>
+                <h2 className="auto9-card-enter mt-7 text-3xl font-black tracking-[-0.04em] lg:text-5xl" style={{ animationDelay: "150ms" }}>
+                  Demande envoyée.
+                </h2>
+                <p className="auto9-card-enter mx-auto mt-3 max-w-md text-sm leading-relaxed text-white/65 lg:text-lg" style={{ animationDelay: "250ms" }}>
+                  {currentService.premiumName} · {vehicleIdentity} · {formattedAvailabilityDateTime}.
+                  AUTO 9 vous recontacte rapidement pour confirmer le créneau.
+                </p>
+                <div className="auto9-card-enter mt-8" style={{ animationDelay: "350ms" }}>
+                  <Link
+                    href="/"
+                    className="inline-block rounded-full bg-metal px-6 py-4 text-xs font-black uppercase tracking-[0.18em] text-on-metal shadow-[0_18px_45px_rgba(var(--metal-rgb),.2)] transition hover:brightness-105"
+                  >
+                    Retour au site
+                  </Link>
+                </div>
+              </div>
             )}
           </div>
         </main>
@@ -1473,7 +1557,7 @@ export function QuoteConfigurator() {
             </p>
 
             <p className="text-xs text-white/40 lg:text-base">
-              {stepLabels[step - 1]} · étape {step}/6
+              {stepLabels[step - 1]} · étape {step}/{stepLabels.length}
             </p>
           </div>
 
@@ -1502,7 +1586,7 @@ export function QuoteConfigurator() {
             </button>
           )}
 
-          {step < 6 ? (
+          {step < stepLabels.length ? (
             <button
               type="button"
               onClick={() => goToStep(step + 1)}
@@ -1517,9 +1601,7 @@ export function QuoteConfigurator() {
             <button
               type="button"
               onClick={handleQuoteRequest}
-              disabled={
-                !contactReady || !vehicleReady || !canRequestAvailability || isSubmitting
-              }
+              disabled={missingItems.length > 0 || isSubmitting || submitSuccess}
               className="rounded-full bg-white px-5 py-3 text-[10px] font-black uppercase tracking-[0.14em] text-black shadow-[0_12px_30px_rgba(255,255,255,.1)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#DDEBFF] disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:translate-y-0 lg:px-9 lg:py-5 lg:text-sm"
             >
               {isSubmitting
@@ -1574,6 +1656,21 @@ export function QuoteConfigurator() {
             opacity: 1;
             transform: scale(1);
             filter: blur(0);
+          }
+        }
+
+        @keyframes auto9SuccessPop {
+          0% {
+            opacity: 0;
+            transform: scale(0.4) rotate(-12deg);
+          }
+          60% {
+            opacity: 1;
+            transform: scale(1.12) rotate(3deg);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1) rotate(0);
           }
         }
 
@@ -1671,6 +1768,10 @@ export function QuoteConfigurator() {
             both;
         }
 
+        .auto9-success-pop {
+          animation: auto9SuccessPop 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
         .auto9-message-enter {
           animation: auto9MessageEnter 420ms ease-out both;
         }
@@ -1713,6 +1814,7 @@ export function QuoteConfigurator() {
           .auto9-card-enter,
           .auto9-price-pop,
           .auto9-message-enter,
+          .auto9-success-pop,
           .auto9-bottom-bar,
           .auto9-orb-one,
           .auto9-orb-two,
@@ -1805,6 +1907,25 @@ function ChoiceRow({
         </span>
       )}
     </button>
+  );
+}
+
+function FinalSectionTitle({
+  number,
+  title,
+}: {
+  number: number;
+  title: string;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent text-xs font-black text-on-metal shadow-[0_0_18px_rgba(var(--accent-rgb),.35)]">
+        {number}
+      </span>
+      <p className="text-base font-black uppercase tracking-[0.08em] lg:text-lg">
+        {title}
+      </p>
+    </div>
   );
 }
 
