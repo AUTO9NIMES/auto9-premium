@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ensureCrmV2Access } from "../access";
 import {
   getCalendarMonth,
   type CalendarAppointmentItem,
@@ -154,6 +155,8 @@ export default async function CrmV2Calendar({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await ensureCrmV2Access("/crm-v2/calendar");
+
   const params = await searchParams;
   const rawMonth = Array.isArray(params.month) ? params.month[0] : params.month;
   const selectedMonth = normalizeMonth(rawMonth);

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ensureCrmV2Access } from "../access";
 import { resolveCurrentBusinessContext } from "../../lib/business";
 import { supabaseRest } from "../../lib/supabase";
 import type { Payment } from "../../lib/crm";
@@ -65,6 +66,8 @@ export default async function RevenuePage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await ensureCrmV2Access("/crm-v2/revenue");
+
   const params = await searchParams;
   const rawYear = Array.isArray(params.year) ? params.year[0] : params.year;
   const currentYear = new Date().getFullYear();

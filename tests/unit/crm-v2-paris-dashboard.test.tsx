@@ -9,6 +9,8 @@ vi.mock("../../app/lib/supabase", () => ({ supabaseRest: mocks.rest }));
 vi.mock("../../app/lib/crm", () => ({ getCrmDashboardMetrics: mocks.metrics, getCalendarMonth: mocks.calendar }));
 vi.mock("../../app/lib/manual-revenue", () => ({ getManualRevenueEntries: mocks.manual }));
 vi.mock("../../app/lib/historical-calendar", () => ({ getHistoricalCalendarEntries: mocks.historical }));
+// Contrôle d'accès du CRM V2 : utilisateur connecté simulé (ce test porte sur les dates de Paris).
+vi.mock("../../app/crm-v2/access", () => ({ ensureCrmV2Access: async () => ({ role: "owner" }) }));
 import Dashboard from "../../app/crm-v2/page";
 
 beforeEach(() => {
