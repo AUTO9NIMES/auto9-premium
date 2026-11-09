@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ensureCrmV2Access } from "./access";
 import { readRequestClock } from "../lib/request-clock";
 import { parisDateKey } from "../lib/paris-business-calendar";
 import { getCalendarMonth, getCrmDashboardMetrics, type CalendarAppointmentItem, type Payment } from "../lib/crm";
@@ -110,6 +111,8 @@ function MiniEvent({ item }: { item: CalendarAppointmentItem }) {
 }
 
 export default async function CrmV2Dashboard() {
+  await ensureCrmV2Access("/crm-v2");
+
   const { businessId } = await resolveCurrentBusinessContext();
   const calendarDate = new Date(await readRequestClock());
   const currentDay = parisDateKey(calendarDate);

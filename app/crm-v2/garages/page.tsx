@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ensureCrmV2Access } from "../access";
 import { readRequestClock } from "../../lib/request-clock";
 import { parisDateKey } from "../../lib/paris-business-calendar";
 import { resolveCurrentBusinessContext } from "../../lib/business";
@@ -41,6 +42,8 @@ export default async function GaragesPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await ensureCrmV2Access("/crm-v2/garages");
+
   const params = await searchParams;
   const raw = (key: string) => {
     const value = params[key];

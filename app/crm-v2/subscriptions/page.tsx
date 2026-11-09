@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ensureCrmV2Access } from "../access";
 import { getCustomersList, type Customer } from "../../lib/crm";
 import { resolveCurrentBusinessContext } from "../../lib/business";
 import { supabaseRest } from "../../lib/supabase";
@@ -60,6 +61,8 @@ export default async function SubscriptionsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await ensureCrmV2Access("/crm-v2/subscriptions");
+
   const params = await searchParams;
   const showNew = (Array.isArray(params.new) ? params.new[0] : params.new) === "1";
   const created = (Array.isArray(params.created) ? params.created[0] : params.created) === "1";

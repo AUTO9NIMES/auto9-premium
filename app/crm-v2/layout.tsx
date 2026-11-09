@@ -1,22 +1,9 @@
 import "./crm-v2.css";
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { CrmAccessError, requireCrmAccess } from "../lib/auth/dal";
+import { ensureCrmV2Access } from "./access";
 import ThemeToggle from "./ThemeToggle";
 
 export const dynamic = "force-dynamic";
-
-async function ensureCrmAccess() {
-  try {
-    await requireCrmAccess();
-  } catch (error) {
-    if (error instanceof CrmAccessError) {
-      if (error.code === "UNAUTHENTICATED") redirect("/crm/login?next=/crm-v2");
-      if (error.code === "FORBIDDEN") redirect("/crm/login?error=access");
-    }
-    throw error;
-  }
-}
 
 const nav = [
   ["Pilotage", "/crm-v2"],
@@ -31,7 +18,7 @@ const nav = [
 ];
 
 export default async function CrmV2Layout({ children }: { children: React.ReactNode }) {
-  await ensureCrmAccess();
+  await ensureCrmV2Access();
 
   return (
     <div className="crm-v2-root min-h-screen bg-[#070b10] text-white">

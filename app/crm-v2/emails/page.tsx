@@ -1,4 +1,5 @@
 import { getCustomersList } from "../../lib/crm";
+import { ensureCrmV2Access } from "../access";
 import { resolveCurrentBusinessContext } from "../../lib/business";
 import { supabaseRest } from "../../lib/supabase";
 import EmailEditor from "./EmailEditor";
@@ -15,6 +16,8 @@ type EmailSubscription = {
 };
 
 export default async function EmailsPage() {
+  await ensureCrmV2Access("/crm-v2/emails");
+
   const customers = await getCustomersList({ page: 1, limit: 100 });
   const { businessId } = await resolveCurrentBusinessContext();
 
