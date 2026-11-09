@@ -1,6 +1,6 @@
 /*
  * FICHIER GÉNÉRÉ — ne pas modifier à la main.
- * Source : scripts/generate-crm-v2-light-adapter.mjs (189 règles).
+ * Source : scripts/generate-crm-v2-light-adapter.mjs (181 règles).
  * Couche de transition : convertit les pages du CRM V2 encore codées en sombre
  * vers le thème clair « Porcelaine émeraude ». À supprimer quand toutes les
  * pages auront leur design clair natif.
@@ -22,7 +22,6 @@
 .crm-v2-root.crm-skin-light .bg-amber-300\/\[0\.035\] { background-color: rgba(var(--crm-warning-rgb), 0.080); }
 .crm-v2-root.crm-skin-light .bg-amber-300\/\[0\.04\] { background-color: rgba(var(--crm-warning-rgb), 0.088); }
 .crm-v2-root.crm-skin-light .bg-amber-300\/\[0\.05\] { background-color: rgba(var(--crm-warning-rgb), 0.110); }
-.crm-v2-root.crm-skin-light .bg-amber-300\/\[0\.06\] { background-color: rgba(var(--crm-warning-rgb), 0.132); }
 .crm-v2-root.crm-skin-light .bg-amber-400\/10 { background-color: rgba(var(--crm-warning-rgb), 0.220); }
 .crm-v2-root.crm-skin-light .bg-black\/10 { background-color: var(--crm-glass-soft); }
 .crm-v2-root.crm-skin-light .bg-black\/80 { background-color: var(--crm-glass-soft); }
@@ -76,7 +75,6 @@
 .crm-v2-root.crm-skin-light .border-cyan-300\/45 { border-color: rgba(var(--crm-accent-rgb), 0.700); }
 .crm-v2-root.crm-skin-light .border-cyan-300\/50 { border-color: rgba(var(--crm-accent-rgb), 0.700); }
 .crm-v2-root.crm-skin-light .border-cyan-400\/20 { border-color: rgba(var(--crm-accent-rgb), 0.360); }
-.crm-v2-root.crm-skin-light .border-emerald-300\/10 { border-color: rgba(var(--crm-accent-rgb), 0.300); }
 .crm-v2-root.crm-skin-light .border-emerald-300\/12 { border-color: rgba(var(--crm-accent-rgb), 0.300); }
 .crm-v2-root.crm-skin-light .border-emerald-300\/15 { border-color: rgba(var(--crm-accent-rgb), 0.300); }
 .crm-v2-root.crm-skin-light .border-emerald-300\/18 { border-color: rgba(var(--crm-accent-rgb), 0.324); }
@@ -109,19 +107,14 @@
 .crm-v2-root.crm-skin-light .from-\[\#10243a\] { --tw-gradient-from: rgba(255, 255, 255, 0.55); }
 .crm-v2-root.crm-skin-light .from-\[\#10253a\] { --tw-gradient-from: rgba(255, 255, 255, 0.55); }
 .crm-v2-root.crm-skin-light .from-cyan-300\/10 { --tw-gradient-from: rgba(var(--crm-accent-rgb), 0.140); }
-.crm-v2-root.crm-skin-light .from-cyan-300\/\[0\.035\] { --tw-gradient-from: rgba(var(--crm-accent-rgb), 0.049); }
-.crm-v2-root.crm-skin-light .from-cyan-300\/\[0\.045\] { --tw-gradient-from: rgba(var(--crm-accent-rgb), 0.063); }
 .crm-v2-root.crm-skin-light .from-cyan-300\/\[0\.06\] { --tw-gradient-from: rgba(var(--crm-accent-rgb), 0.084); }
-.crm-v2-root.crm-skin-light .from-emerald-300\/\[0\.045\] { --tw-gradient-from: rgba(var(--crm-accent-rgb), 0.063); }
 .crm-v2-root.crm-skin-light .hover\:bg-\[rgb\(165:hover { background-color: rgba(var(--crm-accent-rgb), 0.14); }
-.crm-v2-root.crm-skin-light .hover\:bg-amber-300\/\[0\.1\]:hover { background-color: rgba(var(--crm-warning-rgb), 0.220); }
 .crm-v2-root.crm-skin-light .hover\:bg-cyan-300\/10:hover { background-color: rgba(var(--crm-accent-rgb), 0.220); }
 .crm-v2-root.crm-skin-light .hover\:bg-cyan-300\/15:hover { background-color: rgba(var(--crm-accent-rgb), 0.330); }
 .crm-v2-root.crm-skin-light .hover\:bg-cyan-300\/20:hover { background-color: rgba(var(--crm-accent-rgb), 0.440); }
 .crm-v2-root.crm-skin-light .hover\:bg-cyan-300\/\[0\.035\]:hover { background-color: rgba(var(--crm-accent-rgb), 0.080); }
 .crm-v2-root.crm-skin-light .hover\:bg-red-300\/20:hover { background-color: rgba(var(--crm-danger-rgb), 0.440); }
 .crm-v2-root.crm-skin-light .hover\:border-\[rgb\(165:hover { border-color: rgba(var(--crm-accent-rgb), 0.3); }
-.crm-v2-root.crm-skin-light .hover\:border-amber-200\/35:hover { border-color: rgba(var(--crm-warning-rgb), 0.630); }
 .crm-v2-root.crm-skin-light .hover\:border-amber-300\/30:hover { border-color: rgba(var(--crm-warning-rgb), 0.540); }
 .crm-v2-root.crm-skin-light .hover\:border-cyan-300\/25:hover { border-color: rgba(var(--crm-accent-rgb), 0.450); }
 .crm-v2-root.crm-skin-light .hover\:border-cyan-300\/30:hover { border-color: rgba(var(--crm-accent-rgb), 0.540); }
@@ -153,7 +146,6 @@
 .crm-v2-root.crm-skin-light .text-cyan-100\/50 { color: var(--crm-accent-text); }
 .crm-v2-root.crm-skin-light .text-cyan-100\/80 { color: var(--crm-accent-text); }
 .crm-v2-root.crm-skin-light .text-cyan-200 { color: var(--crm-accent-text); }
-.crm-v2-root.crm-skin-light .text-cyan-200\/45 { color: var(--crm-accent-text); }
 .crm-v2-root.crm-skin-light .text-cyan-200\/50 { color: var(--crm-accent-text); }
 .crm-v2-root.crm-skin-light .text-cyan-200\/55 { color: var(--crm-accent-text); }
 .crm-v2-root.crm-skin-light .text-cyan-200\/60 { color: var(--crm-accent-text); }

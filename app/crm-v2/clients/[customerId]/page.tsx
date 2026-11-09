@@ -143,6 +143,27 @@ function birthday(value?: string | null) {
   }).format(date);
 }
 
+function initials(name: string) {
+  const letters = name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+  return letters || "?";
+}
+
+function shortDate(value?: string | null) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "Europe/Paris",
+  }).format(date);
+}
 
 export default async function CustomerV2Page({
   params,
@@ -312,7 +333,7 @@ export default async function CustomerV2Page({
     <div className="space-y-7">
       <Link
         href="/crm-v2/clients"
-        className="text-xs text-cyan-200/65 hover:text-cyan-100"
+        className="crm-accent-text text-xs font-semibold"
       >
         ← Retour aux clients
       </Link>
@@ -343,52 +364,34 @@ export default async function CustomerV2Page({
         </div>
       )}
 
-      <section className="rounded-3xl border border-cyan-300/15 bg-gradient-to-br from-cyan-300/[0.06] to-blue-500/[0.025] p-6 md:p-8">
-        <p className="text-[10px] uppercase tracking-[0.22em] text-cyan-200/55">
-          Dossier client
-        </p>
-
-        <div className="mt-3 flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight md:text-5xl">
-              {customerName(result)}
-            </h1>
-            <p className="mt-3 text-sm text-white/45">
-              {[c.email, c.phone, c.city].filter(Boolean).join(" · ") ||
-                "Coordonnées non renseignées"}
-            </p>
-            <p className="mt-2 text-xs text-white/35">
-              🎂 Anniversaire : {birthday(c.birth_date)}
-            </p>
+      <section className="crm-glass rounded-[26px] p-5 md:p-7" data-customer-header>
+        <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex min-w-0 items-center gap-4">
+            <span
+              aria-hidden="true"
+              className="crm-hero-card grid h-14 w-14 shrink-0 place-items-center rounded-2xl text-lg font-extrabold md:h-16 md:w-16 md:text-xl"
+            >
+              {initials(customerName(result))}
+            </span>
+            <div className="min-w-0">
+              <p className="crm-eyebrow">Fiche client</p>
+              <h1 className="crm-display mt-1 truncate text-3xl md:text-[42px] md:leading-none">
+                {customerName(result)}
+              </h1>
+              <p className="crm-muted mt-2 text-sm">
+                {[c.email, c.phone, c.city].filter(Boolean).join(" · ") ||
+                  "Coordonnées non renseignées"}
+              </p>
+              <p className="crm-faint mt-1 text-xs">
+                🎂 Anniversaire : {birthday(c.birth_date)}
+              </p>
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Link
-              href={`/crm-v2/clients/${id}?edit=1`}
-              className="rounded-xl border border-white/10 px-4 py-2.5 text-xs text-white/70 hover:border-cyan-300/25 hover:text-cyan-100"
-            >
-              Modifier le client
-            </Link>
-            <Link
-              href={`/crm-v2/clients/${id}?new_vehicle=1`}
-              className="rounded-xl border border-cyan-300/20 bg-cyan-300/[0.05] px-4 py-2.5 text-xs text-cyan-100"
-            >
-              + Véhicule
-            </Link>
             {c.phone && (
-              <a
-                href={"tel:" + c.phone}
-                className="rounded-xl border border-white/10 px-4 py-2.5 text-xs text-white/70"
-              >
+              <a href={"tel:" + c.phone} className="crm-btn" data-variant="primary">
                 Appeler
-              </a>
-            )}
-            {c.email && (
-              <a
-                href={"mailto:" + c.email}
-                className="rounded-xl border border-white/10 px-4 py-2.5 text-xs text-white/70"
-              >
-                Email
               </a>
             )}
             {whatsapp && (
@@ -396,23 +399,204 @@ export default async function CustomerV2Page({
                 href={whatsapp}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-xl border border-emerald-300/20 bg-emerald-300/[0.05] px-4 py-2.5 text-xs text-emerald-100"
+                className="crm-btn"
               >
                 WhatsApp
               </a>
             )}
+            {c.email && (
+              <a href={"mailto:" + c.email} className="crm-btn">
+                Email
+              </a>
+            )}
+            <Link href={`/crm-v2/clients/${id}?edit=1`} className="crm-btn">
+              Modifier le client
+            </Link>
+            <Link href={`/crm-v2/clients/${id}?new_vehicle=1`} className="crm-btn">
+              + Véhicule
+            </Link>
           </div>
         </div>
       </section>
 
+      <section className="grid grid-cols-2 gap-3 xl:grid-cols-4" aria-label="Chiffres clés du client">
+        {[
+          {
+            key: "collected",
+            label: "Total encaissé",
+            value: paymentEur.format(finance.totalCollected),
+            detail: `${finance.paymentCount} paiement${finance.paymentCount > 1 ? "s" : ""} enregistré${finance.paymentCount > 1 ? "s" : ""}`,
+          },
+          {
+            key: "jobs",
+            label: "Prestations",
+            value: String(result.jobs.length),
+            detail: `${activeJobs} en cours`,
+          },
+          {
+            key: "last-visit",
+            label: "Dernière visite",
+            value: shortDate(latestCompletedAppointment?.scheduled_at) ?? "—",
+            detail: nextAppointment
+              ? `Prochain RDV : ${shortDate(nextAppointment.scheduled_at) ?? "à préciser"}`
+              : "Aucun RDV à venir",
+          },
+          {
+            key: "since",
+            label: "Client depuis",
+            value: shortDate(c.created_at) ?? "—",
+            detail: `${result.vehicles.length} véhicule${result.vehicles.length > 1 ? "s" : ""}`,
+          },
+        ].map((kpi) => (
+          <div key={kpi.key} className="crm-glass rounded-[20px] p-4 md:p-5" data-customer-kpi={kpi.key}>
+            <p className="crm-eyebrow">{kpi.label}</p>
+            <p className="crm-display crm-num mt-2 text-2xl md:text-[28px]">{kpi.value}</p>
+            <p className="crm-muted mt-1 text-xs">{kpi.detail}</p>
+          </div>
+        ))}
+      </section>
+
+      <section className="crm-hero-card p-5 md:p-7" data-next-action={nextAction.kind}>
+        <div className="flex flex-wrap items-start justify-between gap-5">
+          <div className="max-w-2xl">
+            <span className="crm-chip crm-on-dark-chip">
+              <span className="h-1.5 w-1.5 rounded-full" style={{ background: "var(--crm-ring)" }} />
+              Prochaine action
+            </span>
+            <h2 className="crm-display mt-3 text-2xl md:text-3xl">
+              {nextActionPresentation.title}
+            </h2>
+            <p className="crm-on-dark-muted mt-2 text-sm leading-6">
+              {nextActionPresentation.detail}
+            </p>
+          </div>
+
+          {nextAction.kind === "SCHEDULE_JOB" && nextActionJob ? (
+            <form action={scheduleV2CustomerJob} className="flex flex-wrap items-end gap-2">
+              <input type="hidden" name="customerId" value={id} />
+              <input type="hidden" name="jobId" value={nextActionJob.id} />
+              <label className="crm-on-dark-muted text-[10px] font-bold uppercase tracking-[0.12em]">
+                Créneau
+                <input
+                  type="datetime-local"
+                  name="scheduledAt"
+                  required
+                  className="crm-on-dark-field mt-1 block rounded-xl px-3 py-2 text-xs"
+                />
+              </label>
+              <button className="crm-btn crm-on-dark-btn">
+                Planifier
+              </button>
+            </form>
+          ) : nextAction.kind === "CONFIRM_APPOINTMENT" &&
+            nextActionJob &&
+            nextActionAppointment ? (
+            <form action={confirmV2CustomerAppointment}>
+              <input type="hidden" name="customerId" value={id} />
+              <input type="hidden" name="jobId" value={nextActionJob.id} />
+              <input
+                type="hidden"
+                name="appointmentId"
+                value={nextActionAppointment.id}
+              />
+              <button className="crm-btn crm-on-dark-btn">
+                Confirmer le rendez-vous
+              </button>
+            </form>
+          ) : nextAction.kind === "START_JOB" && nextActionJob ? (
+            <form action={startV2CustomerJob}>
+              <input type="hidden" name="customerId" value={id} />
+              <input type="hidden" name="jobId" value={nextActionJob.id} />
+              <button className="crm-btn crm-on-dark-btn">
+                Démarrer la prestation
+              </button>
+            </form>
+          ) : nextAction.kind === "COMPLETE_JOB" &&
+            nextActionJob &&
+            nextActionAppointment ? (
+            <form action={completeV2CustomerJob}>
+              <input type="hidden" name="customerId" value={id} />
+              <input type="hidden" name="jobId" value={nextActionJob.id} />
+              <input
+                type="hidden"
+                name="appointmentId"
+                value={nextActionAppointment.id}
+              />
+              <button className="crm-btn crm-on-dark-btn">
+                Terminer la prestation
+              </button>
+            </form>
+          ) : nextAction.kind === "RECORD_PAYMENT" &&
+            nextActionJob &&
+            paymentIdempotencyKey ? (
+            <form
+              action={recordV2CustomerJobPayment}
+              className="flex flex-wrap items-end gap-2"
+            >
+              <input type="hidden" name="customerId" value={id} />
+              <input type="hidden" name="jobId" value={nextActionJob.id} />
+              <input
+                type="hidden"
+                name="idempotencyKey"
+                value={paymentIdempotencyKey}
+              />
+              <label className="crm-on-dark-muted text-[10px] font-bold uppercase tracking-[0.12em]">
+                Paiement
+                <select
+                  name="method"
+                  required
+                  defaultValue=""
+                  className="crm-on-dark-field mt-1 block rounded-xl px-3 py-2 text-xs"
+                >
+                  <option value="" disabled>Mode</option>
+                  <option value="CASH">Espèces</option>
+                  <option value="CARD">Carte</option>
+                  <option value="BANK_TRANSFER">Virement</option>
+                  <option value="OTHER">Autre</option>
+                </select>
+              </label>
+              <button className="crm-btn crm-on-dark-btn">
+                Encaisser
+              </button>
+            </form>
+          ) : nextAction.kind === "REQUEST_REVIEW" &&
+            nextActionJob &&
+            reviewIdempotencyKey ? (
+            <form action={requestV2CustomerJobReview}>
+              <input type="hidden" name="customerId" value={id} />
+              <input type="hidden" name="jobId" value={nextActionJob.id} />
+              <input
+                type="hidden"
+                name="idempotencyKey"
+                value={reviewIdempotencyKey}
+              />
+              <button className="crm-btn crm-on-dark-btn">
+                Demander un avis
+              </button>
+            </form>
+          ) : nextAction.href ? (
+            <Link
+              href={nextAction.href}
+              className="crm-btn crm-on-dark-btn"
+            >
+              Ouvrir l&apos;action →
+            </Link>
+          ) : (
+            <span className="crm-chip crm-on-dark-chip">
+              À jour
+            </span>
+          )}
+        </div>
+      </section>
+
       {showEdit && (
-        <section className="rounded-3xl border border-cyan-300/15 bg-[#0b121b] p-5 md:p-6">
+        <section className="crm-glass rounded-[26px] p-5 md:p-6">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-[10px] uppercase tracking-[0.22em] text-cyan-200/50">
                 Profil
               </p>
-              <h2 className="mt-2 text-xl font-semibold">
+              <h2 className="crm-display mt-1 text-2xl">
                 Modifier les informations client
               </h2>
             </div>
@@ -504,13 +688,13 @@ export default async function CustomerV2Page({
       )}
 
       {showVehicle && (
-        <section className="rounded-3xl border border-cyan-300/15 bg-[#0b121b] p-5 md:p-6">
+        <section className="crm-glass rounded-[26px] p-5 md:p-6">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-[10px] uppercase tracking-[0.22em] text-cyan-200/50">
                 Parc client
               </p>
-              <h2 className="mt-2 text-xl font-semibold">Ajouter un véhicule</h2>
+              <h2 className="crm-display mt-1 text-2xl">Ajouter un véhicule</h2>
             </div>
             <Link
               href={`/crm-v2/clients/${id}`}
@@ -575,13 +759,13 @@ export default async function CustomerV2Page({
 
       <section className="space-y-3">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-cyan-200/45">
+          <p className="crm-eyebrow">
             Cockpit
           </p>
-          <h2 className="mt-2 text-xl font-semibold">Vue opérationnelle</h2>
+          <h2 className="crm-display mt-1 text-2xl">Vue opérationnelle</h2>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
           {[
             ["Véhicules", result.vehicles.length, "Parc client"],
             [
@@ -598,7 +782,7 @@ export default async function CustomerV2Page({
           ].map(([label, value, detail]) => (
             <div
               key={String(label)}
-              className="rounded-2xl border border-white/8 bg-white/[0.025] p-5"
+              className="crm-glass rounded-[20px] p-5"
             >
               <p className="text-[10px] uppercase tracking-[0.18em] text-white/30">
                 {label}
@@ -609,139 +793,7 @@ export default async function CustomerV2Page({
           ))}
         </div>
 
-        <div className="rounded-2xl border border-amber-300/15 bg-gradient-to-br from-amber-300/[0.055] to-transparent p-5 md:p-6">
-          <div className="flex flex-wrap items-start justify-between gap-5">
-            <div className="max-w-2xl">
-              <p className="text-[10px] uppercase tracking-[0.18em] text-amber-200/55">
-                Prochaine action
-              </p>
-              <h3 className="mt-2 text-lg font-semibold">
-                {nextActionPresentation.title}
-              </h3>
-              <p className="mt-2 text-sm leading-6 text-white/40">
-                {nextActionPresentation.detail}
-              </p>
-            </div>
-
-            {nextAction.kind === "SCHEDULE_JOB" && nextActionJob ? (
-              <form action={scheduleV2CustomerJob} className="flex flex-wrap items-end gap-2">
-                <input type="hidden" name="customerId" value={id} />
-                <input type="hidden" name="jobId" value={nextActionJob.id} />
-                <label className="text-[10px] uppercase tracking-[0.12em] text-white/35">
-                  Créneau
-                  <input
-                    type="datetime-local"
-                    name="scheduledAt"
-                    required
-                    className="mt-1 block rounded-xl border border-white/10 bg-[#081019] px-3 py-2 text-xs text-white"
-                  />
-                </label>
-                <button className="rounded-xl border border-amber-300/20 bg-amber-300/[0.06] px-4 py-2.5 text-xs font-semibold text-amber-100">
-                  Planifier
-                </button>
-              </form>
-            ) : nextAction.kind === "CONFIRM_APPOINTMENT" &&
-              nextActionJob &&
-              nextActionAppointment ? (
-              <form action={confirmV2CustomerAppointment}>
-                <input type="hidden" name="customerId" value={id} />
-                <input type="hidden" name="jobId" value={nextActionJob.id} />
-                <input
-                  type="hidden"
-                  name="appointmentId"
-                  value={nextActionAppointment.id}
-                />
-                <button className="rounded-xl border border-amber-300/20 bg-amber-300/[0.06] px-4 py-2.5 text-xs font-semibold text-amber-100">
-                  Confirmer le rendez-vous
-                </button>
-              </form>
-            ) : nextAction.kind === "START_JOB" && nextActionJob ? (
-              <form action={startV2CustomerJob}>
-                <input type="hidden" name="customerId" value={id} />
-                <input type="hidden" name="jobId" value={nextActionJob.id} />
-                <button className="rounded-xl border border-amber-300/20 bg-amber-300/[0.06] px-4 py-2.5 text-xs font-semibold text-amber-100">
-                  Démarrer la prestation
-                </button>
-              </form>
-            ) : nextAction.kind === "COMPLETE_JOB" &&
-              nextActionJob &&
-              nextActionAppointment ? (
-              <form action={completeV2CustomerJob}>
-                <input type="hidden" name="customerId" value={id} />
-                <input type="hidden" name="jobId" value={nextActionJob.id} />
-                <input
-                  type="hidden"
-                  name="appointmentId"
-                  value={nextActionAppointment.id}
-                />
-                <button className="rounded-xl border border-amber-300/20 bg-amber-300/[0.06] px-4 py-2.5 text-xs font-semibold text-amber-100">
-                  Terminer la prestation
-                </button>
-              </form>
-            ) : nextAction.kind === "RECORD_PAYMENT" &&
-              nextActionJob &&
-              paymentIdempotencyKey ? (
-              <form
-                action={recordV2CustomerJobPayment}
-                className="flex flex-wrap items-end gap-2"
-              >
-                <input type="hidden" name="customerId" value={id} />
-                <input type="hidden" name="jobId" value={nextActionJob.id} />
-                <input
-                  type="hidden"
-                  name="idempotencyKey"
-                  value={paymentIdempotencyKey}
-                />
-                <label className="text-[10px] uppercase tracking-[0.12em] text-white/35">
-                  Paiement
-                  <select
-                    name="method"
-                    required
-                    defaultValue=""
-                    className="mt-1 block rounded-xl border border-white/10 bg-[#081019] px-3 py-2 text-xs text-white"
-                  >
-                    <option value="" disabled>Mode</option>
-                    <option value="CASH">Espèces</option>
-                    <option value="CARD">Carte</option>
-                    <option value="BANK_TRANSFER">Virement</option>
-                    <option value="OTHER">Autre</option>
-                  </select>
-                </label>
-                <button className="rounded-xl border border-amber-300/20 bg-amber-300/[0.06] px-4 py-2.5 text-xs font-semibold text-amber-100">
-                  Encaisser
-                </button>
-              </form>
-            ) : nextAction.kind === "REQUEST_REVIEW" &&
-              nextActionJob &&
-              reviewIdempotencyKey ? (
-              <form action={requestV2CustomerJobReview}>
-                <input type="hidden" name="customerId" value={id} />
-                <input type="hidden" name="jobId" value={nextActionJob.id} />
-                <input
-                  type="hidden"
-                  name="idempotencyKey"
-                  value={reviewIdempotencyKey}
-                />
-                <button className="rounded-xl border border-amber-300/20 bg-amber-300/[0.06] px-4 py-2.5 text-xs font-semibold text-amber-100">
-                  Demander un avis
-                </button>
-              </form>
-            ) : nextAction.href ? (
-              <Link
-                href={nextAction.href}
-                className="rounded-xl border border-amber-300/20 bg-amber-300/[0.06] px-4 py-2.5 text-xs font-semibold text-amber-100 hover:border-amber-200/35 hover:bg-amber-300/[0.1]"
-              >
-                Ouvrir l&apos;action →
-              </Link>
-            ) : (
-              <span className="rounded-full border border-white/8 bg-white/[0.025] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-white/30">
-                À jour
-              </span>
-            )}
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-emerald-300/10 bg-gradient-to-br from-emerald-300/[0.045] to-transparent p-5 md:p-6">
+        <div className="crm-glass rounded-[22px] p-5 md:p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-[10px] uppercase tracking-[0.18em] text-emerald-200/50">
@@ -802,7 +854,7 @@ export default async function CustomerV2Page({
         </div>
 
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_minmax(260px,0.6fr)]">
-          <div className="rounded-2xl border border-cyan-300/10 bg-gradient-to-br from-cyan-300/[0.045] to-transparent p-5 md:p-6">
+          <div className="crm-glass rounded-[22px] p-5 md:p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="text-[10px] uppercase tracking-[0.18em] text-cyan-200/50">
@@ -847,7 +899,7 @@ export default async function CustomerV2Page({
             </Link>
           </div>
 
-          <div className="rounded-2xl border border-white/8 bg-white/[0.025] p-5 md:p-6">
+          <div className="crm-glass rounded-[20px] p-5 md:p-6">
             <p className="text-[10px] uppercase tracking-[0.18em] text-cyan-200/50">
               Relation
             </p>
@@ -876,7 +928,7 @@ export default async function CustomerV2Page({
             </Link>
           </div>
         </div>
-      <section className="rounded-3xl border border-cyan-300/10 bg-gradient-to-br from-cyan-300/[0.035] to-transparent p-5 md:p-6">
+      <section className="crm-glass rounded-[26px] p-5 md:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-[10px] uppercase tracking-[0.18em] text-cyan-200/50">
@@ -897,7 +949,7 @@ export default async function CustomerV2Page({
           </Link>
         </div>
 
-        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
           {[
             ["Actifs", retention.activeSubscriptions],
             ["En pause", retention.pausedSubscriptions],
@@ -997,10 +1049,10 @@ export default async function CustomerV2Page({
 
       <section className="space-y-3">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-cyan-200/45">
+          <p className="crm-eyebrow">
             Parc
           </p>
-          <h2 className="mt-2 text-xl font-semibold">Véhicules possédés</h2>
+          <h2 className="crm-display mt-1 text-2xl">Véhicules possédés</h2>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
@@ -1010,7 +1062,7 @@ export default async function CustomerV2Page({
               return (
                 <article
                   key={v.id}
-                  className="overflow-hidden rounded-3xl border border-white/8 bg-[#0b121b]"
+                  className="overflow-hidden crm-glass rounded-[22px]"
                 >
                   <div className="relative aspect-[16/8] bg-white/[0.025]">
                     {photo ? (
@@ -1077,12 +1129,12 @@ export default async function CustomerV2Page({
 
       <section className="space-y-3">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-cyan-200/45">
+          <p className="crm-eyebrow">
             Relation
           </p>
-          <h2 className="mt-2 text-xl font-semibold">Demandes</h2>
+          <h2 className="crm-display mt-1 text-2xl">Demandes</h2>
         </div>
-        <div className="divide-y divide-white/8 overflow-hidden rounded-3xl border border-white/8 bg-[#0b121b]">
+        <div className="divide-y divide-white/8 overflow-hidden crm-glass rounded-[22px]">
           {result.leads.length ? (
             result.leads.map((lead) => (
               <article
@@ -1114,12 +1166,12 @@ export default async function CustomerV2Page({
 
       <section className="space-y-3">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-cyan-200/45">
+          <p className="crm-eyebrow">
             Commercial
           </p>
-          <h2 className="mt-2 text-xl font-semibold">Devis</h2>
+          <h2 className="crm-display mt-1 text-2xl">Devis</h2>
         </div>
-        <div className="divide-y divide-white/8 overflow-hidden rounded-3xl border border-white/8 bg-[#0b121b]">
+        <div className="divide-y divide-white/8 overflow-hidden crm-glass rounded-[22px]">
           {result.quotes.length ? (
             result.quotes.map((quote) => (
               <article
@@ -1149,12 +1201,12 @@ export default async function CustomerV2Page({
 
       <section className="space-y-3">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-cyan-200/45">
+          <p className="crm-eyebrow">
             Opérations
           </p>
-          <h2 className="mt-2 text-xl font-semibold">Prestations</h2>
+          <h2 className="crm-display mt-1 text-2xl">Prestations</h2>
         </div>
-        <div className="divide-y divide-white/8 overflow-hidden rounded-3xl border border-white/8 bg-[#0b121b]">
+        <div className="divide-y divide-white/8 overflow-hidden crm-glass rounded-[22px]">
           {result.jobs.length ? (
             result.jobs.map((job) => (
               <article
@@ -1196,10 +1248,10 @@ export default async function CustomerV2Page({
       <section className="space-y-3">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-cyan-200/45">
+            <p className="crm-eyebrow">
               Planning
             </p>
-            <h2 className="mt-2 text-xl font-semibold">Rendez-vous</h2>
+            <h2 className="crm-display mt-1 text-2xl">Rendez-vous</h2>
           </div>
           <Link
             href="/crm-v2/calendar"
@@ -1208,7 +1260,7 @@ export default async function CustomerV2Page({
             Ouvrir le calendrier →
           </Link>
         </div>
-        <div className="divide-y divide-white/8 overflow-hidden rounded-3xl border border-white/8 bg-[#0b121b]">
+        <div className="divide-y divide-white/8 overflow-hidden crm-glass rounded-[22px]">
           {result.appointments.length ? (
             result.appointments.map((appointment) => (
               <article
@@ -1238,13 +1290,13 @@ export default async function CustomerV2Page({
 
       <section className="space-y-3">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-cyan-200/45">
+          <p className="crm-eyebrow">
             Historique
           </p>
-          <h2 className="mt-2 text-xl font-semibold">Timeline client</h2>
+          <h2 className="crm-display mt-1 text-2xl">Timeline client</h2>
         </div>
 
-        <div className="overflow-hidden rounded-3xl border border-white/8 bg-[#0b121b]">
+        <div className="overflow-hidden crm-glass rounded-[22px]">
           {result.activities.length ? (
             <div className="divide-y divide-white/8">
               {result.activities.map((activity) => {

@@ -24,6 +24,19 @@ import {
   updateV2ServicePrice,
   updateV2JobPrice,
 } from "./actions";
+import {
+  BOARD_COLUMNS,
+  type BoardFilter,
+  type BoardStage,
+  type BoardStepKey,
+  boardRenderedAt,
+  boardStage,
+  isLate,
+  isProLead,
+  matchesFilter,
+  nextActionLabel,
+  parseBoardFilter,
+} from "./board";
 import LeadDangerActions from "./LeadDangerActions";
 import LeadEditPanel from "./LeadEditPanel";
 
@@ -633,6 +646,61 @@ function LeadProgress({
   );
 }
 
+type BoardEntry = {
+  item: LeadListItem;
+  id: string;
+  stage: BoardStage;
+  pro: boolean;
+  amount: number | null;
+  dateLabel: string | null;
+  late: boolean;
+  action: string;
+  doneCount: number;
+  nowIndex: number;
+};
+
+const boardDay = new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit", timeZone: "Europe/Paris" });
+
+function BoardCard({ entry, href, selected }: { entry: BoardEntry; href: string; selected: boolean }) {
+  const { item } = entry;
+  return (
+    <Link
+      href={href}
+      aria-current={selected ? "true" : undefined}
+      data-board-card={entry.id}
+      className="crm-glass crm-lift grid gap-2 !rounded-[16px] p-3"
+      style={selected ? { borderColor: "var(--crm-accent)", boxShadow: "0 0 0 3px rgba(var(--crm-accent-rgb), .18), var(--crm-shadow)" } : undefined}
+    >
+      <span className="flex items-start justify-between gap-2">
+        <span className="min-w-0 truncate text-[13.5px] font-extrabold leading-tight">{name(item)}</span>
+        {entry.amount !== null && (
+          <span className="crm-display crm-num crm-accent-text shrink-0 text-[14px]">{money(entry.amount)}</span>
+        )}
+      </span>
+      <span className="crm-muted grid text-[11.5px] leading-snug">
+        <span className="truncate">{item.vehicle ? vehicle(item) : "Véhicule non renseigné"}</span>
+        <span className="truncate">{serviceName(item)}</span>
+      </span>
+      <span className="flex gap-[3px]" aria-label={`${entry.doneCount} étapes sur ${steps.length}`}>
+        {steps.map((step, index) => (
+          <span
+            key={step.key}
+            className="h-1 flex-1 rounded-full"
+            style={{ background: index < entry.doneCount ? "var(--crm-accent-soft)" : index === entry.nowIndex ? "var(--crm-warning)" : "rgba(var(--crm-ink-rgb), .12)" }}
+          />
+        ))}
+      </span>
+      <span className="flex flex-wrap items-center justify-between gap-1.5">
+        <span className="flex flex-wrap gap-1">
+          {entry.dateLabel && <span className="crm-chip !px-2 !py-0.5 !text-[10.5px]" data-tone={entry.late ? "warning" : "neutral"}>{entry.dateLabel}</span>}
+          {entry.pro && <span className="crm-chip !px-2 !py-0.5 !text-[10.5px]">Garage pro</span>}
+        </span>
+        <span className="crm-accent-text text-[11.5px] font-extrabold">{entry.action} →</span>
+      </span>
+    </Link>
+  );
+}
+
 export default async function CrmV2Pipeline({
   searchParams,
 }: {
@@ -665,6 +733,9 @@ export default async function CrmV2Pipeline({
   const priceUpdated = (Array.isArray(params.price_updated) ? params.price_updated[0] : params.price_updated) === "1";
   const priceError = Array.isArray(params.price_error) ? params.price_error[0] : params.price_error;
   const created = (Array.isArray(params.created) ? params.created[0] : params.created) === "1";
+  const view = (Array.isArray(params.view) ? params.view[0] : params.view) === "list" ? "list" : "board";
+  const filter: BoardFilter = parseBoardFilter(Array.isArray(params.filter) ? params.filter[0] : params.filter);
+  const openParam = Array.isArray(params.open) ? params.open[0] : params.open;
 
   const result = await getLeadsList({ page: 1, limit: 50, search });
   const { businessId } = await resolveCurrentBusinessContext();
@@ -760,14 +831,88 @@ export default async function CrmV2Pipeline({
     }
   }
 
+  // ---------- Vue tableau ----------
+  const now = await boardRenderedAt();
+  const allEntries: BoardEntry[] = result.items
+    .filter((item): item is LeadListItem & { lead: { id: string } } => Boolean(item.lead.id))
+    .map((item) => {
+      const states = steps.map((step) => stepState(item, step.key, activity));
+      const done = Object.fromEntries(steps.map((step, index) => [step.key, states[index].done])) as Record<BoardStepKey, boolean>;
+      const stage = boardStage(done);
+      const lastDone = [...states].reverse().find((state) => state.done && state.date);
+      const stageDate = lastDone?.date ?? item.lead.created_at ?? null;
+      const service = serviceByLead.get(item.lead.id);
+      const amount = item.latestJob?.total_amount ?? service?.price ?? item.latestQuote?.total_price ?? null;
+      const doneCount = states.filter((state) => state.done).length;
+      const nowIndex = states.findIndex((state) => !state.done);
+      return {
+        item,
+        id: item.lead.id,
+        stage,
+        pro: isProLead(item.lead.id, item.lead.source, activity),
+        amount: typeof amount === "number" && Number.isFinite(amount) ? amount : null,
+        dateLabel: stageDate && Number.isFinite(Date.parse(stageDate)) ? boardDay.format(new Date(stageDate)) : null,
+        late: isLate(stage, stageDate, now),
+        action: nextActionLabel(stage, done),
+        doneCount,
+        nowIndex,
+      };
+    });
+  const openEntries = allEntries.filter((entry) => entry.item.lead.lifecycle_status !== "CLOSED_LOST");
+  const closedCount = allEntries.length - openEntries.length;
+  const boardEntries = openEntries.filter((entry) => matchesFilter(filter, entry));
+  const toCollect = openEntries.filter((entry) => entry.stage === "TO_COLLECT").length;
+  const newRequests = openEntries.filter((entry) => entry.stage === "NEW").length;
+
+  // Dossier ouvert à droite : demandé, sinon celui qui vient d'être modifié, sinon le premier.
+  const selectedId =
+    [openParam, editLeadId].find((id) => id && result.items.some((item) => item.lead.id === id)) ??
+    boardEntries[0]?.id ??
+    result.items[0]?.lead.id ??
+    null;
+  const selectedItem = result.items.find((item) => item.lead.id === selectedId) ?? null;
+
+  const pipelineHref = (next: { view?: string; filter?: BoardFilter; open?: string | null }) => {
+    const query = new URLSearchParams();
+    const merged = { search, view, filter, open: selectedId, ...next };
+    if (merged.search) query.set("search", merged.search);
+    if (merged.view === "list") query.set("view", "list");
+    if (merged.filter && merged.filter !== "all") query.set("filter", merged.filter);
+    if (merged.open && merged.view !== "list") query.set("open", merged.open);
+    const qs = query.toString();
+    return "/crm-v2/pipeline" + (qs ? "?" + qs : "");
+  };
+
+  const leadProgressFor = (item: LeadListItem) => (
+    <LeadProgress
+      key={item.lead.id || item.lead.created_at}
+      item={item}
+      activity={activity}
+      editFeedback={editLeadId === item.lead.id
+        ? editError
+          ? "Enregistrement refusé (" + editError + "). Recharge le dossier et vérifie les champs."
+          : editUpdated
+            ? "Modification enregistrée avec succès."
+            : null
+        : null}
+      serviceOverride={item.lead.id ? serviceByLead.get(item.lead.id)?.name : null}
+      servicePrice={item.lead.id ? serviceByLead.get(item.lead.id)?.price : null}
+      serviceSnapshot={item.lead.id ? (() => {
+        const service = serviceByLead.get(item.lead.id);
+        return service ? { id: service.id, name: service.name, updatedAt: service.updatedAt } : null;
+      })() : null}
+    />
+  );
+
   return (
-    <div className="space-y-7">
+    <div className="space-y-6">
       <header className="flex flex-col justify-between gap-5 xl:flex-row xl:items-end">
         <div>
           <p className="text-[11px] uppercase tracking-[0.28em] text-cyan-200/55">Gestion des dossiers</p>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight md:text-5xl">Dossiers clients</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-white/45">
-            Clique sur une étape pour la cocher ou la rouvrir. La date est conservée automatiquement.
+          <h1 className="crm-display mt-3 text-3xl md:text-5xl">Dossiers clients</h1>
+          <p className="crm-muted mt-3 max-w-2xl text-sm leading-6">
+            {openEntries.length} dossier{openEntries.length > 1 ? "s" : ""} ouvert{openEntries.length > 1 ? "s" : ""}
+            {" · "}{toCollect} à encaisser{" · "}{newRequests} nouvelle{newRequests > 1 ? "s" : ""} demande{newRequests > 1 ? "s" : ""}
           </p>
         </div>
         <Link
@@ -885,34 +1030,88 @@ export default async function CrmV2Pipeline({
         </button>
       </form>
 
-      <div className="space-y-4">
-        {result.items.length ? (
-          result.items.map((item) => (
-            <LeadProgress
-              key={item.lead.id || item.lead.created_at}
-              item={item}
-              activity={activity}
-              editFeedback={editLeadId === item.lead.id
-                ? editError
-                  ? "Enregistrement refusé (" + editError + "). Recharge le dossier et vérifie les champs."
-                  : editUpdated
-                    ? "Modification enregistrée avec succès."
-                    : null
-                : null}
-              serviceOverride={item.lead.id ? serviceByLead.get(item.lead.id)?.name : null}
-              servicePrice={item.lead.id ? serviceByLead.get(item.lead.id)?.price : null}
-              serviceSnapshot={item.lead.id ? (() => {
-                const service = serviceByLead.get(item.lead.id);
-                return service ? { id: service.id, name: service.name, updatedAt: service.updatedAt } : null;
-              })() : null}
-            />
-          ))
-        ) : (
-          <div className="rounded-3xl border border-dashed border-white/10 p-10 text-center text-sm text-white/30">
-            Aucun dossier trouvé.
-          </div>
-        )}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filtrer les dossiers">
+          {([
+            ["all", "Tous"],
+            ["particulier", "Particuliers"],
+            ["pro", "Garages pro"],
+            ["unpaid", "À encaisser"],
+          ] as Array<[BoardFilter, string]>).map(([key, label]) => (
+            <Link
+              key={key}
+              href={pipelineHref({ filter: key, open: null })}
+              aria-current={filter === key ? "true" : undefined}
+              className="crm-btn !px-3.5 !py-2 !text-[12px]"
+              data-variant={filter === key ? "primary" : undefined}
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
+        <div className="flex gap-1.5" role="group" aria-label="Affichage">
+          <Link href={pipelineHref({ view: "board" })} aria-current={view === "board" ? "true" : undefined} className="crm-btn !px-3.5 !py-2 !text-[12px]" data-variant={view === "board" ? "primary" : undefined}>Tableau</Link>
+          <Link href={pipelineHref({ view: "list" })} aria-current={view === "list" ? "true" : undefined} className="crm-btn !px-3.5 !py-2 !text-[12px]" data-variant={view === "list" ? "primary" : undefined}>Liste</Link>
+        </div>
       </div>
+
+      {view === "board" ? (
+        <div className="grid gap-6" data-pipeline-view="board">
+          <div className="min-w-0">
+            <div className="overflow-x-auto pb-2 [scrollbar-width:thin]">
+              <div className="grid auto-cols-[minmax(170px,1fr)] grid-flow-col gap-2.5">
+                {BOARD_COLUMNS.map((column) => {
+                  const columnEntries = boardEntries.filter((entry) => entry.stage === column.key);
+                  const total = columnEntries.reduce((sum, entry) => sum + (entry.amount ?? 0), 0);
+                  return (
+                    <section key={column.key} className="grid content-start gap-2.5" aria-label={column.title} data-board-column={column.key}>
+                      <header className="flex items-baseline justify-between gap-2 px-1">
+                        <h2 className="text-[13px] font-extrabold">{column.title}</h2>
+                        <span className="crm-muted crm-num text-[12px]">{columnEntries.length} · {money(total)}</span>
+                      </header>
+                      {columnEntries.length ? columnEntries.map((entry) => (
+                        <BoardCard
+                          key={entry.id}
+                          entry={entry}
+                          selected={entry.id === selectedId}
+                          href={pipelineHref({ open: entry.id }) + "#dossier-ouvert"}
+                        />
+                      )) : (
+                        <p className="crm-faint rounded-2xl border border-dashed p-3 text-center text-[12px]" style={{ borderColor: "var(--crm-line-strong)" }}>Aucun dossier</p>
+                      )}
+                    </section>
+                  );
+                })}
+              </div>
+            </div>
+            {closedCount > 0 && (
+              <p className="crm-faint mt-2 text-[12px]">
+                {closedCount} demande{closedCount > 1 ? "s" : ""} annulée{closedCount > 1 ? "s" : ""} : visible{closedCount > 1 ? "s" : ""} dans la{" "}
+                <Link href={pipelineHref({ view: "list" })} className="crm-accent-text font-bold">vue Liste</Link>.
+              </p>
+            )}
+          </div>
+
+          <div id="dossier-ouvert" className="grid min-w-0 scroll-mt-24 gap-3">
+            <p className="crm-eyebrow px-1">Dossier ouvert</p>
+            {selectedItem ? leadProgressFor(selectedItem) : (
+              <div className="crm-glass p-8 text-center text-sm crm-muted">
+                {result.items.length ? "Choisis un dossier dans le tableau." : "Aucun dossier trouvé."}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4" data-pipeline-view="list">
+          {result.items.length ? (
+            result.items.map((item) => leadProgressFor(item))
+          ) : (
+            <div className="rounded-3xl border border-dashed border-white/10 p-10 text-center text-sm text-white/30">
+              Aucun dossier trouvé.
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
