@@ -14,6 +14,8 @@ vi.mock("../../app/lib/supabase", () => ({ supabaseRest: mocks.rest }));
 vi.mock("../../app/lib/crm", () => ({ getCrmDashboardMetrics: mocks.metrics, getCalendarMonth: mocks.calendar }));
 vi.mock("../../app/lib/manual-revenue", () => ({ getManualRevenueEntries: mocks.manual }));
 vi.mock("../../app/lib/historical-calendar", () => ({ getHistoricalCalendarEntries: mocks.historical }));
+// Contrôle d'accès du CRM V2 : utilisateur connecté simulé.
+vi.mock("../../app/crm-v2/access", () => ({ ensureCrmV2Access: async () => ({ role: "owner" }) }));
 import GoogleAnalytics from "../../app/components/GoogleAnalytics";
 import ThemeToggle from "../../app/crm-v2/ThemeToggle";
 import { SpecialRequestForm } from "../../app/components/SpecialRequestForm";
@@ -45,8 +47,9 @@ describe("SSR and external browser preferences", () => {
     vi.stubGlobal("window", new Proxy({}, { get() { throw new Error("render-time browser access"); } }));
     vi.stubGlobal("document", new Proxy({}, { get() { throw new Error("render-time DOM access"); } }));
     expect(renderToString(<GoogleAnalytics />)).toBe("");
-    expect(renderToString(<ThemeToggle />)).toContain("Activer le thème clair");
-    expect(renderToString(<ThemeToggle compact />)).toContain("☀");
+    // Thème clair par défaut : le bouton propose le thème sombre.
+    expect(renderToString(<ThemeToggle />)).toContain("Passer en thème sombre");
+    expect(renderToString(<ThemeToggle compact />)).toContain('aria-label="Passer en thème sombre"');
   });
 
   it.each(["accepted", "refused", "invalid", null])("initializes consent %s only on subscription", (stored) => {
@@ -139,7 +142,11 @@ describe("request-time dashboard clock", () => {
     mocks.metrics.mockResolvedValue({ activeLeads: 0, leadsRequiringAttention: 0, customersTotal: 0 });
     mocks.calendar.mockResolvedValue({ items });
     mocks.manual.mockImplementation(async () => { time = cutoff; return []; });
-    const html = renderToStaticMarkup(await Dashboard());
+    const page = renderToStaticMarkup(await Dashboard());
+    // Section « Prochains rendez-vous » uniquement : la carte du jour liste aussi ceux déjà passés.
+    const start = page.indexOf('aria-labelledby="crm-next-title"');
+    const html = page.slice(start, page.indexOf("</section>", start));
+    expect(start).toBeGreaterThan(0);
     expect(html).not.toContain("Customer -1");
     for (const offset of [0, 1, 2, 3, 4]) expect(html).toContain(`Customer ${offset}`);
     expect(html).not.toContain("Customer 5"); expect(html).not.toContain("Customer 6");
@@ -147,7 +154,8 @@ describe("request-time dashboard clock", () => {
     expect(JSON.stringify(items)).toBe(original);
     expect(mocks.calendar).toHaveBeenCalledWith({ month: "2026-09" });
     expect(mocks.connection).toHaveBeenCalledTimes(2);
-    expect(mocks.rest).toHaveBeenCalledTimes(5);
+    // 7 lectures : abonnements, paiements, dossiers, étapes, événements, prestations, services.
+    expect(mocks.rest).toHaveBeenCalledTimes(7);
     for (const call of mocks.rest.mock.calls) expect(call[3]).toContain("business_id=eq.server-business");
     expect(mocks.manual).toHaveBeenCalledWith("server-business", []);
   });

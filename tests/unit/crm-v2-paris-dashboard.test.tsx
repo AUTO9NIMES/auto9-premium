@@ -24,9 +24,10 @@ beforeEach(() => {
 });
 afterEach(() => { vi.restoreAllMocks(); });
 
+// Case du calendrier du mois : repérée par data-day (le lien ?day= existe aussi ailleurs).
 function dayCell(html: string, key: string) {
-  const href = `href="/crm-v2/calendar?day=${key}"`;
-  const position = html.indexOf(href);
+  const marker = `data-day="${key}"`;
+  const position = html.indexOf(marker);
   if (position < 0) return "";
 
   const start = html.lastIndexOf("<a ", position);
@@ -40,8 +41,9 @@ function dayCell(html: string, key: string) {
 function event(instant: number, name = "Appointment") {
   return { appointment: { id: name, scheduledAt: new Date(instant).toISOString() }, customer: { fullName: name }, job: { title: "Local fixture" } };
 }
-function card(html: string, label: string) {
-  return html.match(new RegExp(`<a[^>]+href="/crm-v2/revenue"[^>]*>(?:(?!</a>)[\\s\\S])*${label}(?:(?!</a>)[\\s\\S])*</a>`))?.[0] ?? "";
+// Montant de CA affiché dans la carte du CA (data-revenue="cash" | "card" | "total").
+function revenue(html: string, kind: string) {
+  return html.match(new RegExp(`data-revenue="${kind}"[^>]*>([^<]*)<`))?.[1] ?? "";
 }
 
 describe("Paris business calendar, independent of process TZ", () => {
@@ -62,11 +64,12 @@ describe("Paris business calendar, independent of process TZ", () => {
     mocks.calendar.mockResolvedValue({ items: [event(time)] });
     const html = renderToStaticMarkup(await Dashboard());
     expect(mocks.calendar).toHaveBeenCalledWith({ month: dateKey.slice(0, 7) });
-    expect(dayCell(html, dateKey)).toContain("border-cyan-300/35");
+    expect(dayCell(html, dateKey)).toContain('data-today="true"');
     expect(dayCell(html, dateKey)).toContain("1 RDV");
-    expect([...html.matchAll(/href="\/crm-v2\/calendar\?day=/g)]).toHaveLength(days);
+    expect([...html.matchAll(/data-day="/g)]).toHaveLength(days);
     expect(mocks.connection).toHaveBeenCalledTimes(2);
-    expect(mocks.rest).toHaveBeenCalledTimes(5);
+    // 7 lectures : abonnements, paiements, dossiers, étapes, événements, prestations, services.
+    expect(mocks.rest).toHaveBeenCalledTimes(7);
     for (const call of mocks.rest.mock.calls) expect(call[3]).toContain("business_id=eq.server-business");
   });
 
@@ -87,7 +90,7 @@ describe("Paris business calendar, independent of process TZ", () => {
     const html = renderToStaticMarkup(await Dashboard());
     expect(dayCell(html, "2026-04-01")).toContain("3 RDV");
     expect(mocks.historical).toHaveBeenCalledWith("server-business", "2026-04");
-    expect(mocks.rest).toHaveBeenCalledTimes(5);
+    expect(mocks.rest).toHaveBeenCalledTimes(7);
   });
 
   it.each([
@@ -96,7 +99,7 @@ describe("Paris business calendar, independent of process TZ", () => {
   ])("renders the business appointment time across DST: %s", async (instant, time) => {
     const value = Date.parse(instant); vi.spyOn(Date, "now").mockReturnValue(value);
     mocks.calendar.mockResolvedValue({ items: [event(value)] });
-    expect(renderToStaticMarkup(await Dashboard())).toContain(`>${time}</p>`);
+    expect(renderToStaticMarkup(await Dashboard())).toContain(`>${time}</time>`);
   });
 
   it("uses the same Paris month for subscriptions, payments and manual revenue", async () => {
@@ -117,8 +120,8 @@ describe("Paris business calendar, independent of process TZ", () => {
       { method: "CASH", amount: 50, receivedAt: "2026-04-30T22:00:00Z" },
     ]);
     const html = renderToStaticMarkup(await Dashboard());
-    expect(card(html, "CA espèces")).toMatch(/25\s*€/);
-    expect(card(html, "CA carte \\+ virement")).toMatch(/37\s*€/);
+    expect(revenue(html, "cash")).toMatch(/25\s*€/);
+    expect(revenue(html, "card")).toMatch(/37\s*€/);
     expect(html).toContain("2 abonnements à planifier ce mois-ci");
     expect(mocks.manual).toHaveBeenCalledWith("server-business", payments);
     expect(mocks.rest).toHaveBeenCalledWith("crm_subscriptions", "GET", null, "business_id=eq.server-business&active=eq.true&select=next_due_on,active");
@@ -134,7 +137,7 @@ describe("Paris business calendar, independent of process TZ", () => {
     mocks.manual.mockImplementation(async () => { now = finish; return []; });
     const html = renderToStaticMarkup(await Dashboard());
     expect(mocks.calendar).toHaveBeenCalledWith({ month: "2026-03" });
-    expect(dayCell(html, "2026-03-31")).toContain("border-cyan-300/35");
+    expect(dayCell(html, "2026-03-31")).toContain('data-today="true"');
     expect(html).not.toContain("Cutoff -1");
     for (const i of [0, 1, 2, 3, 4]) expect(html).toContain(`Cutoff ${i}`);
     expect(html).not.toContain("Cutoff 5");

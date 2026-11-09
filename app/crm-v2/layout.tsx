@@ -1,66 +1,55 @@
 import "./crm-v2.css";
+import "./crm-v2-light-adapter.css";
+import Image from "next/image";
 import Link from "next/link";
 import { ensureCrmV2Access } from "./access";
+import { CrmMobileNav, CrmSideNav } from "./CrmNav";
+import CrmSearch from "./CrmSearch";
 import ThemeToggle from "./ThemeToggle";
 
 export const dynamic = "force-dynamic";
-
-const nav = [
-  ["Pilotage", "/crm-v2"],
-  ["Garages pro", "/crm-v2/garages"],
-  ["Développement", "/crm-v2/developpement"],
-  ["Chiffre d’affaires", "/crm-v2/revenue"],
-  ["Dossiers clients", "/crm-v2/pipeline"],
-  ["Clients", "/crm-v2/clients"],
-  ["Abonnements", "/crm-v2/subscriptions"],
-  ["Emails", "/crm-v2/emails"],
-  ["Calendrier", "/crm-v2/calendar"],
-];
 
 export default async function CrmV2Layout({ children }: { children: React.ReactNode }) {
   await ensureCrmV2Access();
 
   return (
-    <div className="crm-v2-root min-h-screen bg-[#070b10] text-white">
-      <div className="mx-auto flex min-h-screen max-w-[1800px]">
-        <aside className="sticky top-0 hidden h-screen w-64 shrink-0 border-r border-cyan-400/10 bg-[#091019]/95 p-6 lg:flex lg:flex-col">
-          <Link href="/crm-v2" className="block">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-cyan-300/20 bg-cyan-300/5 text-sm font-black tracking-[0.18em] text-cyan-200">A9</div>
-              <div>
-                <p className="text-sm font-semibold">AUTO 9</p>
-                <p className="text-[10px] uppercase tracking-[0.25em] text-cyan-200/50">Command Center</p>
-              </div>
-            </div>
+    <div className="crm-v2-root crm-skin-light min-h-screen" data-theme="light">
+      <div className="mx-auto flex min-h-screen max-w-[1800px] gap-4 p-3 md:p-4">
+        <aside className="crm-glass sticky top-4 hidden h-[calc(100vh-2rem)] w-[248px] shrink-0 flex-col gap-5 overflow-y-auto p-4 lg:flex">
+          <Link href="/crm-v2" className="flex items-center gap-3 px-1">
+            <Image src="/brand/auto9-logo.webp" alt="" width={420} height={288} sizes="60px" className="h-10 w-auto" />
+            <span className="grid">
+              <span className="text-sm font-extrabold tracking-tight">AUTO 9</span>
+              <span className="crm-eyebrow !tracking-[0.14em]">CRM · Nîmes</span>
+            </span>
           </Link>
 
-          <nav className="mt-10 space-y-2">
-            {nav.map(([label, href]) => (
-              <Link key={href} href={href} className="block rounded-xl border border-transparent px-4 py-3 text-sm text-white/60 transition hover:border-cyan-300/15 hover:bg-cyan-300/5 hover:text-white">
-                {label}
-              </Link>
-            ))}
-          </nav>
+          <CrmSearch id="crm-search-side" />
 
-          <div className="mt-auto rounded-2xl border border-white/8 bg-white/[0.03] p-4">
+          <CrmSideNav />
+
+          <div className="mt-auto grid gap-2">
+            <Link href="/" className="crm-nav-link !text-[12.5px]">← Voir le site</Link>
             <ThemeToggle />
-            <p className="text-[10px] uppercase tracking-[0.2em] text-white/30">Version</p>
-            <p className="mt-2 text-sm text-cyan-200">CRM V3 · NOX</p>
-            <p className="mt-2 text-xs leading-5 text-white/35">Évolution du CRM V2. La V1 reste intacte.</p>
           </div>
         </aside>
 
-        <main className="min-w-0 flex-1">
-          <div className="border-b border-white/8 bg-[#091019]/80 px-4 py-3 backdrop-blur lg:hidden">
-            <div className="flex items-center gap-2 overflow-x-auto">
+        <div className="flex min-w-0 flex-1 flex-col gap-3">
+          <div className="crm-glass sticky top-3 z-30 grid gap-3 p-3 lg:hidden">
+            <div className="flex items-center gap-3">
+              <Link href="/crm-v2" className="flex shrink-0 items-center gap-2" aria-label="Tableau de bord AUTO 9">
+                <Image src="/brand/auto9-logo.webp" alt="" width={420} height={288} sizes="48px" className="h-8 w-auto" />
+              </Link>
+              <div className="min-w-0 flex-1">
+                <CrmSearch id="crm-search-top" />
+              </div>
               <ThemeToggle compact />
-              {nav.map(([label, href]) => (
-                <Link key={href} href={href} className="whitespace-nowrap rounded-full border border-white/10 px-3 py-2 text-xs text-white/70">{label}</Link>
-              ))}
             </div>
+            <CrmMobileNav />
           </div>
-          <div className="p-4 md:p-7 xl:p-10">{children}</div>
-        </main>
+
+          <main className="min-w-0 flex-1 px-1 pb-10 pt-1 md:px-3 md:pt-3 xl:px-5">{children}</main>
+        </div>
       </div>
     </div>
   );
