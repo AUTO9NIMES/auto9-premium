@@ -1,6 +1,6 @@
 /*
  * FICHIER GÉNÉRÉ — ne pas modifier à la main.
- * Source : scripts/generate-crm-v2-light-adapter.mjs (187 règles).
+ * Source : scripts/generate-crm-v2-light-adapter.mjs (189 règles).
  * Couche de transition : convertit les pages du CRM V2 encore codées en sombre
  * vers le thème clair « Porcelaine émeraude ». À supprimer quand toutes les
  * pages auront leur design clair natif.
@@ -102,6 +102,7 @@
 .crm-v2-root.crm-skin-light .focus\:border-amber-300\/30:focus { border-color: rgba(var(--crm-warning-rgb), 0.540); }
 .crm-v2-root.crm-skin-light .focus\:border-cyan-300\/30:focus { border-color: rgba(var(--crm-accent-rgb), 0.540); }
 .crm-v2-root.crm-skin-light .focus\:border-cyan-300\/35:focus { border-color: rgba(var(--crm-accent-rgb), 0.630); }
+.crm-v2-root.crm-skin-light .focus\:border-cyan-300\/40:focus { border-color: rgba(var(--crm-accent-rgb), 0.700); }
 .crm-v2-root.crm-skin-light .focus\:border-cyan-300\/50:focus { border-color: rgba(var(--crm-accent-rgb), 0.700); }
 .crm-v2-root.crm-skin-light .focus\:border-cyan-300\/55:focus { border-color: rgba(var(--crm-accent-rgb), 0.700); }
 .crm-v2-root.crm-skin-light .focus\:border-cyan-400\/50:focus { border-color: rgba(var(--crm-accent-rgb), 0.700); }
@@ -118,6 +119,7 @@
 .crm-v2-root.crm-skin-light .hover\:bg-cyan-300\/15:hover { background-color: rgba(var(--crm-accent-rgb), 0.330); }
 .crm-v2-root.crm-skin-light .hover\:bg-cyan-300\/20:hover { background-color: rgba(var(--crm-accent-rgb), 0.440); }
 .crm-v2-root.crm-skin-light .hover\:bg-cyan-300\/\[0\.035\]:hover { background-color: rgba(var(--crm-accent-rgb), 0.080); }
+.crm-v2-root.crm-skin-light .hover\:bg-red-300\/20:hover { background-color: rgba(var(--crm-danger-rgb), 0.440); }
 .crm-v2-root.crm-skin-light .hover\:border-\[rgb\(165:hover { border-color: rgba(var(--crm-accent-rgb), 0.3); }
 .crm-v2-root.crm-skin-light .hover\:border-amber-200\/35:hover { border-color: rgba(var(--crm-warning-rgb), 0.630); }
 .crm-v2-root.crm-skin-light .hover\:border-amber-300\/30:hover { border-color: rgba(var(--crm-warning-rgb), 0.540); }

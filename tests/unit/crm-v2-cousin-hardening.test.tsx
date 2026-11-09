@@ -825,26 +825,26 @@ describe("V2 authorization and rendered presentation", () => {
     expect(html).toContain("Annulée le");
   });
 
-  it("separates general dossier editing from the guarded draft quote amount", async () => {
+  // Édition rubrique par rubrique (commit 9e2aff1) : l'éditeur s'ouvre sur les
+  // coordonnées ; prestation, note, date et prix ont chacun leur onglet. Le
+  // contrat serveur du prix (devis, montant attendu, conflit) est couvert par
+  // les tests de l'action de prix ci-dessus.
+  it("keeps contact editing separate from the guarded price form", async () => {
     mocks.open = true;
     mocks.supabaseRest.mockResolvedValue([]);
     const html = renderToStaticMarkup(await Pipeline({ searchParams: Promise.resolve({}) }));
     const forms = html.match(/<form\b[\s\S]*?<\/form>/g) ?? [];
     const profile = forms.find(value => value.includes('name="fullName"'))!;
-    const draft = forms.find(value => value.includes('name="quoteId"'))!;
 
     expect(profile).toBeTruthy();
-    expect(profile).toContain('name="serviceName"');
-    expect(profile).toContain('name="note"');
-    expect(profile).not.toContain('name="price"');
-    expect(profile).not.toContain('name="expectedPrice"');
-
-    expect(draft).toBeTruthy();
-    expect(draft).toContain(`name="quoteId" value="${quoteId}"`);
-    expect(draft).toContain('name="expectedPrice" value="100"');
-    expect(draft).toContain('name="price"');
-    expect(draft).not.toContain('name="serviceName"');
-    expect(draft).not.toContain('name="fullName"');
+    for (const field of ["fullName", "phone", "email", "city", "expectedLeadUpdatedAt", "expectedCustomerUpdatedAt"]) {
+      expect(profile).toContain(`name="${field}"`);
+    }
+    for (const field of ["price", "expectedPrice", "quoteId", "serviceName", "note"]) {
+      expect(profile).not.toContain(`name="${field}"`);
+    }
+    // Le prix n'est jamais exposé dans la vue par défaut.
+    expect(html).not.toContain('name="price"');
 
     expect(mocks.requireCrmAccess.mock.invocationCallOrder[0])
       .toBeLessThan(mocks.getLeadsList.mock.invocationCallOrder[0]);
@@ -900,7 +900,7 @@ describe("V2 authorization and rendered presentation", () => {
 
   it.each([
     ["conflict", "Le montant a changé"], ["invalid_lifecycle", "Ce devis est verrouillé"],
-    ["not_found", "Ce devis est introuvable"], ["unavailable", "Le montant n’a pas pu"],
+    ["not_found", "Ce devis ou cette prestation est introuvable"], ["unavailable", "Le montant n’a pas pu"],
   ])("distinguishes %s in the rendered page", async (price_error, message) => {
     mocks.supabaseRest.mockResolvedValue([]);
     expect(renderToStaticMarkup(await Pipeline({ searchParams: Promise.resolve({ price_error }) }))).toContain(message);
