@@ -91,7 +91,7 @@ function declarationsFor(base) {
   if (/^bg-black(\/.+)?$/.test(base)) return "background-color: var(--crm-glass-soft);";
   if ((m = base.match(/^bg-\[#([0-9a-fA-F]{3,8})\](\/.+)?$/))) {
     if (hexLuminance(m[1]) > 0.6) return null;
-    return `background-color: ${opacityOf(base) >= 0.9 ? "var(--crm-surface)" : "var(--crm-glass)"}; -webkit-backdrop-filter: blur(18px) saturate(140%); backdrop-filter: blur(18px) saturate(140%);`;
+    return `background-color: ${opacityOf(base) >= 0.9 ? "var(--crm-surface)" : "var(--crm-glass)"}; -webkit-backdrop-filter: blur(18px) saturate(140%); backdrop-filter: blur(18px) saturate(140%); box-shadow: var(--crm-shadow);`;
   }
   if ((m = base.match(/^bg-(cyan|sky|teal|emerald|green|lime|amber|yellow|orange|red|rose|blue|violet|indigo|slate|zinc|gray)-\d{2,3}(\/.+)?$/))) {
     const f = family(m[1]);
@@ -99,7 +99,7 @@ function declarationsFor(base) {
     if (solid) {
       return `background-color: ${{ accent: "var(--crm-accent)", success: "var(--crm-accent)", warning: "var(--crm-warning)", danger: "var(--crm-danger)", neutral: "var(--crm-muted)" }[f]};`;
     }
-    const o = Math.min(1, opacityOf(base) * 1.6);
+    const o = Math.min(1, Math.max(0.08, opacityOf(base) * 2.2));
     const rgb = { accent: "var(--crm-accent-rgb)", success: "var(--crm-accent-rgb)", warning: "var(--crm-warning-rgb)", danger: "var(--crm-danger-rgb)", neutral: "var(--crm-ink-rgb)" }[f];
     return `background-color: rgba(${rgb}, ${o.toFixed(3)});`;
   }
@@ -112,7 +112,7 @@ function declarationsFor(base) {
   if ((m = base.match(/^(border|divide|ring|outline)-(cyan|sky|teal|emerald|green|lime|amber|yellow|orange|red|rose|blue|violet|indigo|slate|zinc|gray)-\d{2,3}(\/.+)?$/))) {
     const f = family(m[2]);
     const rgb = { accent: "var(--crm-accent-rgb)", success: "var(--crm-accent-rgb)", warning: "var(--crm-warning-rgb)", danger: "var(--crm-danger-rgb)", neutral: "var(--crm-ink-rgb)" }[f];
-    const o = Math.max(0.18, Math.min(0.6, opacityOf(base) * 1.4));
+    const o = Math.max(0.3, Math.min(0.7, opacityOf(base) * 1.8));
     const prop = m[1] === "ring" ? "--tw-ring-color" : m[1] === "outline" ? "outline-color" : "border-color";
     return `${prop}: rgba(${rgb}, ${o.toFixed(3)});`;
   }
