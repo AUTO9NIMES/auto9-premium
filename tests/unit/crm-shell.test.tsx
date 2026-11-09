@@ -177,10 +177,29 @@ describe("CRM login presentation preserves its native form contract", () => {
     expect(html).toContain('action="/logout" method="post"');
   });
 
-  it("keeps the authorized redirect", async () => {
+  it("keeps the authorized redirect (CRM V2 by default)", async () => {
     mocks.requireCrmAccess.mockResolvedValue({ role: "owner" });
-    await expect(LoginPage({ searchParams: Promise.resolve({}) })).rejects.toThrow("redirect:/crm");
-    expect(mocks.redirect).toHaveBeenCalledWith("/crm");
+    await expect(LoginPage({ searchParams: Promise.resolve({}) })).rejects.toThrow("redirect:/crm-v2");
+    expect(mocks.redirect).toHaveBeenCalledWith("/crm-v2");
+  });
+
+  it("sends an authorized user back to the requested CRM page", async () => {
+    mocks.requireCrmAccess.mockResolvedValue({ role: "owner" });
+    await expect(LoginPage({ searchParams: Promise.resolve({ next: "/crm-v2/revenue" }) })).rejects.toThrow("redirect:/crm-v2/revenue");
+    expect(mocks.redirect).toHaveBeenCalledWith("/crm-v2/revenue");
+  });
+
+  it("never redirects outside the CRM", async () => {
+    mocks.requireCrmAccess.mockResolvedValue({ role: "owner" });
+    await expect(LoginPage({ searchParams: Promise.resolve({ next: "//evil.example" }) })).rejects.toThrow("redirect:/crm-v2");
+    expect(mocks.redirect).toHaveBeenCalledWith("/crm-v2");
+  });
+
+  it("keeps the requested page in the form, never an external one", async () => {
+    const kept = renderToStaticMarkup(await LoginPage({ searchParams: Promise.resolve({ next: "/crm-v2/calendar" }) }));
+    expect(kept).toContain('<input type="hidden" name="next" value="/crm-v2/calendar"/>');
+    const dropped = renderToStaticMarkup(await LoginPage({ searchParams: Promise.resolve({ next: "https://evil.example" }) }));
+    expect(dropped).not.toContain('name="next"');
   });
 });
 

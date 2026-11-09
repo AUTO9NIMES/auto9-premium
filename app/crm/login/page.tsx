@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { CrmAccessError, requireCrmAccess } from "../../lib/auth/dal";
+import { DEFAULT_CRM_PATH, safeCrmNextPath } from "../../lib/auth/next-path";
 
 import styles from "../crm.module.css";
 
@@ -8,6 +9,10 @@ export const dynamic = "force-dynamic";
 export default async function LoginPage({ searchParams }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const params = await searchParams;
+  // Page demandée avant la connexion (chemin interne du CRM uniquement).
+  const next = safeCrmNextPath(Array.isArray(params.next) ? params.next[0] : params.next);
+
   let authorized = false;
   let unavailable = false;
   let denied = false;
@@ -24,9 +29,8 @@ export default async function LoginPage({ searchParams }: {
     }
   }
 
-  if (authorized) redirect("/crm");
+  if (authorized) redirect(next ?? DEFAULT_CRM_PATH);
 
-  const params = await searchParams;
   const message = unavailable
     ? "Service temporairement indisponible."
     : denied || params.error === "access"
@@ -47,6 +51,7 @@ export default async function LoginPage({ searchParams }: {
       </div>
       {message && <p role="alert" className={styles.error}>{message}</p>}
       <form action="/crm/login/submit" method="post" className={styles.loginForm}>
+        {next && <input type="hidden" name="next" value={next} />}
         <div>
           <label htmlFor="email" className={styles.fieldLabel}>Email</label>
           <input id="email" name="email" type="email" required
