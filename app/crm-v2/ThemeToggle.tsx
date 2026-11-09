@@ -7,8 +7,8 @@ type Theme = "dark" | "light";
 
 const STORAGE_KEY = "auto9-crm-v2-theme";
 
-// Le thème clair « Porcelaine émeraude » est rendu par défaut côté serveur
-// (classe crm-skin-light) ; seul un choix explicite « dark » le retire.
+// Le thème sombre (fond noir) est rendu par défaut côté serveur ;
+// seul un choix explicite « light » ajoute la classe crm-skin-light.
 function applyTheme(theme: Theme) {
   const root = document.querySelector<HTMLElement>(".crm-v2-root");
   if (!root) return;
@@ -18,7 +18,7 @@ function applyTheme(theme: Theme) {
 
 const themePreference = createBrowserPreference<Theme>(
   STORAGE_KEY,
-  (stored) => (stored === "dark" ? "dark" : "light"),
+  (stored) => (stored === "light" ? "light" : "dark"),
   applyTheme,
 );
 
@@ -45,7 +45,7 @@ export default function ThemeToggle({ compact = false }: { compact?: boolean }) 
     themePreference.getSnapshot,
     themePreference.getServerSnapshot,
   );
-  const theme = savedTheme ?? "light";
+  const theme = savedTheme ?? "dark";
   const nextLabel = theme === "light" ? "Passer en thème sombre" : "Passer en thème clair";
 
   function toggle() {

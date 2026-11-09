@@ -13,7 +13,7 @@ export default async function CrmV2Layout({ children }: { children: React.ReactN
   await ensureCrmV2Access();
 
   return (
-    <div className="crm-v2-root crm-skin-light min-h-screen" data-theme="light">
+    <div className="crm-v2-root min-h-screen" data-theme="dark">
       <div className="mx-auto flex min-h-screen max-w-[1800px] gap-4 p-3 md:p-4">
         <aside className="crm-glass sticky top-4 hidden h-[calc(100vh-2rem)] w-[248px] shrink-0 flex-col gap-5 overflow-y-auto p-4 lg:flex">
           <Link href="/crm-v2" className="flex items-center gap-3 px-1">
