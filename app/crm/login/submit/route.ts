@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { CrmAccessError, requireCrmAccess } from "../../../lib/auth/dal";
+import { DEFAULT_CRM_PATH, safeCrmNextPath } from "../../../lib/auth/next-path";
 import {
   createWritableAuthClient, privateResponse, sameOriginPost,
 } from "../../../lib/auth/writable";
@@ -11,8 +12,14 @@ export async function POST(request: NextRequest) {
     return privateResponse(new NextResponse("Requête refusée.", { status: 403 }));
   }
 
+  // Page demandée avant la connexion, conservée en cas d'erreur.
+  let next: string | null = null;
   const back = (error: string) => NextResponse.redirect(
-    new URL("/crm/login?error=" + error, request.url), 303,
+    new URL(
+      "/crm/login?error=" + error + (next ? "&next=" + encodeURIComponent(next) : ""),
+      request.url,
+    ),
+    303,
   );
 
   if (
@@ -44,6 +51,8 @@ export async function POST(request: NextRequest) {
   } catch {
     return privateResponse(back("credentials"));
   }
+
+  if (form.getAll("next").length <= 1) next = safeCrmNextPath(form.get("next"));
 
   const email = form.get("email");
   const password = form.get("password");
@@ -84,7 +93,7 @@ export async function POST(request: NextRequest) {
       ));
     }
 
-    return auth.apply(NextResponse.redirect(new URL("/crm", request.url), 303));
+    return auth.apply(NextResponse.redirect(new URL(next ?? DEFAULT_CRM_PATH, request.url), 303));
   } catch {
     return auth.apply(back("service"));
   }
