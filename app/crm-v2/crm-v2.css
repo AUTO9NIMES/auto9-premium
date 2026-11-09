@@ -283,6 +283,13 @@
 /* Textes posés sur les cartes vertes (mêmes valeurs dans les deux thèmes). */
 .crm-v2-root .crm-on-dark-muted { color: rgba(244, 245, 246, 0.78); }
 .crm-v2-root .crm-on-dark-chip { background: rgba(255, 255, 255, 0.16); color: #ffffff; }
+.crm-v2-root .crm-on-dark-btn { background: #ffffff; border-color: transparent; color: #0b1d15; }
+.crm-v2-root .crm-on-dark-btn:hover { background: #e8f6ee; border-color: transparent; }
+.crm-v2-root .crm-on-dark-field {
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.94);
+  color: #0b1d15;
+}
 
 /* Carte KPI mise en avant (émeraude) */
 .crm-feature-card {
