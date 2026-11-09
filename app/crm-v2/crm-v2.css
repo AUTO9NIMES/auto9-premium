@@ -1,7 +1,7 @@
 /*
  * CRM V2 — thème « verre » AUTO 9.
- * Sombre par défaut : fond noir, verre sombre (sans .crm-skin-light).
- * Clair au choix : Porcelaine émeraude (.crm-skin-light).
+ * Clair par défaut : Porcelaine émeraude sur fond sauge (.crm-skin-light).
+ * Sombre au choix : vert Jaguar (sans .crm-skin-light).
  * Polices : celles du site (Manrope, Archivo Black), hébergées dans /public/fonts.
  */
 
@@ -35,10 +35,10 @@
 /* ---------- Couleurs ---------- */
 
 .crm-v2-root {
-  /* Sombre (par défaut) : fond noir à peine teinté de vert */
-  --crm-bg: #040605;
-  --crm-blob-1: rgba(52, 192, 133, 0.11);
-  --crm-blob-2: rgba(195, 200, 203, 0.05);
+  /* Sombre (au choix) : vert Jaguar */
+  --crm-bg: #071710;
+  --crm-blob-1: rgba(52, 192, 133, 0.16);
+  --crm-blob-2: rgba(195, 200, 203, 0.08);
   --crm-ink: #f1f4f2;
   --crm-ink-2: rgba(241, 244, 242, 0.78);
   --crm-muted: rgba(241, 244, 242, 0.56);
@@ -46,7 +46,7 @@
   --crm-ink-rgb: 241, 244, 242;
   --crm-line: rgba(255, 255, 255, 0.08);
   --crm-line-strong: rgba(255, 255, 255, 0.16);
-  --crm-surface: rgba(12, 22, 17, 0.94);
+  --crm-surface: rgba(10, 30, 21, 0.92);
   --crm-glass: rgba(255, 255, 255, 0.045);
   --crm-glass-strong: rgba(255, 255, 255, 0.085);
   --crm-glass-soft: rgba(255, 255, 255, 0.025);
@@ -81,12 +81,13 @@
   transition: background-color 180ms ease, color 180ms ease;
 }
 
-/* Clair (Porcelaine émeraude) — au choix, via le bouton de thème */
+/* Clair (Porcelaine émeraude) — thème par défaut */
 .crm-v2-root.crm-skin-light {
   /* Contraste renforcé : fond plus soutenu, cartes plus blanches, textes plus foncés. */
-  --crm-bg: #e2eae5;
-  --crm-blob-1: rgba(52, 192, 133, 0.22);
-  --crm-blob-2: rgba(167, 178, 172, 0.5);
+  /* Fond vert sauge soutenu : les cartes blanches s'en détachent nettement. */
+  --crm-bg: #c6d4cb;
+  --crm-blob-1: rgba(30, 148, 98, 0.22);
+  --crm-blob-2: rgba(120, 140, 130, 0.35);
   --crm-ink: #0b1d15;
   --crm-ink-2: #22342b;
   --crm-muted: #46574e;

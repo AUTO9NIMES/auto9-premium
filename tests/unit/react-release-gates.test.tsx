@@ -47,9 +47,9 @@ describe("SSR and external browser preferences", () => {
     vi.stubGlobal("window", new Proxy({}, { get() { throw new Error("render-time browser access"); } }));
     vi.stubGlobal("document", new Proxy({}, { get() { throw new Error("render-time DOM access"); } }));
     expect(renderToString(<GoogleAnalytics />)).toBe("");
-    // Thème sombre par défaut : le bouton propose le thème clair.
-    expect(renderToString(<ThemeToggle />)).toContain("Passer en thème clair");
-    expect(renderToString(<ThemeToggle compact />)).toContain('aria-label="Passer en thème clair"');
+    // Thème clair par défaut : le bouton propose le thème sombre.
+    expect(renderToString(<ThemeToggle />)).toContain("Passer en thème sombre");
+    expect(renderToString(<ThemeToggle compact />)).toContain('aria-label="Passer en thème sombre"');
   });
 
   it.each(["accepted", "refused", "invalid", null])("initializes consent %s only on subscription", (stored) => {
