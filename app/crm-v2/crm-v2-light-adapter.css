@@ -1,6 +1,6 @@
 /*
  * FICHIER GÉNÉRÉ — ne pas modifier à la main.
- * Source : scripts/generate-crm-v2-light-adapter.mjs (187 règles).
+ * Source : scripts/generate-crm-v2-light-adapter.mjs (188 règles).
  * Couche de transition : convertit les pages du CRM V2 encore codées en sombre
  * vers le thème clair « Porcelaine émeraude ». À supprimer quand toutes les
  * pages auront leur design clair natif.
@@ -102,6 +102,7 @@
 .crm-v2-root.crm-skin-light .focus\:border-amber-300\/30:focus { border-color: rgba(var(--crm-warning-rgb), 0.540); }
 .crm-v2-root.crm-skin-light .focus\:border-cyan-300\/30:focus { border-color: rgba(var(--crm-accent-rgb), 0.540); }
 .crm-v2-root.crm-skin-light .focus\:border-cyan-300\/35:focus { border-color: rgba(var(--crm-accent-rgb), 0.630); }
+.crm-v2-root.crm-skin-light .focus\:border-cyan-300\/40:focus { border-color: rgba(var(--crm-accent-rgb), 0.700); }
 .crm-v2-root.crm-skin-light .focus\:border-cyan-300\/50:focus { border-color: rgba(var(--crm-accent-rgb), 0.700); }
 .crm-v2-root.crm-skin-light .focus\:border-cyan-300\/55:focus { border-color: rgba(var(--crm-accent-rgb), 0.700); }
 .crm-v2-root.crm-skin-light .focus\:border-cyan-400\/50:focus { border-color: rgba(var(--crm-accent-rgb), 0.700); }

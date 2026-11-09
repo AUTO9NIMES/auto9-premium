@@ -9,6 +9,7 @@ import {
 } from "../../lib/crm";
 import { resolveCurrentBusinessContext } from "../../lib/business";
 import { supabaseRest } from "../../lib/supabase";
+import { parsePaymentDay } from "../../lib/payment-date";
 
 const allowedMethods = new Set<Payment["method"]>(["CASH", "CARD", "BANK_TRANSFER"]);
 
@@ -44,9 +45,15 @@ export async function recordV2ManualPayment(formData: FormData) {
 
   const leadId = String(formData.get("leadId") || "").trim();
   const method = String(formData.get("method") || "").trim();
+  // Date du paiement (facultative) : sans date, l'heure d'enregistrement fait foi.
+  const rawDay = String(formData.get("receivedOn") || "").trim();
+  const receivedOn = rawDay ? parsePaymentDay(rawDay) : null;
 
   if (!UUID_REGEX.test(leadId) || !["CASH", "CARD_BANK"].includes(method)) {
     redirect("/crm-v2/pipeline?payment_error=invalid");
+  }
+  if (rawDay && !receivedOn) {
+    redirect("/crm-v2/pipeline?payment_error=date_invalid");
   }
 
   const { businessId } = await resolveCurrentBusinessContext();
@@ -91,6 +98,7 @@ export async function recordV2ManualPayment(formData: FormData) {
           source: "crm_v2_pipeline",
           payment_method: method,
           payment_amount: paymentAmount,
+          ...(receivedOn ? { payment_received_on: receivedOn } : {}),
         },
       },
       "select=id",
@@ -104,6 +112,91 @@ export async function recordV2ManualPayment(formData: FormData) {
   revalidatePath("/crm-v2/revenue");
   revalidatePath("/crm-v2/pipeline");
   redirect("/crm-v2/pipeline?payment=manual_recorded");
+}
+
+type PaidStepEvent = {
+  event_type: string;
+  customer_id: string | null;
+  event_data: Record<string, unknown> | null;
+  created_at: string;
+};
+
+/*
+ * Corrige la date d'un paiement « Paiement reçu » (pipeline V2).
+ * Rien n'est modifié ni supprimé : une nouvelle entrée d'historique reprend
+ * le mode et le montant du paiement en vigueur, avec la nouvelle date et la
+ * date précédente (traçabilité comptable). Seul le dernier paiement actif du
+ * dossier, dans l'entreprise courante, peut être corrigé.
+ */
+export async function correctV2ManualPaymentDate(formData: FormData) {
+  await requireCrmAccess();
+
+  const leadId = String(formData.get("leadId") || "").trim();
+  const receivedOn = parsePaymentDay(String(formData.get("receivedOn") || ""));
+
+  if (!UUID_REGEX.test(leadId)) {
+    redirect("/crm-v2/pipeline?payment_error=invalid");
+  }
+  if (!receivedOn) {
+    redirect("/crm-v2/pipeline?payment_error=date_invalid");
+  }
+
+  const { businessId } = await resolveCurrentBusinessContext();
+
+  try {
+    const rows = await supabaseRest<PaidStepEvent[]>(
+      "activity_log",
+      "GET",
+      null,
+      `business_id=eq.${businessId}&lead_id=eq.${leadId}` +
+        "&event_type=in.(crm_v2.step.completed,crm_v2.step.reopened)" +
+        "&event_data->>step_key=eq.PAID&order=created_at.desc&limit=1" +
+        "&select=event_type,customer_id,event_data,created_at",
+    );
+    const latest = (rows as PaidStepEvent[] | null)?.[0];
+    const data = latest?.event_data ?? null;
+
+    // Uniquement un paiement manuel actif (mode connu), jamais une annulation.
+    if (
+      !latest ||
+      latest.event_type !== "crm_v2.step.completed" ||
+      typeof data?.payment_method !== "string"
+    ) {
+      redirect("/crm-v2/pipeline?payment_error=not_correctable");
+    }
+
+    const previous =
+      typeof data.payment_received_on === "string" ? data.payment_received_on : latest.created_at;
+
+    await supabaseRest(
+      "activity_log",
+      "POST",
+      {
+        business_id: businessId,
+        customer_id: latest.customer_id,
+        lead_id: leadId,
+        event_type: "crm_v2.step.completed",
+        event_data: {
+          step_key: "PAID",
+          source: "crm_v2_payment_date_correction",
+          payment_method: data.payment_method,
+          ...(data.payment_amount !== undefined ? { payment_amount: data.payment_amount } : {}),
+          payment_received_on: receivedOn,
+          corrected_from: previous,
+        },
+      },
+      "select=id",
+    );
+  } catch (error) {
+    if (error && typeof error === "object" && "digest" in error) throw error;
+    redirect("/crm-v2/pipeline?payment_error=unavailable");
+  }
+
+  revalidatePath("/crm-v2");
+  revalidatePath("/crm-v2/revenue");
+  revalidatePath("/crm-v2/garages");
+  revalidatePath("/crm-v2/pipeline");
+  redirect(`/crm-v2/pipeline?payment=date_corrected#dossier-${leadId}`);
 }
 
 

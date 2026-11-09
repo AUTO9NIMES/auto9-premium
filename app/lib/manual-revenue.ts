@@ -1,5 +1,6 @@
 import "server-only";
 
+import { paymentReceivedAt } from "./payment-date";
 import { supabaseRest } from "./supabase";
 
 export type ManualRevenueEntry = {
@@ -83,9 +84,11 @@ export async function getManualRevenueEntries(
     if (leadId) canonicalPaidLeads.add(leadId);
   }
 
+  // recordedAt : heure d'enregistrement (ordre des événements, annulations) ;
+  // receivedAt : date réelle du paiement (mois de chiffre d'affaires).
   const latestPaymentByLead = new Map<
     string,
-    { receivedAt: string; method: ManualRevenueEntry["method"]; amount: number | null }
+    { recordedAt: string; receivedAt: string; method: ManualRevenueEntry["method"]; amount: number | null }
   >();
   const latestReopenByLead = new Map<string, string>();
 
@@ -107,7 +110,8 @@ export async function getManualRevenueEntries(
 
     const rawAmount = Number(row.event_data?.payment_amount);
     latestPaymentByLead.set(leadId, {
-      receivedAt: row.created_at,
+      recordedAt: row.created_at,
+      receivedAt: paymentReceivedAt(row.event_data, row.created_at),
       method,
       amount: Number.isFinite(rawAmount) && rawAmount > 0 ? rawAmount : null,
     });
@@ -118,7 +122,9 @@ export async function getManualRevenueEntries(
     if (canonicalPaidLeads.has(leadId)) continue;
 
     const reopenedAt = latestReopenByLead.get(leadId);
-    if (reopenedAt && new Date(reopenedAt).getTime() > new Date(payment.receivedAt).getTime()) {
+    // Comparaison sur l'heure d'enregistrement : une date de paiement antidatée
+    // ne doit pas faire passer une annulation antérieure pour postérieure.
+    if (reopenedAt && new Date(reopenedAt).getTime() > new Date(payment.recordedAt).getTime()) {
       continue;
     }
 
