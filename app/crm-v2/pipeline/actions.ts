@@ -122,6 +122,29 @@ type PaidStepEvent = {
 };
 
 /*
+ * Paiement « Paiement reçu » actif d'un dossier (même règle que le calcul du
+ * chiffre d'affaires) : le plus récent paiement avec un mode, sauf si une
+ * remise en attente de l'étape est plus récente. Les validations d'étape
+ * sans mode (cochage en cascade) sont ignorées.
+ */
+async function findActiveManualPayment(businessId: string, leadId: string) {
+  const rows = await supabaseRest<PaidStepEvent[]>(
+    "activity_log",
+    "GET",
+    null,
+    `business_id=eq.${businessId}&lead_id=eq.${leadId}` +
+      "&event_type=in.(crm_v2.step.completed,crm_v2.step.reopened)" +
+      "&event_data->>step_key=eq.PAID&order=created_at.desc&limit=50" +
+      "&select=event_type,customer_id,event_data,created_at",
+  );
+  for (const row of (rows as PaidStepEvent[] | null) ?? []) {
+    if (row.event_type === "crm_v2.step.reopened") return null;
+    if (typeof row.event_data?.payment_method === "string") return row;
+  }
+  return null;
+}
+
+/*
  * Corrige la date d'un paiement « Paiement reçu » (pipeline V2).
  * Rien n'est modifié ni supprimé : une nouvelle entrée d'historique reprend
  * le mode et le montant du paiement en vigueur, avec la nouvelle date et la
@@ -144,24 +167,10 @@ export async function correctV2ManualPaymentDate(formData: FormData) {
   const { businessId } = await resolveCurrentBusinessContext();
 
   try {
-    const rows = await supabaseRest<PaidStepEvent[]>(
-      "activity_log",
-      "GET",
-      null,
-      `business_id=eq.${businessId}&lead_id=eq.${leadId}` +
-        "&event_type=in.(crm_v2.step.completed,crm_v2.step.reopened)" +
-        "&event_data->>step_key=eq.PAID&order=created_at.desc&limit=1" +
-        "&select=event_type,customer_id,event_data,created_at",
-    );
-    const latest = (rows as PaidStepEvent[] | null)?.[0];
-    const data = latest?.event_data ?? null;
-
     // Uniquement un paiement manuel actif (mode connu), jamais une annulation.
-    if (
-      !latest ||
-      latest.event_type !== "crm_v2.step.completed" ||
-      typeof data?.payment_method !== "string"
-    ) {
+    const latest = await findActiveManualPayment(businessId, leadId);
+    const data = latest?.event_data ?? null;
+    if (!latest || typeof data?.payment_method !== "string") {
       redirect("/crm-v2/pipeline?payment_error=not_correctable");
     }
 
@@ -303,6 +312,7 @@ export async function toggleV2LeadStep(formData: FormData) {
   const leadId = String(formData.get("leadId") || "").trim();
   const stepKey = String(formData.get("stepKey") || "").trim();
   const nextDone = String(formData.get("nextDone") || "") === "1";
+  const confirmCancelPayment = String(formData.get("confirmCancelPayment") || "") === "1";
 
   if (!UUID_REGEX.test(leadId) || !isManualStepKey(stepKey)) {
     redirect("/crm-v2/pipeline?step_error=invalid");
@@ -324,6 +334,16 @@ export async function toggleV2LeadStep(formData: FormData) {
     const affected = nextDone
       ? MANUAL_STEPS.slice(0, targetIndex + 1)
       : MANUAL_STEPS.slice(targetIndex);
+
+    // Remettre une étape en attente rouvre aussi les suivantes, dont le
+    // paiement : un paiement enregistré n'est jamais annulé sans la
+    // confirmation explicite « Annuler le paiement ».
+    if (!nextDone && affected.includes("PAID") && !confirmCancelPayment) {
+      const activePayment = await findActiveManualPayment(businessId, leadId);
+      if (activePayment) {
+        redirect(`/crm-v2/pipeline?step_error=payment_locked#dossier-${leadId}`);
+      }
+    }
 
     for (const key of affected) {
       await supabaseRest(

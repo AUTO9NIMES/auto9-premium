@@ -212,3 +212,53 @@ describe("action : corriger la date d'un paiement", () => {
     expect(m.rest).not.toHaveBeenCalled();
   });
 });
+
+describe("étapes : un paiement enregistré ne s'annule jamais par accident", () => {
+  function setup(paidEvents: Array<Record<string, unknown>>) {
+    m.rest.mockImplementation(async (resource: string, method: string, _body: unknown, query?: string) => {
+      if (resource === "leads") return [{ id: LEAD, customer_id: "cust-1" }];
+      if (resource === "activity_log" && method === "GET" && String(query).includes("step_key=eq.PAID")) return paidEvents;
+      if (resource === "activity_log" && method === "POST") return [{ id: "evt" }];
+      return [];
+    });
+  }
+  const activePayment = { event_type: "crm_v2.step.completed", customer_id: "cust-1", event_data: { step_key: "PAID", payment_method: "CARD_BANK", payment_amount: 270 }, created_at: "2026-11-08T14:55:00Z" };
+  const posts = () => m.rest.mock.calls.filter(([resource, method]) => resource === "activity_log" && method === "POST");
+
+  it("rouvrir une étape antérieure ne peut pas annuler le paiement sans confirmation", async () => {
+    const { toggleV2LeadStep } = await import("../../app/crm-v2/pipeline/actions");
+    setup([activePayment]);
+    await expect(toggleV2LeadStep(form({ leadId: LEAD, stepKey: "COMPLETED", nextDone: "0" }))).rejects.toThrow("step_error=payment_locked");
+    expect(posts()).toHaveLength(0);
+  });
+
+  it("« Annuler le paiement » confirmé remet bien l'étape en attente", async () => {
+    const { toggleV2LeadStep } = await import("../../app/crm-v2/pipeline/actions");
+    setup([activePayment]);
+    await expect(toggleV2LeadStep(form({ leadId: LEAD, stepKey: "PAID", nextDone: "0", confirmCancelPayment: "1" }))).rejects.toThrow("step_updated=1");
+    expect(posts().map(([, , body]) => (body as { event_type: string; event_data: { step_key: string } }).event_data.step_key)).toContain("PAID");
+    expect(posts().every(([, , body]) => (body as { event_type: string }).event_type === "crm_v2.step.reopened")).toBe(true);
+  });
+
+  it("sans paiement enregistré, rouvrir une étape reste libre", async () => {
+    const { toggleV2LeadStep } = await import("../../app/crm-v2/pipeline/actions");
+    setup([{ event_type: "crm_v2.step.reopened", customer_id: "cust-1", event_data: { step_key: "PAID" }, created_at: "2026-11-09T09:00:00Z" }, activePayment]);
+    await expect(toggleV2LeadStep(form({ leadId: LEAD, stepKey: "COMPLETED", nextDone: "0" }))).rejects.toThrow("step_updated=1");
+    expect(posts().length).toBeGreaterThan(0);
+  });
+
+  it("une étape cochée sans mode (cascade) ne masque pas le vrai paiement", async () => {
+    setup([
+      { event_type: "crm_v2.step.completed", customer_id: "cust-1", event_data: { step_key: "PAID", source: "crm_v2_pipeline" }, created_at: "2026-11-09T10:00:00Z" },
+      activePayment,
+    ]);
+    await expect(correctV2ManualPaymentDate(form({ leadId: LEAD, receivedOn: "2026-10-20" }))).rejects.toThrow("payment=date_corrected");
+    expect(posts()[0][2]).toMatchObject({ event_data: { payment_method: "CARD_BANK", payment_amount: 270, payment_received_on: "2026-10-20" } });
+  });
+
+  it("cocher une étape reste libre (aucune lecture de paiement nécessaire)", async () => {
+    const { toggleV2LeadStep } = await import("../../app/crm-v2/pipeline/actions");
+    setup([activePayment]);
+    await expect(toggleV2LeadStep(form({ leadId: LEAD, stepKey: "CONTACTED", nextDone: "1" }))).rejects.toThrow("step_updated=1");
+  });
+});

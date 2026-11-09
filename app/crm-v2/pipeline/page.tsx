@@ -429,7 +429,10 @@ function LeadProgress({
               item.lead.id &&
               manual &&
               !closed &&
-              (step.key !== "PAID" || manualPayment),
+              (step.key !== "PAID" || manualPayment) &&
+              // Un paiement enregistré ne s'annule plus d'un simple clic :
+              // voir « Paiement : corriger la date ou annuler ».
+              !(step.key === "PAID" && state.done && manualPaymentLabel),
             );
 
             const inner = (
@@ -468,7 +471,7 @@ function LeadProgress({
                     <p className="mt-1 text-[9px] text-white/20">
                       {item.latestJob?.id
                         ? "Via encaissement"
-                        : manualPaymentLabel || "Choisir le mode"}
+                        : (state.done && manualPaymentLabel) || "Choisir le mode"}
                     </p>
                   )}
                 </div>
@@ -551,31 +554,50 @@ function LeadProgress({
         {manualPaymentLabel && !item.latestJob?.id && states[steps.findIndex((step) => step.key === "PAID")]?.done && item.lead.id && (
           <details className="mt-3 rounded-2xl border border-white/8 bg-white/[0.02] px-4 py-3">
             <summary className="cursor-pointer list-none text-xs font-semibold text-white/60 hover:text-white">
-              Corriger la date du paiement
+              Paiement : corriger la date ou annuler
             </summary>
-            <form action={correctV2ManualPaymentDate} className="mt-3 flex flex-wrap items-end gap-2">
-              <input type="hidden" name="leadId" value={item.lead.id} />
-              <label className="grid gap-1 text-[11px] text-white/55">
-                Nouvelle date
-                <input
-                  type="date"
-                  name="receivedOn"
-                  max={todayParisDay()}
-                  min="2020-01-01"
-                  required
-                  className="rounded-lg border border-white/10 bg-[#081019] px-2 py-1.5 text-xs text-white outline-none focus:border-cyan-300/40"
-                />
-              </label>
-              <button
-                type="submit"
-                className="rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
-              >
-                Enregistrer la date
-              </button>
-              <p className="basis-full text-[11px] leading-5 text-white/40">
-                Le paiement passe dans le chiffre d&apos;affaires du mois choisi. L&apos;ancienne date reste dans l&apos;historique du dossier.
-              </p>
-            </form>
+            <div className="mt-3 grid gap-4 md:grid-cols-2">
+              <form action={correctV2ManualPaymentDate} className="grid content-start gap-2">
+                <input type="hidden" name="leadId" value={item.lead.id} />
+                <p className="text-xs font-semibold text-white/75">Corriger la date</p>
+                <label className="grid gap-1 text-[11px] text-white/55">
+                  Nouvelle date
+                  <input
+                    type="date"
+                    name="receivedOn"
+                    max={todayParisDay()}
+                    min="2020-01-01"
+                    required
+                    className="rounded-lg border border-white/10 bg-[#081019] px-2 py-1.5 text-xs text-white outline-none focus:border-cyan-300/40"
+                  />
+                </label>
+                <button
+                  type="submit"
+                  className="justify-self-start rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
+                >
+                  Enregistrer la date
+                </button>
+                <p className="text-[11px] leading-5 text-white/40">
+                  Le paiement passe dans le chiffre d&apos;affaires du mois choisi. L&apos;ancienne date reste dans l&apos;historique du dossier.
+                </p>
+              </form>
+              <form action={toggleV2LeadStep} className="grid content-start gap-2">
+                <input type="hidden" name="leadId" value={item.lead.id} />
+                <input type="hidden" name="stepKey" value="PAID" />
+                <input type="hidden" name="nextDone" value="0" />
+                <p className="text-xs font-semibold text-white/75">Annuler le paiement</p>
+                <label className="flex items-start gap-2 text-[11px] leading-5 text-white/55">
+                  <input type="checkbox" name="confirmCancelPayment" value="1" required className="mt-1" />
+                  Je confirme : ce paiement n&apos;a pas eu lieu et doit sortir du chiffre d&apos;affaires.
+                </label>
+                <button
+                  type="submit"
+                  className="justify-self-start rounded-xl border border-red-300/30 bg-red-300/10 px-4 py-2 text-xs font-semibold text-red-100 transition hover:bg-red-300/20"
+                >
+                  Annuler le paiement
+                </button>
+              </form>
+            </div>
           </details>
         )}
 
@@ -825,7 +847,9 @@ export default async function CrmV2Pipeline({
       )}
       {stepError && (
         <div className="rounded-xl border border-red-300/20 bg-red-300/[0.05] px-4 py-3 text-sm text-red-100">
-          L&apos;étape n&apos;a pas pu être mise à jour.
+          {stepError === "payment_locked"
+            ? "Ce dossier a un paiement enregistré : pour rouvrir cette étape, annule d'abord le paiement (« Paiement : corriger la date ou annuler »)."
+            : "L'étape n'a pas pu être mise à jour."}
         </div>
       )}
       {leadCancelled && (
