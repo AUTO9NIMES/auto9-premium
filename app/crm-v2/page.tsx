@@ -94,21 +94,87 @@ function hasBookedStep(lead: DashboardLeadRow, activity: DashboardStepActivity[]
   );
 }
 
-function MiniEvent({ item }: { item: CalendarAppointmentItem }) {
+const longDate = new Intl.DateTimeFormat("fr-FR", {
+  timeZone: "Europe/Paris",
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+});
+const monthName = new Intl.DateTimeFormat("fr-FR", { timeZone: "UTC", month: "long" });
+const parisHour = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Paris", hour: "numeric", hourCycle: "h23" });
+
+function previousMonthKey(value: string) {
+  const [year, month] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 2, 1));
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+function greetingFor(date: Date) {
+  const hourOfDay = Number(parisHour.formatToParts(date).find((part) => part.type === "hour")?.value ?? 12);
+  return hourOfDay < 12 ? "Bonjour" : hourOfDay < 18 ? "Bon après-midi" : "Bonsoir";
+}
+
+/* Courbe : valeurs cumulées, tracées à l'échelle (min 0 → max). */
+function Sparkline({ values, stroke }: { values: number[]; stroke: string }) {
+  if (values.length < 2) return null;
+  const max = Math.max(...values, 1);
+  const step = 100 / (values.length - 1);
+  const points = values.map((value, index) => `${(index * step).toFixed(2)},${(28 - (value / max) * 24).toFixed(2)}`).join(" ");
+  const last = values.length - 1;
+  return (
+    <svg viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true" className="h-8 w-full overflow-visible">
+      <polygon points={`0,30 ${points} 100,30`} fill={stroke} opacity="0.12" />
+      <polyline points={points} fill="none" stroke={stroke} strokeWidth="2" vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
+      <circle cx={last * step} cy={28 - (values[last] / max) * 24} r="2.6" fill={stroke} />
+    </svg>
+  );
+}
+
+function ProgressRing({ percent, label }: { percent: number | null; label: string }) {
+  const radius = 50;
+  const circumference = 2 * Math.PI * radius;
+  const shown = percent === null ? 0 : Math.min(100, Math.max(0, percent));
+  return (
+    <div className="relative grid h-[132px] w-[132px] shrink-0 place-items-center" role="img" aria-label={percent === null ? label : `${Math.round(shown)} % — ${label}`}>
+      <svg viewBox="0 0 120 120" className="absolute inset-0 -rotate-90" aria-hidden="true">
+        <circle cx="60" cy="60" r={radius} fill="none" stroke="rgba(255,255,255,.14)" strokeWidth="10" />
+        <circle cx="60" cy="60" r={radius} fill="none" stroke="var(--crm-ring)" strokeWidth="10" strokeLinecap="round" strokeDasharray={`${(shown / 100) * circumference} ${circumference}`} />
+      </svg>
+      <div className="text-center">
+        <p className="crm-display crm-num text-[26px] leading-none">{percent === null ? "—" : `${Math.round(percent)} %`}</p>
+        <p className="crm-on-dark-muted mt-1 max-w-[86px] text-[10.5px] leading-tight">{label}</p>
+      </div>
+    </div>
+  );
+}
+
+function NextEvent({ item }: { item: CalendarAppointmentItem }) {
   const when = new Date(item.appointment.scheduledAt);
   return (
-    <Link href="/crm-v2/calendar" className="group flex items-center gap-3 rounded-xl border border-white/8 bg-white/[0.025] p-3 transition hover:border-cyan-300/25 hover:bg-cyan-300/[0.04]">
+    <Link href="/crm-v2/calendar" className="crm-lift flex items-center gap-3 rounded-2xl border p-3" style={{ background: "var(--crm-glass-strong)", borderColor: "var(--crm-glass-border)" }}>
       <div className="w-14 shrink-0 text-center">
-        <p className="text-[10px] uppercase text-white/35">{day.format(when)}</p>
-        <p className="mt-1 text-xs font-semibold text-cyan-200">{hour.format(when)}</p>
+        <p className="crm-eyebrow !text-[9.5px] !tracking-[0.12em]">{day.format(when)}</p>
+        <time className="crm-num crm-accent-text mt-1 block text-[13px] font-bold">{hour.format(when)}</time>
       </div>
-      <div className="min-w-0 border-l border-white/10 pl-3">
-        <p className="truncate text-sm font-medium text-white">{item.customer.fullName}</p>
-        <p className="mt-1 truncate text-xs text-white/40">{item.job.title || item.job.jobNumber || "Prestation AUTO 9"}</p>
+      <div className="min-w-0 border-l pl-3" style={{ borderColor: "var(--crm-line)" }}>
+        <p className="truncate text-sm font-semibold">{item.customer.fullName}</p>
+        <p className="crm-muted mt-0.5 truncate text-xs">{item.job.title || item.job.jobNumber || "Prestation AUTO 9"}</p>
       </div>
     </Link>
   );
 }
+
+const ICON = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" } as const;
+const kpiIcons = {
+  calendar: <svg viewBox="0 0 24 24" {...ICON} className="h-4 w-4" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3" /><path d="M8 3v4M16 3v4M3 10h18" /></svg>,
+  euro: <svg viewBox="0 0 24 24" {...ICON} className="h-4 w-4" aria-hidden="true"><path d="M17 6.5A7 7 0 1 0 17 17.5" /><path d="M4 10h9M4 14h9" /></svg>,
+  inbox: <svg viewBox="0 0 24 24" {...ICON} className="h-4 w-4" aria-hidden="true"><path d="M3 13h5l1.5 3h5L16 13h5" /><path d="M5 5h14l2 8v6H3v-6Z" /></svg>,
+  repeat: <svg viewBox="0 0 24 24" {...ICON} className="h-4 w-4" aria-hidden="true"><path d="M17 2l3 3-3 3" /><path d="M4 11V9a4 4 0 0 1 4-4h12" /><path d="M7 22l-3-3 3-3" /><path d="M20 13v2a4 4 0 0 1-4 4H4" /></svg>,
+  plus: <svg viewBox="0 0 24 24" {...ICON} className="h-4 w-4" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>,
+  user: <svg viewBox="0 0 24 24" {...ICON} className="h-4 w-4" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></svg>,
+  target: <svg viewBox="0 0 24 24" {...ICON} className="h-4 w-4" aria-hidden="true"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1" /></svg>,
+  arrow: <svg viewBox="0 0 24 24" {...ICON} className="h-4 w-4" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>,
+};
 
 export default async function CrmV2Dashboard() {
   await ensureCrmV2Access("/crm-v2");
@@ -268,217 +334,310 @@ export default async function CrmV2Dashboard() {
     .sort((a, b) => new Date(a.appointment.scheduledAt).getTime() - new Date(b.appointment.scheduledAt).getTime())
     .slice(0, 5);
 
-  const cards = [
+  // ---------- Affichage ----------
+  const countForDay = (key: string) =>
+    calendar.items.filter((item) => parisDateKey(item.appointment.scheduledAt) === key).length +
+    customEvents.filter((item) => item.event_date === key).length +
+    historicalEvents.filter((item) => item.eventDate === key).length;
+
+  // Comparaison avec le mois précédent (mêmes règles : paiements réellement enregistrés).
+  const previousMonth = previousMonthKey(currentMonth);
+  const previousRevenue =
+    payments
+      .filter((payment) => parisMonthKey(payment.received_at) === previousMonth && ["CASH", "CARD", "BANK_TRANSFER"].includes(payment.method))
+      .reduce((sum, payment) => sum + (payment.amount || 0), 0) +
+    manualPayments
+      .filter((payment) => parisMonthKey(payment.receivedAt) === previousMonth && ["CASH", "CARD", "BANK_TRANSFER"].includes(payment.method))
+      .reduce((sum, payment) => sum + payment.amount, 0);
+  const revenuePercent = previousRevenue > 0 ? (monthRevenue / previousRevenue) * 100 : null;
+  const previousMonthLabel = monthName.format(new Date(`${previousMonth}-15T00:00:00Z`));
+
+  // CA cumulé jour par jour (mois en cours, jusqu'à aujourd'hui).
+  const revenueByDay = new Array<number>(todayNumber).fill(0);
+  for (const payment of paymentsThisMonth) {
+    if (!["CASH", "CARD", "BANK_TRANSFER"].includes(payment.method)) continue;
+    const index = Number(parisDateKey(payment.received_at).slice(8, 10)) - 1;
+    if (index >= 0 && index < todayNumber) revenueByDay[index] += payment.amount || 0;
+  }
+  for (const payment of manualThisMonth) {
+    if (!["CASH", "CARD", "BANK_TRANSFER"].includes(payment.method)) continue;
+    const index = Number(parisDateKey(payment.receivedAt).slice(8, 10)) - 1;
+    if (index >= 0 && index < todayNumber) revenueByDay[index] += payment.amount;
+  }
+  const cumulativeRevenue = revenueByDay.reduce<number[]>((acc, value) => [...acc, (acc.at(-1) ?? 0) + value], []);
+
+  // Semaine en cours (lundi → dimanche) ; seuls les jours du mois affiché ont leur compte.
+  const todayUtc = new Date(Date.UTC(calendarYear, calendarMonth - 1, todayNumber));
+  const mondayOffset = (todayUtc.getUTCDay() + 6) % 7;
+  const week = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(todayUtc);
+    date.setUTCDate(todayUtc.getUTCDate() - mondayOffset + index);
+    const key = date.toISOString().slice(0, 10);
+    return {
+      key,
+      letter: ["L", "M", "M", "J", "V", "S", "D"][index],
+      number: date.getUTCDate(),
+      count: key.startsWith(currentMonth) ? countForDay(key) : null,
+      today: key === currentDay,
+    };
+  });
+
+  const attention = unpaidCount + leadsToTreat + subscriptionsDue;
+  const greeting = greetingFor(calendarDate);
+  const dateLabel = longDate.format(calendarDate);
+
+  const kpis = [
     {
-      label: "Prestations du jour",
-      value: String(todayAgenda.length),
-      detail: "Interventions planifiées",
-      accent: true,
-      href: "/crm-v2/calendar?day=" + currentDay,
-    },
-    {
+      key: "unpaid",
       label: "Paiements à suivre",
       value: String(unpaidCount),
-      detail: unpaidCount ? eur.format(unpaidKnownAmount) + " connus" +
-        (unpaidWithoutAmount ? " · prix à compléter" : "") : "Tout est à jour",
+      detail: unpaidCount ? eur.format(unpaidKnownAmount) + " connus" + (unpaidWithoutAmount ? " · prix à compléter" : "") : "Tout est à jour",
+      chip: unpaidCount ? { text: "À encaisser", tone: "warning" } : { text: "À jour", tone: "accent" },
       href: "/crm-v2/pipeline",
+      icon: kpiIcons.euro,
     },
     {
+      key: "leads",
       label: "Demandes à traiter",
       value: String(leadsToTreat),
       detail: "Sans réservation confirmée",
+      chip: leadsToTreat ? { text: "À rappeler", tone: "warning" } : { text: "Rien en attente", tone: "neutral" },
       href: "/crm-v2/pipeline",
+      icon: kpiIcons.inbox,
     },
     {
-      label: "CA encaissé ce mois",
-      value: eur.format(monthRevenue),
-      detail: "Paiements réellement enregistrés",
-      href: "/crm-v2/revenue",
+      key: "dossiers",
+      label: "Dossiers réservés",
+      value: String(clientDossiers),
+      detail: "Clients avec réservation",
+      chip: { text: "En cours", tone: "neutral" },
+      href: "/crm-v2/pipeline",
+      icon: kpiIcons.user,
     },
   ];
 
+  const quickActions = [
+    { label: "Nouveau dossier", detail: "Client ou garage", href: "/crm-v2/pipeline/new", icon: kpiIcons.plus },
+    { label: "Intervention", detail: "Ajouter au planning", href: "/crm-v2/calendar?new=1", icon: kpiIcons.calendar },
+    { label: "Nouveau client", detail: "Créer une fiche", href: "/crm-v2/clients?new=1", icon: kpiIcons.user },
+    { label: "Prospection", detail: "Garages et relances", href: "/crm-v2/developpement", icon: kpiIcons.target },
+  ];
+
   return (
-    <div className="space-y-8">
-      <header className="relative min-h-[260px] overflow-hidden rounded-[28px] border border-cyan-300/12 bg-[#081019] shadow-[0_24px_70px_rgba(0,0,0,0.28)] md:min-h-[300px]">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: "url('/crm-v2-hero.webp')" }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#071019]/95 via-[#071019]/78 to-[#071019]/10" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#070b10]/70 via-transparent to-black/10" />
-        <div className="relative z-10 flex min-h-[260px] flex-col justify-end p-6 md:min-h-[300px] md:p-8 xl:p-10">
-          <div className="max-w-3xl">
-            <p className="text-[11px] uppercase tracking-[0.30em] text-cyan-200/70">AUTO 9 · CRM V3 · Pilotage quotidien</p>
-            <h1 className="mt-3 text-4xl font-bold tracking-tight text-white md:text-6xl">Ma journée AUTO 9</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-white/55">
-              Tes interventions, tes encaissements et les actions importantes du jour, au même endroit.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-2">
-              <Link href="/crm-v2/clients?new=1" className="rounded-xl border border-cyan-300/35 bg-cyan-300/12 px-4 py-3 text-xs font-semibold text-cyan-100 backdrop-blur-sm transition hover:bg-cyan-300/20">
-                + Nouveau client
-              </Link>
-              <Link href="/crm-v2/calendar?new=1" className="rounded-xl border border-white/12 bg-black/20 px-4 py-3 text-xs font-semibold text-white/80 backdrop-blur-sm transition hover:border-white/25 hover:bg-black/30">
-                + Événement
-              </Link>
-            </div>
-          </div>
+    <div className="grid gap-4">
+      <header className="crm-rise flex flex-wrap items-end justify-between gap-4 px-1">
+        <div>
+          <h1 className="crm-display text-[clamp(28px,4vw,42px)] leading-[1.05]">{greeting}</h1>
+          <p className="crm-muted mt-1.5 text-sm first-letter:uppercase">
+            {dateLabel}
+            {" · "}
+            {attention ? (
+              <span className="font-semibold" style={{ color: "var(--crm-ink)" }}>
+                {attention} chose{attention > 1 ? "s" : ""} demande{attention > 1 ? "nt" : ""} ton attention
+              </span>
+            ) : (
+              "Tout est à jour"
+            )}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/crm-v2/calendar?new=1" className="crm-btn">{kpiIcons.calendar} Événement</Link>
+          <Link href="/crm-v2/pipeline/new" className="crm-btn" data-variant="primary">{kpiIcons.plus} Nouveau dossier</Link>
         </div>
       </header>
 
-      <section className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
-        {cards.map((card) => (
-          <Link
-            key={card.label}
-            href={card.href}
-            className={`group min-h-[150px] rounded-2xl border p-6 transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-300/30 hover:bg-cyan-300/[0.045] hover:shadow-[0_12px_35px_rgba(34,211,238,0.07)] ${card.accent ? "border-cyan-300/25 bg-gradient-to-br from-cyan-300/10 to-blue-500/[0.04]" : "border-white/8 bg-white/[0.025]"}`}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-white/35">{card.label}</p>
-              <span className="text-sm text-white/20 transition group-hover:translate-x-0.5 group-hover:text-cyan-200/70">→</span>
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
+        <Link href="/crm-v2/revenue" className="crm-hero-card crm-rise crm-lift grid gap-5 p-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:p-7" style={{ "--crm-delay": "60ms" } as React.CSSProperties} data-revenue-card>
+          <div className="min-w-0">
+            <span className="crm-chip crm-on-dark-chip">
+              <span className="h-1.5 w-1.5 rounded-full" style={{ background: "var(--crm-ring)" }} />
+              CA encaissé · {monthName.format(new Date(`${currentMonth}-15T00:00:00Z`))}
+            </span>
+            <p className="crm-display crm-num mt-4 text-[clamp(38px,5vw,56px)] leading-none" data-revenue="total">{eur.format(monthRevenue)}</p>
+            <p className="crm-on-dark-muted mt-2 max-w-[44ch] text-[13px] leading-relaxed">
+              Paiements réellement enregistrés ce mois-ci.
+              {previousRevenue > 0 ? ` ${previousMonthLabel.charAt(0).toUpperCase() + previousMonthLabel.slice(1)} : ${eur.format(previousRevenue)}.` : ""}
+            </p>
+            <div className="mt-5 flex flex-wrap gap-6">
+              <div>
+                <p className="crm-num text-lg font-extrabold" data-revenue="cash">{eur.format(cashRevenue)}</p>
+                <p className="crm-on-dark-muted text-[11px]">Espèces</p>
+              </div>
+              <div>
+                <p className="crm-num text-lg font-extrabold" data-revenue="card">{eur.format(bankRevenue)}</p>
+                <p className="crm-on-dark-muted text-[11px]">Carte + virement</p>
+              </div>
             </div>
-            <p className={`mt-4 text-3xl font-bold ${card.accent ? "text-cyan-100" : "text-white"}`}>{card.value}</p>
-            <p className="mt-2 text-xs text-white/35">{card.detail}</p>
+            {cumulativeRevenue.length > 1 && (
+              <div className="mt-4 max-w-[420px]">
+                <Sparkline values={cumulativeRevenue} stroke="#6fd9a8" />
+              </div>
+            )}
+          </div>
+          <ProgressRing percent={revenuePercent} label={previousRevenue > 0 ? `du CA de ${previousMonthLabel}` : "pas de mois précédent"} />
+        </Link>
+
+        <div className="crm-glass crm-rise grid content-start gap-4 p-5" style={{ "--crm-delay": "120ms" } as React.CSSProperties}>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="crm-display crm-num crm-accent-text text-[40px] leading-none">{String(todayNumber).padStart(2, "0")}</span>
+              <div>
+                <p className="text-sm font-bold first-letter:uppercase">{dateLabel.split(" ")[0]}</p>
+                <p className="crm-muted text-xs">{todayAgenda.length} intervention{todayAgenda.length > 1 ? "s" : ""} aujourd&apos;hui</p>
+              </div>
+            </div>
+            <Link href={"/crm-v2/calendar?day=" + currentDay} className="crm-btn !px-3 !py-2 !text-[11.5px]">Journée {kpiIcons.arrow}</Link>
+          </div>
+
+          <div className="grid grid-cols-7 gap-1 rounded-2xl p-1.5" style={{ background: "var(--crm-glass-strong)" }}>
+            {week.map((d) => (
+              <Link
+                key={d.key}
+                href={`/crm-v2/calendar?day=${d.key}`}
+                data-week-day={d.key}
+                className="grid place-items-center rounded-xl py-1.5 text-center transition"
+                style={d.today ? { background: "var(--crm-accent)", color: "#fff" } : { color: "var(--crm-muted)" }}
+              >
+                <span className="text-[10px] font-bold">{d.letter}</span>
+                <span className="crm-num text-[13px] font-bold">{d.number}</span>
+                <span className="h-1.5 w-1.5 rounded-full" style={{ background: d.count ? (d.today ? "#fff" : "var(--crm-accent)") : "transparent" }} />
+              </Link>
+            ))}
+          </div>
+
+          <div className="grid gap-2">
+            {todayAgenda.length ? todayAgenda.slice(0, 4).map((event) => (
+              <Link key={event.id} href={"/crm-v2/calendar?day=" + currentDay} className="crm-lift grid grid-cols-[auto_3px_minmax(0,1fr)] items-center gap-3 rounded-2xl border p-3" style={{ background: "var(--crm-glass-strong)", borderColor: "var(--crm-glass-border)" }}>
+                <time className="crm-num crm-muted text-[12.5px] font-semibold">{event.time}</time>
+                <span className="h-7 rounded-full" style={{ background: "var(--crm-accent-soft)" }} />
+                <span className="min-w-0">
+                  <span className="block truncate text-[13.5px] font-semibold">{event.title}</span>
+                  <span className="crm-muted block truncate text-[11.5px]">{event.subtitle}</span>
+                </span>
+              </Link>
+            )) : (
+              <div className="rounded-2xl border border-dashed p-4" style={{ borderColor: "var(--crm-line-strong)" }}>
+                <p className="crm-muted text-sm">Aucune intervention inscrite aujourd&apos;hui.</p>
+                <Link href="/crm-v2/calendar?new=1" className="crm-accent-text mt-2 inline-block text-xs font-bold">+ Ajouter un événement</Link>
+              </div>
+            )}
+            {todayAgenda.length > 4 && (
+              <Link href={"/crm-v2/calendar?day=" + currentDay} className="crm-accent-text text-xs font-bold">+ {todayAgenda.length - 4} autre{todayAgenda.length - 4 > 1 ? "s" : ""} →</Link>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Link
+          href={"/crm-v2/calendar?day=" + currentDay}
+          className="crm-glass crm-feature-card crm-rise crm-lift grid content-start gap-2 p-5"
+          style={{ "--crm-delay": "160ms" } as React.CSSProperties}
+          data-kpi="today"
+        >
+          <div className="flex items-center justify-between">
+            <span className="crm-on-dark-chip grid h-8 w-8 place-items-center rounded-xl">{kpiIcons.calendar}</span>
+            <span className="crm-chip crm-on-dark-chip">Aujourd&apos;hui</span>
+          </div>
+          <p className="crm-display crm-num mt-3 text-[34px] leading-none">{todayAgenda.length}</p>
+          <p className="text-sm font-bold">Prestations du jour</p>
+          <p className="crm-on-dark-muted text-xs">{nextEvents[0] ? `Prochain : ${hour.format(new Date(nextEvents[0].appointment.scheduledAt))} · ${nextEvents[0].customer.fullName}` : "Interventions planifiées"}</p>
+        </Link>
+        {kpis.map((kpi, index) => (
+          <Link
+            key={kpi.key}
+            href={kpi.href}
+            className="crm-glass crm-rise crm-lift grid content-start gap-2 p-5"
+            style={{ "--crm-delay": `${200 + index * 40}ms` } as React.CSSProperties}
+            data-kpi={kpi.key}
+          >
+            <div className="flex items-center justify-between">
+              <span className="crm-accent-text grid h-8 w-8 place-items-center rounded-xl" style={{ background: "var(--crm-glass-strong)" }}>{kpi.icon}</span>
+              <span className="crm-chip" data-tone={kpi.chip.tone}>{kpi.chip.text}</span>
+            </div>
+            <p className="crm-display crm-num mt-3 text-[34px] leading-none">{kpi.value}</p>
+            <p className="text-sm font-bold">{kpi.label}</p>
+            <p className="crm-muted text-xs">{kpi.detail}</p>
           </Link>
         ))}
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[1.2fr_.8fr]">
-        <div className="rounded-3xl border border-cyan-300/15 bg-[#0b121b] p-5 md:p-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Actions rapides">
+        {quickActions.map((action) => (
+          <Link key={action.href} href={action.href} className="crm-glass crm-lift flex items-center gap-3 !rounded-[18px] p-3.5">
+            <span className="crm-accent-text grid h-9 w-9 shrink-0 place-items-center rounded-full" style={{ background: "var(--crm-glass-strong)" }}>{action.icon}</span>
+            <span className="min-w-0">
+              <span className="block text-[13.5px] font-bold">{action.label}</span>
+              <span className="crm-muted block text-[11.5px]">{action.detail}</span>
+            </span>
+          </Link>
+        ))}
+      </section>
+
+      {subscriptionsDue > 0 && (
+        <Link href="/crm-v2/subscriptions" className="crm-glass crm-lift flex flex-wrap items-center justify-between gap-3 p-5" data-subscriptions-reminder>
+          <div className="flex items-center gap-3">
+            <span className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "rgba(var(--crm-warning-rgb), .14)", color: "var(--crm-warning-text)" }}>{kpiIcons.repeat}</span>
             <div>
-              <p className="text-[10px] uppercase tracking-[0.22em] text-cyan-200/55">Aujourd'hui</p>
-              <h2 className="mt-2 text-xl font-semibold">Mes interventions</h2>
+              <p className="crm-eyebrow">Rappel abonnements</p>
+              <p className="mt-0.5 text-[15px] font-bold">{subscriptionsDue} abonnement{subscriptionsDue > 1 ? "s" : ""} à planifier ce mois-ci</p>
             </div>
-            <Link href={"/crm-v2/calendar?day=" + currentDay} className="text-xs text-cyan-200/75 hover:text-cyan-100">Ouvrir la journée →</Link>
           </div>
-          <div className="mt-5 space-y-2">
-            {todayAgenda.length ? todayAgenda.map((event) => (
-              <Link
-                key={event.id}
-                href={"/crm-v2/calendar?day=" + currentDay}
-                className="flex items-center gap-4 rounded-xl border border-white/8 bg-white/[0.025] p-4 transition hover:border-cyan-300/25 hover:bg-cyan-300/[0.03]"
-              >
-                <span className="w-12 shrink-0 text-sm font-semibold text-cyan-200">{event.time}</span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-semibold text-white">{event.title}</span>
-                  <span className="mt-1 block truncate text-xs text-white/45">{event.subtitle}</span>
-                </span>
-                <span className="text-white/30">→</span>
-              </Link>
-            )) : (
-              <div className="rounded-xl border border-dashed border-white/10 p-5">
-                <p className="text-sm text-white/65">Aucune intervention inscrite aujourd'hui.</p>
-                <Link href="/crm-v2/calendar?new=1" className="mt-3 inline-block text-xs text-cyan-200">+ Ajouter un événement</Link>
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="rounded-3xl border border-white/8 bg-[#0b121b] p-5 md:p-6">
-          <p className="text-[10px] uppercase tracking-[0.22em] text-cyan-200/55">À suivre</p>
-          <h2 className="mt-2 text-xl font-semibold">Priorités</h2>
-          <div className="mt-5 space-y-3">
-            <Link href="/crm-v2/pipeline" className="flex items-center justify-between rounded-xl border border-white/8 bg-white/[0.025] p-4 transition hover:border-amber-300/30">
-              <span>
-                <span className="block text-sm font-semibold">Encaissements</span>
-                <span className="mt-1 block text-xs text-white/45">Prestations terminées sans paiement</span>
-              </span>
-              <span className="ml-3 text-xl font-bold text-amber-200">{unpaidCount}</span>
-            </Link>
-            <Link href="/crm-v2/pipeline" className="flex items-center justify-between rounded-xl border border-white/8 bg-white/[0.025] p-4 transition hover:border-cyan-300/25">
-              <span>
-                <span className="block text-sm font-semibold">Demandes à rappeler</span>
-                <span className="mt-1 block text-xs text-white/45">Sans rendez-vous confirmé</span>
-              </span>
-              <span className="ml-3 text-xl font-bold text-cyan-100">{leadsToTreat}</span>
-            </Link>
-            <Link href="/crm-v2/developpement" className="flex items-center justify-between rounded-xl border border-white/8 bg-white/[0.025] p-4 transition hover:border-cyan-300/25">
-              <span>
-                <span className="block text-sm font-semibold">Prospection garages</span>
-                <span className="mt-1 block text-xs text-white/45">Prospects et relances commerciales</span>
-              </span>
-              <span className="ml-3 text-white/35">→</span>
-            </Link>
-          </div>
-          <p className="mt-4 text-xs leading-5 text-white/35">Les montants à encaisser sont indicatifs. Le CA tient compte uniquement des paiements enregistrés.</p>
-        </div>
-      </section>
+          <span className="crm-btn !py-2">Ouvrir {kpiIcons.arrow}</span>
+        </Link>
+      )}
 
-      <section className="flex flex-wrap gap-2">
-        <Link href="/crm-v2/pipeline/new" className="rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-3 text-xs font-semibold text-cyan-100 hover:bg-cyan-300/20">+ Nouveau dossier</Link>
-        <Link href="/crm-v2/calendar?new=1" className="rounded-xl border border-white/12 bg-white/[0.035] px-4 py-3 text-xs font-semibold text-white/80 hover:border-white/25">+ Intervention</Link>
-        <Link href="/crm-v2/clients?new=1" className="rounded-xl border border-white/12 bg-white/[0.035] px-4 py-3 text-xs font-semibold text-white/80 hover:border-white/25">+ Client</Link>
-        <Link href="/crm-v2/developpement" className="rounded-xl border border-white/12 bg-white/[0.035] px-4 py-3 text-xs font-semibold text-white/80 hover:border-white/25">Prospection →</Link>
-      </section>
-
-      <div className="grid gap-5 2xl:grid-cols-[1.25fr_.75fr]">
-        <section className="rounded-3xl border border-white/8 bg-[#0b121b] p-5 md:p-6">
+      <div className="grid gap-4 2xl:grid-cols-[minmax(0,1.3fr)_minmax(0,0.7fr)]">
+        <section className="crm-glass p-5 md:p-6" aria-labelledby="crm-month-title">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-[10px] uppercase tracking-[0.22em] text-cyan-200/50">Planning</p>
-              <h2 className="mt-2 text-xl font-semibold">Calendrier du mois</h2>
+              <p className="crm-eyebrow">Planning</p>
+              <h2 id="crm-month-title" className="mt-1 text-lg font-extrabold first-letter:uppercase">{monthName.format(new Date(`${currentMonth}-15T00:00:00Z`))} {calendarYear}</h2>
             </div>
-            <Link href="/crm-v2/calendar" className="text-xs text-cyan-200/70 hover:text-cyan-100">Ouvrir le calendrier →</Link>
+            <Link href="/crm-v2/calendar" className="crm-btn !px-3 !py-2 !text-[11.5px]">Calendrier {kpiIcons.arrow}</Link>
           </div>
 
-          <div className="mt-6 grid grid-cols-7 gap-1">
-            {["L","M","M","J","V","S","D"].map((d, i) => <div key={i} className="py-2 text-center text-[10px] text-white/25">{d}</div>)}
+          <div className="mt-5 grid grid-cols-7 gap-1.5">
+            {["L", "M", "M", "J", "V", "S", "D"].map((d, i) => <div key={i} className="crm-faint py-1 text-center text-[10px] font-bold">{d}</div>)}
             {Array.from({ length: firstWeekday === 0 ? 6 : firstWeekday - 1 }).map((_, i) => <div key={`e-${i}`} />)}
             {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((n) => {
               const key = `${currentMonth}-${String(n).padStart(2, "0")}`;
-              const canonicalCount = calendar.items.filter((item) => parisDateKey(item.appointment.scheduledAt) === key).length;
-              const customCount = customEvents.filter((item) => item.event_date === key).length;
-              const historicalCount = historicalEvents.filter((item) => item.eventDate === key).length;
-              const count = canonicalCount + customCount + historicalCount;
+              const count = countForDay(key);
               const today = n === todayNumber;
               return (
-                <Link href={`/crm-v2/calendar?day=${key}`} key={n} className={`relative min-h-16 rounded-xl border p-2 transition hover:border-cyan-300/25 ${today ? "border-cyan-300/35 bg-cyan-300/[0.07]" : "border-white/6 bg-white/[0.018]"}`}>
-                  <span className={`text-xs ${today ? "font-bold text-cyan-100" : "text-white/55"}`}>{n}</span>
-                  {count > 0 && <span className="absolute bottom-2 left-2 right-2 rounded-full bg-cyan-300/20 py-1 text-center text-[9px] font-semibold text-cyan-100">{count} RDV</span>}
+                <Link
+                  href={`/crm-v2/calendar?day=${key}`}
+                  key={n}
+                  data-day={key}
+                  data-today={today ? "true" : undefined}
+                  className="relative min-h-16 rounded-2xl border p-2 transition hover:-translate-y-px"
+                  style={today
+                    ? { background: "rgba(var(--crm-accent-rgb), .12)", borderColor: "rgba(var(--crm-accent-rgb), .45)" }
+                    : { background: "var(--crm-glass-soft)", borderColor: "var(--crm-line)" }}
+                >
+                  <span className={`crm-num text-xs ${today ? "crm-accent-text font-extrabold" : "crm-muted"}`}>{n}</span>
+                  {count > 0 && (
+                    <span className="absolute bottom-2 left-1.5 right-1.5 rounded-full py-0.5 text-center text-[9.5px] font-bold" style={{ background: "rgba(var(--crm-accent-rgb), .16)", color: "var(--crm-accent-text)" }}>
+                      {count} RDV
+                    </span>
+                  )}
                 </Link>
               );
             })}
           </div>
         </section>
 
-        <section className="rounded-3xl border border-white/8 bg-[#0b121b] p-5 md:p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.22em] text-cyan-200/50">À venir</p>
-              <h2 className="mt-2 text-xl font-semibold">Prochains rendez-vous</h2>
-            </div>
+        <section className="crm-glass p-5 md:p-6" aria-labelledby="crm-next-title">
+          <p className="crm-eyebrow">À venir</p>
+          <h2 id="crm-next-title" className="mt-1 text-lg font-extrabold">Prochains rendez-vous</h2>
+          <div className="mt-5 grid gap-2">
+            {nextEvents.length ? nextEvents.map((item) => <NextEvent key={item.appointment.id} item={item} />) : (
+              <p className="crm-muted rounded-2xl border border-dashed p-5 text-sm" style={{ borderColor: "var(--crm-line-strong)" }}>Aucun rendez-vous planifié.</p>
+            )}
           </div>
-          <div className="mt-6 space-y-2">
-            {nextEvents.length ? nextEvents.map((item) => <MiniEvent key={item.appointment.id} item={item} />) : <p className="rounded-xl border border-dashed border-white/10 p-5 text-sm text-white/30">Aucun rendez-vous planifié.</p>}
-          </div>
+          <p className="crm-faint mt-4 text-[11px] leading-5">Les montants à encaisser sont indicatifs. Le CA ne compte que les paiements enregistrés.</p>
         </section>
       </div>
-
-      {subscriptionsDue > 0 && (
-        <Link href="/crm-v2/subscriptions" className="block rounded-2xl border border-amber-300/20 bg-amber-300/[0.05] p-5 transition hover:border-amber-300/35">
-          <p className="text-[10px] uppercase tracking-[0.18em] text-amber-100/60">Rappel abonnements</p>
-          <p className="mt-2 text-lg font-semibold text-amber-100">{subscriptionsDue} abonnement{subscriptionsDue > 1 ? "s" : ""} à planifier ce mois-ci</p>
-          <p className="mt-2 text-xs text-white/40">Ouvrir l&apos;espace abonnements →</p>
-        </Link>
-      )}
-
-      <section className="grid gap-3 md:grid-cols-4">
-        <Link href="/crm-v2/pipeline" className="rounded-2xl border border-white/8 bg-white/[0.025] p-5 transition hover:border-cyan-300/25">
-          <p className="text-sm font-semibold">Pipeline checklist</p>
-          <p className="mt-2 text-xs leading-5 text-white/40">Chaque client, chaque étape, un seul coup d&apos;œil.</p>
-        </Link>
-        <Link href="/crm-v2/clients" className="rounded-2xl border border-white/8 bg-white/[0.025] p-5 transition hover:border-cyan-300/25">
-          <p className="text-sm font-semibold">Clients</p>
-          <p className="mt-2 text-xs leading-5 text-white/40">Créer, retrouver et gérer la base clients.</p>
-        </Link>
-        <Link href="/crm-v2/subscriptions" className="rounded-2xl border border-white/8 bg-white/[0.025] p-5 transition hover:border-cyan-300/25">
-          <p className="text-sm font-semibold">Abonnements</p>
-          <p className="mt-2 text-xs leading-5 text-white/40">Clients récurrents et rappels mensuels.</p>
-        </Link>
-        <Link href="/crm-v2/pipeline" className="rounded-2xl border border-white/8 bg-white/[0.025] p-5 transition hover:border-cyan-300/25">
-          <p className="text-sm font-semibold">Prestations</p>
-          <p className="mt-2 text-xs leading-5 text-white/40">Retrouver les prestations depuis les dossiers clients.</p>
-        </Link>
-      </section>
     </div>
   );
 }
