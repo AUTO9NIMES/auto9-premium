@@ -14,8 +14,8 @@ const steps = [
   },
   {
     number: "03",
-    title: "On intervient",
-    text: "AUTO 9 confirme le créneau et réalise la préparation directement sur le lieu convenu.",
+    title: "Profitez",
+    text: "Votre créneau est confirmé et votre véhicule est préparé directement sur le lieu de votre choix.",
   },
 ];
 
@@ -30,7 +30,7 @@ const trustItems = [
   },
   {
     title: "Créneau confirmé",
-    text: "Votre demande est vérifiée puis confirmée par AUTO 9 selon le planning.",
+    text: "Vous recevez la confirmation de votre créneau selon le planning.",
   },
   {
     title: "Finition soignée",

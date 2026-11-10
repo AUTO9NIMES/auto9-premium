@@ -28,7 +28,7 @@ export function RealisationsPreview() {
 
           <div data-motion-reveal className="lg:pb-2">
             <p className="max-w-xl text-base leading-7 text-white/52 md:text-lg">
-              Des véhicules du quotidien aux modèles d’exception, chaque intervention est traitée avec la même exigence : précision, finition et respect du véhicule.
+              Citadine du quotidien ou modèle d’exception, votre véhicule reçoit la même exigence : précision, finition et respect de chaque détail.
             </p>
           </div>
         </div>
@@ -91,7 +91,7 @@ export function RealisationsPreview() {
         </div>
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-white/40">Une sélection de travaux, événements et transformations réalisés par AUTO 9.</p>
+          <p className="text-sm text-white/40">Travaux, événements, transformations : voyez le résultat que vous pouvez attendre.</p>
           <Link
             href="/realisations"
             className="group inline-flex items-center justify-center gap-3 rounded-full border border-metal-mid/40 bg-white/[0.04] px-6 py-3.5 text-[10px] font-black uppercase tracking-[.22em] text-ivory transition duration-300 hover:-translate-y-0.5 hover:border-metal-mid/70 hover:bg-white/[0.08]"

@@ -23,7 +23,7 @@ const benefits = [
   },
   {
     title: "Gain de temps pour vos équipes",
-    text: "AUTO 9 prend en charge la préparation esthétique pendant que vous vous concentrez sur la vente.",
+    text: "Concentrez-vous sur la vente : vos véhicules vous reviennent prêts, propres et brillants.",
   },
   {
     title: "Image professionnelle renforcée",
@@ -104,7 +104,7 @@ export default function ProfessionnelsPage() {
               <div>
                 <h2 className="text-4xl font-black uppercase tracking-[-0.06em] md:text-7xl">Préparation esthétique pour garages & pros auto.</h2>
                 <p className="mt-7 max-w-3xl text-lg leading-relaxed text-white/55">
-                  AUTO 9 accompagne les professionnels de l’automobile dans la préparation esthétique de leurs véhicules : mise en vente, livraison client, présentation parc VO et image premium.
+                  Mise en vente, livraison client, présentation de votre parc VO : vos véhicules font bonne impression dès le premier regard, et votre image en profite.
                 </p>
               </div>
               <div className="rounded-[2rem] border border-accent/25 bg-[#0b281c]/65 p-7 shadow-[0_0_35px_rgba(var(--accent-rgb),.08)]">
