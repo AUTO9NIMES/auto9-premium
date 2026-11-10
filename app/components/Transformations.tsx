@@ -18,7 +18,7 @@ const results = [
   },
   {
     title: "Formule Duo",
-    subtitle: "La remise à neuf complète AUTO 9.",
+    subtitle: "Votre véhicule remis à neuf, dedans comme dehors.",
     video: "/media/transformations-v2/duo.mp4",
     badge: "Best Seller",
   },
@@ -42,7 +42,7 @@ export function Transformations() {
         </h2>
 
         <p className="mt-8 max-w-3xl text-xl leading-relaxed text-white/55">
-          Découvrez nos prestations en vidéo.
+          Voyez le résultat en vidéo avant de réserver.
         </p>
 
         <div className="mt-20 grid gap-8 lg:grid-cols-3">

@@ -20,7 +20,7 @@ export function BeforeAfter() {
           </div>
 
           <p data-motion-words className="max-w-xl text-[15px] leading-7 text-white/48 lg:justify-self-end lg:text-right">
-            Deux images, aucun discours inutile : le soin apporté aux détails se voit directement sur le résultat final.
+            Deux images, aucun discours inutile : jugez vous-même le résultat que vous pouvez attendre.
           </p>
         </div>
 

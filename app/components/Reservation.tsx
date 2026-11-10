@@ -80,7 +80,7 @@ export function Reservation() {
 
                   <div>
                     <p className="font-bold text-white/82">Confirmation</p>
-                    <p className="mt-1">Votre demande est confirmée selon les disponibilités AUTO 9.</p>
+                    <p className="mt-1">Vous recevez la confirmation de votre créneau selon les disponibilités.</p>
                   </div>
                 </div>
               </div>

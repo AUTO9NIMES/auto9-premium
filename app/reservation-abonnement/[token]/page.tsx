@@ -83,7 +83,7 @@ export default async function SubscriptionBookingPage({
             <p className="text-[11px] uppercase tracking-[0.24em] text-emerald-200/60">AUTO 9 · Abonnement</p>
             <h1 className="mt-4 text-3xl font-bold md:text-5xl">Demande de créneau reçue</h1>
             <p className="mt-5 text-sm leading-7 text-white/60">
-              Merci {displayName(customer)}. Ta demande a bien été transmise à AUTO 9. Nous te confirmerons le rendez-vous dès validation.
+              Merci {displayName(customer)}. Votre demande a bien été transmise à AUTO 9. Vous recevrez la confirmation de votre rendez-vous dès validation.
             </p>
           </div>
         </div>
@@ -102,13 +102,13 @@ export default async function SubscriptionBookingPage({
             Bonjour {displayName(customer)}
           </h1>
           <p className="mt-4 text-sm leading-7 text-white/50">
-            Choisis simplement le jour et l&apos;heure qui te conviennent pour ton prochain entretien AUTO 9.
+            Choisissez simplement le jour et l&apos;heure qui vous conviennent pour votre prochain entretien.
           </p>
         </div>
 
         <section className="rounded-3xl border border-white/8 bg-white/[0.035] backdrop-blur-md p-5 md:p-7">
           <div className="rounded-2xl border border-cyan-300/12 bg-cyan-300/[0.035] p-4">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-cyan-200/50">Ton abonnement</p>
+            <p className="text-[10px] uppercase tracking-[0.18em] text-cyan-200/50">Votre abonnement</p>
             <p className="mt-2 text-lg font-semibold">{subscription.service_name}</p>
             {typeof subscription.price === "number" && (
               <p className="mt-1 text-sm text-white/45">
@@ -143,7 +143,7 @@ export default async function SubscriptionBookingPage({
             </label>
 
             <p className="text-xs leading-5 text-white/30">
-              Le créneau choisi est une demande. AUTO 9 te confirme ensuite définitivement le rendez-vous.
+              Le créneau choisi est une demande : vous recevez ensuite la confirmation définitive de votre rendez-vous.
             </p>
 
             <button className="w-full rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-5 py-4 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/15">
