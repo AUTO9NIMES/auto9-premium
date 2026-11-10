@@ -15,6 +15,8 @@ import {
   deleteCalendarEvent,
   updateCalendarEvent,
 } from "./actions";
+import QuickAdd from "./QuickAdd";
+import { TIME_TO_DEFINE_NOTE } from "./quick-add";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +34,7 @@ const time = new Intl.DateTimeFormat("fr-FR", {
 type CustomerRow = {
   id: string;
   full_name: string;
+  phone?: string | null;
 };
 
 type VehicleRow = {
@@ -96,7 +99,7 @@ function CustomEvent({
       className="block rounded-lg border border-emerald-300/12 bg-emerald-300/[0.04] p-2 transition hover:border-emerald-300/30"
     >
       <p className="text-[10px] font-semibold text-emerald-100">
-        {item.event_time.slice(0, 5)}
+        {item.notes?.startsWith(TIME_TO_DEFINE_NOTE) ? "Horaire à définir" : item.event_time.slice(0, 5)}
       </p>
       <p className="mt-1 truncate text-[11px] text-white/75">
         {customer?.full_name || item.title}
@@ -148,6 +151,16 @@ function HistoricalEvent({
       )}
     </Link>
   );
+}
+
+/** Jour courant à Paris (AAAA-MM-JJ), lu hors du rendu pour le garder pur. */
+async function parisTodayAtRender() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Paris",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
 }
 
 export default async function CrmV2Calendar({
@@ -220,7 +233,7 @@ export default async function CrmV2Calendar({
       "customers",
       "GET",
       null,
-      `business_id=eq.${businessId}&order=full_name.asc&select=id,full_name`,
+      `business_id=eq.${businessId}&order=full_name.asc&select=id,full_name,phone`,
     );
     customers = (customerRows as CustomerRow[] | null) ?? [];
   } catch {
@@ -277,6 +290,7 @@ export default async function CrmV2Calendar({
 
   const formEvent = editing;
   const formOpen = showNew || Boolean(formEvent);
+  const parisToday = await parisTodayAtRender();
 
   return (
     <div className="space-y-7">
@@ -314,6 +328,11 @@ export default async function CrmV2Calendar({
           </Link>
         </div>
       </header>
+
+      <QuickAdd
+        customers={customers.map(({ id, full_name, phone }) => ({ id, full_name, phone: phone ?? null }))}
+        today={parisToday}
+      />
 
       {eventCreated && (
         <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/[0.05] px-4 py-3 text-sm text-emerald-100">

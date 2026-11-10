@@ -349,3 +349,15 @@
     }
   }
 }
+
+/* Champ de saisie des composants redessinés (ajout rapide…). */
+.crm-v2-root .crm-field {
+  border: 1px solid var(--crm-glass-border);
+  background: var(--crm-glass-strong);
+  color: var(--crm-ink);
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+}
+.crm-v2-root .crm-field:disabled { opacity: 0.55; }
+.crm-v2-root .crm-btn:disabled { opacity: 0.45; cursor: not-allowed; }
