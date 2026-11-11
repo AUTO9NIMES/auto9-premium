@@ -1,30 +1,25 @@
 import Link from "next/link";
 import { ensureCrmV2Access } from "../access";
 import { resolveCurrentBusinessContext } from "../../lib/business";
-import {
-  getProspect,
-  listDueFollowUps,
-  listProspectEvents,
-  listProspectFacets,
-  listProspects,
-  listToContact,
-  type ProspectEventRow,
-  type ProspectRow,
-} from "./data";
+import { loadProspects } from "./data";
 import {
   ACTION_LABELS,
   CLOSED_STATUSES,
   EVENT_LABELS,
+  PROSPECT_KEY,
   PROSPECT_STATUSES,
   STATUS_LABELS,
+  dueFollowUps,
+  filterProspects,
   isFollowUpDue,
   isProspectStatus,
+  type Prospect,
   type ProspectAction,
+  type ProspectHistoryEntry,
   type ProspectStatus,
 } from "./prospects";
 import {
   createProspect,
-  importProspectsCsv,
   prospectQuickAction,
   setProspectStatus,
   updateProspect,
@@ -36,7 +31,6 @@ export const dynamic = "force-dynamic";
 
 type Params = Record<string, string | string[] | undefined>;
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const dayFr = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", timeZone: "UTC" });
 const dateTimeFr = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Paris" });
@@ -67,7 +61,7 @@ function hrefWith(base: Params, changes: Record<string, string | null>) {
   return `/crm-v2/developpement${s ? `?${s}` : ""}`;
 }
 
-function QuickActions({ p, back }: { p: ProspectRow; back: string }) {
+function QuickActions({ p, back }: { p: Prospect; back: string }) {
   if (p.status === "NE_PAS_CONTACTER") return null;
   const actions: ProspectAction[] = ["MAIL_SENT", "CALLED", "FOLLOWED_UP", "STOP"];
   return (
@@ -86,7 +80,7 @@ function QuickActions({ p, back }: { p: ProspectRow; back: string }) {
   );
 }
 
-function ProspectCard({ p, back, today, openHref }: { p: ProspectRow; back: string; today: string; openHref: string }) {
+function ProspectCard({ p, back, today, openHref }: { p: Prospect; back: string; today: string; openHref: string }) {
   const due = isFollowUpDue(p, today);
   return (
     <article className="crm-glass rounded-[20px] p-4" data-prospect-card={p.id}>
@@ -115,9 +109,9 @@ function ProspectCard({ p, back, today, openHref }: { p: ProspectRow; back: stri
   );
 }
 
-function ProspectForm({ p, back, action, submit }: { p?: ProspectRow; back: string; action: (fd: FormData) => Promise<void>; submit: string }) {
+function ProspectForm({ p, back, action, submit }: { p?: Prospect; back: string; action: (fd: FormData) => Promise<void>; submit: string }) {
   const field = "crm-field mt-1 block w-full rounded-xl px-3 py-2.5 text-sm";
-  const input = (name: keyof ProspectRow, label: string, type = "text") => (
+  const input = (name: keyof Prospect, label: string, type = "text") => (
     <label className="crm-eyebrow block">
       {label}
       <input className={field} name={name} type={type} defaultValue={p ? String(p[name] ?? "") : ""} required={name === "name"} />
@@ -144,7 +138,7 @@ function ProspectForm({ p, back, action, submit }: { p?: ProspectRow; back: stri
   );
 }
 
-function OpenProspect({ p, events, back, closeHref }: { p: ProspectRow; events: ProspectEventRow[]; back: string; closeHref: string }) {
+function OpenProspect({ p, events, back, closeHref }: { p: Prospect; events: ProspectHistoryEntry[]; back: string; closeHref: string }) {
   return (
     <section className="crm-glass-strong crm-glass rounded-[24px] p-5 md:p-6" id="fiche" data-open-prospect={p.id}>
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -152,7 +146,7 @@ function OpenProspect({ p, events, back, closeHref }: { p: ProspectRow; events: 
           <p className="crm-eyebrow">Fiche prospect</p>
           <h2 className="crm-display mt-1 text-3xl">{p.name}</h2>
           <p className="crm-muted mt-1 text-sm">
-            {[p.legal_name !== p.name ? p.legal_name : null, p.address, p.headcount ? `${p.headcount} salariés` : null, p.siret ? `SIRET ${p.siret}` : null].filter(Boolean).join(" · ")}
+            {[p.legal_name && p.legal_name.toLowerCase() !== p.name.toLowerCase() ? p.legal_name : null, p.address, p.headcount ? `${p.headcount} salariés` : null, p.siret ? `SIRET ${p.siret}` : null].filter(Boolean).join(" · ") || "Ajouté à la main"}
           </p>
           {p.source_notes && <p className="crm-faint mt-1 text-xs">Recherche : {p.source_notes}</p>}
         </div>
@@ -195,8 +189,8 @@ function OpenProspect({ p, events, back, closeHref }: { p: ProspectRow; events: 
 }
 
 const ERRORS: Record<string, string> = {
-  import_file: "Fichier manquant ou trop lourd (2 Mo maximum).",
-  import_format: "Fichier illisible : il faut un CSV avec au moins une colonne « nom ».",
+  import_format: "Reprise impossible : données du navigateur illisibles.",
+  duplicate: "Ce prospect existe déjà dans la liste.",
   invalid: "Données invalides.",
   not_found: "Prospect introuvable.",
   unavailable: "Enregistrement impossible pour le moment. Réessayez.",
@@ -221,43 +215,35 @@ export default async function DevelopmentPage({ searchParams }: { searchParams: 
   const category = one(sp.category).slice(0, 80);
   const city = one(sp.city).slice(0, 120);
   const q = one(sp.q).slice(0, 80);
-  const page = Math.max(1, Number.parseInt(one(sp.page), 10) || 1);
-  const openId = UUID.test(one(sp.open)) ? one(sp.open) : "";
+  const openId = PROSPECT_KEY.test(one(sp.open)) ? one(sp.open) : "";
   const showNew = one(sp.new) === "1";
   const back = hrefWith(sp, {});
   const today = await parisToday();
 
   const { businessId } = await resolveCurrentBusinessContext();
   let unavailable = false;
-  let facets: Awaited<ReturnType<typeof listProspectFacets>> = [];
-  let due: ProspectRow[] = [];
-  let toContact: ProspectRow[] = [];
-  let list: { rows: ProspectRow[]; hasNext: boolean } = { rows: [], hasNext: false };
-  let opened: ProspectRow | null = null;
-  let events: ProspectEventRow[] = [];
+  let all: Prospect[] = [];
   try {
-    [facets, due, toContact, list] = await Promise.all([
-      listProspectFacets(businessId),
-      listDueFollowUps(businessId, today),
-      listToContact(businessId),
-      tab === "prospects" ? listProspects(businessId, { status, category, city, q, page }) : Promise.resolve(list),
-    ]);
-    if (openId) {
-      [opened, events] = await Promise.all([getProspect(businessId, openId), listProspectEvents(businessId, openId)]);
-    }
+    all = await loadProspects(businessId);
   } catch (error) {
     console.error("CRM prospects unavailable", error);
     unavailable = true;
   }
+  const facets = all;
+  const due = dueFollowUps(all, today);
+  const toContact = all.filter((p) => p.status === "A_CONTACTER").slice(0, 10);
+  const list = filterProspects(all, { status, category, city, q });
+  const opened = openId ? all.find((p) => p.id === openId) ?? null : null;
+  const events = opened?.history ?? [];
 
   const count = (s: ProspectStatus[]) => facets.filter((f) => s.includes(f.status)).length;
   const categories = [...new Set(facets.map((f) => f.category).filter(Boolean) as string[])].sort((a, b) => a.localeCompare(b, "fr"));
   const cities = [...new Set(facets.map((f) => f.city).filter(Boolean) as string[])].sort((a, b) => a.localeCompare(b, "fr"));
   const kpis = [
     { key: "due", label: "À relancer aujourd’hui", value: due.length, href: hrefWith(sp, { tab: "todo" }) },
-    { key: "to_contact", label: "À contacter", value: count(["A_CONTACTER"]), href: hrefWith(sp, { tab: "prospects", status: "A_CONTACTER", page: null }) },
-    { key: "active", label: "En cours", value: count(["MAIL_ENVOYE", "A_RELANCER", "RDV_OBTENU", "ESSAI_PREVU"]), href: hrefWith(sp, { tab: "prospects", status: null, page: null }) },
-    { key: "partners", label: "Partenaires", value: count(["PARTENAIRE"]), href: hrefWith(sp, { tab: "prospects", status: "PARTENAIRE", page: null }) },
+    { key: "to_contact", label: "À contacter", value: count(["A_CONTACTER"]), href: hrefWith(sp, { tab: "prospects", status: "A_CONTACTER" }) },
+    { key: "active", label: "En cours", value: count(["MAIL_ENVOYE", "A_RELANCER", "RDV_OBTENU", "ESSAI_PREVU"]), href: hrefWith(sp, { tab: "prospects", status: null }) },
+    { key: "partners", label: "Partenaires", value: count(["PARTENAIRE"]), href: hrefWith(sp, { tab: "prospects", status: "PARTENAIRE" }) },
   ];
   const openHref = (id: string) => hrefWith(sp, { open: id }) + "#fiche";
   const imported = one(sp.imported);
@@ -281,7 +267,7 @@ export default async function DevelopmentPage({ searchParams }: { searchParams: 
 
       {unavailable && (
         <p className="crm-chip" data-tone="warning" data-prospects-unavailable>
-          La table des prospects n’est pas encore créée dans Supabase (fichier supabase/migrations/20261110120000_crm_prospects.sql).
+          Prospection momentanément indisponible : le journal d’activité n’a pas pu être lu. Réessayez dans un instant.
         </p>
       )}
       {imported && (
@@ -318,7 +304,7 @@ export default async function DevelopmentPage({ searchParams }: { searchParams: 
 
       <nav className="flex flex-wrap gap-2" aria-label="Onglets">
         {[["todo", `À faire${due.length ? ` · ${due.length}` : ""}`], ["prospects", "Prospects"], ["checklist", "Checklist"]].map(([key, label]) => (
-          <Link key={key} href={hrefWith(sp, { tab: key, page: null })} className="crm-btn" data-variant={tab === key ? "primary" : undefined} aria-current={tab === key ? "page" : undefined}>
+          <Link key={key} href={hrefWith(sp, { tab: key })} className="crm-btn" data-variant={tab === key ? "primary" : undefined} aria-current={tab === key ? "page" : undefined}>
             {label}
           </Link>
         ))}
@@ -338,7 +324,7 @@ export default async function DevelopmentPage({ searchParams }: { searchParams: 
             <h2 className="crm-display text-2xl">Prochains à contacter</h2>
             <p className="crm-muted mt-1 text-sm">Les prospects prioritaires jamais contactés.</p>
             <div className="mt-3 grid gap-3 md:grid-cols-2" data-to-contact-list>
-              {toContact.length === 0 && <p className="crm-glass rounded-[20px] p-5 text-sm">Personne à contacter : importez votre liste ci-dessous.</p>}
+              {toContact.length === 0 && <p className="crm-glass rounded-[20px] p-5 text-sm">Tous vos prospects ont été contactés 👏</p>}
               {toContact.map((p) => <ProspectCard key={p.id} p={p} back={back} today={today} openHref={openHref(p.id)} />)}
             </div>
           </section>
@@ -365,30 +351,15 @@ export default async function DevelopmentPage({ searchParams }: { searchParams: 
             <button className="crm-btn" data-variant="primary">Filtrer</button>
           </form>
           <div className="grid gap-3 md:grid-cols-2" data-prospect-list>
-            {list.rows.length === 0 && <p className="crm-glass rounded-[20px] p-5 text-sm">Aucun prospect pour ces filtres.</p>}
-            {list.rows.map((p) => <ProspectCard key={p.id} p={p} back={back} today={today} openHref={openHref(p.id)} />)}
+            {list.length === 0 && <p className="crm-glass rounded-[20px] p-5 text-sm">Aucun prospect pour ces filtres.</p>}
+            {list.map((p) => <ProspectCard key={p.id} p={p} back={back} today={today} openHref={openHref(p.id)} />)}
           </div>
-          <div className="flex items-center justify-between gap-3">
-            {page > 1 ? <Link className="crm-btn" href={hrefWith(sp, { page: String(page - 1) })}>← Précédents</Link> : <span />}
-            <span className="crm-muted text-xs">Page {page}</span>
-            {list.hasNext ? <Link className="crm-btn" href={hrefWith(sp, { page: String(page + 1) })}>Suivants →</Link> : <span />}
-          </div>
+          <p className="crm-muted text-xs">{list.length} prospect{list.length > 1 ? "s" : ""} affiché{list.length > 1 ? "s" : ""}</p>
         </section>
       )}
 
       {tab === "checklist" && <LocalChecklist />}
 
-      <details className="crm-glass rounded-[20px] p-4" data-import>
-        <summary className="cursor-pointer text-sm font-bold">Importer une liste de prospects (CSV)</summary>
-        <form action={importProspectsCsv} className="mt-3 flex flex-wrap items-center gap-2">
-          <input type="hidden" name="back" value={back} />
-          <input type="file" name="file" accept=".csv,text/csv" required className="crm-field rounded-xl px-3 py-2 text-sm" />
-          <button className="crm-btn" data-variant="primary">Importer</button>
-        </form>
-        <p className="crm-muted mt-2 text-xs">
-          Fichier CSV avec au moins une colonne « nom » (ex. la liste AUTO 9 des pros à 30 km). Les prospects déjà présents (même SIRET, ou même nom et commune) ne sont ni dupliqués ni modifiés.
-        </p>
-      </details>
     </div>
   );
 }

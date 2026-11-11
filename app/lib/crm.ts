@@ -3112,7 +3112,8 @@ export async function getRecentActivity(input?: {
     "activity_log",
     "GET",
     null,
-    `business_id=eq.${businessId}&order=created_at.desc,id.desc&limit=${limit}&select=id,event_type,created_at,customer_id,lead_id,job_id`,
+    // La prospection (crm_v3.prospect.*) n'est pas une activité client : exclue.
+    `business_id=eq.${businessId}&event_type=not.like.crm_v3.prospect.*&order=created_at.desc,id.desc&limit=${limit}&select=id,event_type,created_at,customer_id,lead_id,job_id`,
   )) as RecentActivityRow[] | null;
 
   return (rows ?? [])
