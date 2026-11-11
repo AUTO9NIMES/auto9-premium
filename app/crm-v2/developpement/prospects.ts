@@ -100,133 +100,148 @@ export function isFollowUpDue(p: { status: ProspectStatus; next_follow_up_on: st
   return Boolean(p.next_follow_up_on && p.next_follow_up_on <= today && !CLOSED_STATUSES.includes(p.status));
 }
 
-// ---------- Import CSV ----------
+// ---------- Journal d'activité ----------
+// Pas de table dédiée : la liste de départ est dans seed.ts, et chaque ajout,
+// modification ou action est un événement de activity_log (comme les garages pro).
 
-export type ProspectImportRow = {
+export const PROSPECT_EVENT_ADDED = "crm_v3.prospect.added";
+export const PROSPECT_EVENT_UPDATED = "crm_v3.prospect.updated";
+export const PROSPECT_EVENT_ACTION = "crm_v3.prospect.action";
+export const PROSPECT_EVENT_TYPES = [PROSPECT_EVENT_ADDED, PROSPECT_EVENT_UPDATED, PROSPECT_EVENT_ACTION] as const;
+
+export const PROSPECT_KEY = /^[a-z]-[a-z0-9-]{3,64}$/;
+
+export type Prospect = {
+  id: string;
   siret: string | null;
   name: string;
   legal_name: string | null;
   category: string | null;
   address: string | null;
-  postal_code: string | null;
   city: string | null;
   distance_km: number | null;
   headcount: string | null;
+  contact_name: string | null;
   phone: string | null;
   email: string | null;
   website: string | null;
   priority: number | null;
-  status: ProspectStatus | null;
+  status: ProspectStatus;
   next_follow_up_on: string | null;
+  last_contacted_at: string | null;
+  contact_count: number;
   notes: string | null;
+  source: string;
   source_notes: string | null;
-  contact_name: string | null;
+  history: ProspectHistoryEntry[];
 };
 
-const STATUS_FROM_LABEL = new Map<string, ProspectStatus>(
-  PROSPECT_STATUSES.flatMap((s) => [
-    [normalizeKey(STATUS_LABELS[s]), s],
-    [normalizeKey(s), s],
-  ]),
-);
-// Anciens libellés de la page (sauvegarde du navigateur).
-for (const [label, status] of [["mail envoye", "MAIL_ENVOYE"], ["a rappeler", "A_RELANCER"], ["rdv obtenu", "RDV_OBTENU"], ["essai prevu", "ESSAI_PREVU"]] as const) {
-  STATUS_FROM_LABEL.set(label, status);
-}
-
-export function normalizeKey(value: string) {
-  return value.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
-}
-
-/** Découpe une ligne CSV (séparateur « ; » ou « , », guillemets doubles). */
-function splitCsvLine(line: string, sep: string) {
-  const out: string[] = [];
-  let cur = "";
-  let quoted = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (quoted) {
-      if (ch === '"' && line[i + 1] === '"') { cur += '"'; i++; }
-      else if (ch === '"') quoted = false;
-      else cur += ch;
-    } else if (ch === '"') quoted = true;
-    else if (ch === sep) { out.push(cur); cur = ""; }
-    else cur += ch;
-  }
-  out.push(cur);
-  return out.map((v) => v.trim());
-}
-
-const text = (v: string | undefined, max: number) => {
-  const t = (v ?? "").replace(/\s+/g, " ").trim();
-  return t ? t.slice(0, max) : null;
+export type ProspectHistoryEntry = {
+  id: string;
+  event_type: ProspectEventType;
+  from_status: ProspectStatus | null;
+  to_status: ProspectStatus | null;
+  note: string | null;
+  created_at: string;
 };
 
-const COLUMN_ALIASES: Record<string, keyof ProspectImportRow | "ignore"> = {
-  siret: "siret", nom: "name", garage: "name", raison_sociale: "legal_name", categorie: "category",
-  metier: "category", adresse: "address", code_postal: "postal_code", commune: "city", ville: "city",
-  distance_km: "distance_km", effectif: "headcount", telephone: "phone", email: "email", site: "website",
-  priorite: "priority", statut: "status", relance: "next_follow_up_on", notes: "source_notes",
-  contact: "contact_name",
+export type ProspectLogRow = {
+  id: string;
+  event_type: string;
+  event_data: Record<string, unknown> | null;
+  created_at: string;
 };
 
-export type CsvParseResult = { rows: ProspectImportRow[]; skipped: number; errors: string[] };
+export type SeedLike = {
+  key: string; name: string; legalName: string | null; category: string; address: string | null; city: string;
+  distanceKm: number; headcount: string | null; phone: string | null; email: string | null; priority: number;
+  siret: string; researchNotes: string | null;
+};
+
+const EDITABLE = ["name", "contact_name", "phone", "email", "website", "city", "category", "notes"] as const;
+const ACTION_TYPES: ProspectEventType[] = ["MAIL_SENT", "CALLED", "FOLLOWED_UP", "STOP", "STATUS_CHANGED"];
+
+const str = (v: unknown, max: number) => (typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null);
+const day = (v: unknown) => (typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null);
+
+function fromSeed(s: SeedLike): Prospect {
+  return {
+    id: s.key, siret: s.siret, name: s.name, legal_name: s.legalName, category: s.category, address: s.address,
+    city: s.city, distance_km: s.distanceKm, headcount: s.headcount, contact_name: null, phone: s.phone, email: s.email,
+    website: null, priority: s.priority, status: "A_CONTACTER", next_follow_up_on: null, last_contacted_at: null,
+    contact_count: 0, notes: null, source: "liste", source_notes: s.researchNotes, history: [],
+  };
+}
 
 /**
- * Lit le fichier CSV de prospects (format de la liste AUTO 9, ou export de
- * l'ancienne page). Les lignes sans nom sont ignorées ; les « notes » du
- * fichier vont dans les notes de recherche, pas dans les notes personnelles.
+ * Rejoue les événements (du plus ancien au plus récent) sur la liste de départ.
+ * Les événements mal formés ou visant un prospect inconnu sont ignorés.
  */
-export function parseProspectCsv(content: string, maxRows = 5000): CsvParseResult {
-  const lines = content.replace(/^﻿/, "").split(/\r?\n/).filter((l) => l.trim());
-  if (lines.length < 2) return { rows: [], skipped: 0, errors: ["Fichier vide ou sans ligne de données."] };
-  const sep = (lines[0].match(/;/g)?.length ?? 0) >= (lines[0].match(/,/g)?.length ?? 0) ? ";" : ",";
-  const header = splitCsvLine(lines[0], sep).map((h) => COLUMN_ALIASES[normalizeKey(h).replace(/ /g, "_")]);
-  if (!header.includes("name")) return { rows: [], skipped: 0, errors: ["Colonne « nom » introuvable."] };
-  if (lines.length - 1 > maxRows) return { rows: [], skipped: 0, errors: [`Fichier trop long (${lines.length - 1} lignes, maximum ${maxRows}).`] };
-
-  const rows: ProspectImportRow[] = [];
-  let skipped = 0;
-  for (const line of lines.slice(1)) {
-    const cells = splitCsvLine(line, sep);
-    const get = (key: keyof ProspectImportRow) => {
-      const i = header.indexOf(key);
-      return i >= 0 ? cells[i] : undefined;
-    };
-    const name = text(get("name"), 160);
-    if (!name) { skipped++; continue; }
-    const siretDigits = (get("siret") ?? "").replace(/\D/g, "");
-    const priority = Number.parseInt(get("priority") ?? "", 10);
-    const distance = Number.parseFloat((get("distance_km") ?? "").replace(",", "."));
-    const statusRaw = normalizeKey(get("status") ?? "");
-    const followUp = (get("next_follow_up_on") ?? "").trim();
-    const email = text(get("email"), 200);
-    rows.push({
-      siret: /^\d{14}$/.test(siretDigits) ? siretDigits : null,
-      name,
-      legal_name: text(get("legal_name"), 200),
-      category: text(get("category"), 80),
-      address: text(get("address"), 300),
-      postal_code: text(get("postal_code"), 10),
-      city: text(get("city"), 120),
-      distance_km: Number.isFinite(distance) && distance >= 0 ? Math.round(distance * 10) / 10 : null,
-      headcount: text(get("headcount"), 20),
-      phone: text(get("phone"), 40),
-      email: email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null,
-      website: text(get("website"), 300),
-      priority: Number.isFinite(priority) && priority > 0 ? priority : null,
-      status: STATUS_FROM_LABEL.get(statusRaw) ?? null,
-      next_follow_up_on: /^\d{4}-\d{2}-\d{2}$/.test(followUp) ? followUp : null,
-      notes: null,
-      source_notes: text(get("source_notes"), 1000),
-      contact_name: text(get("contact_name"), 120),
-    });
+export function foldProspects(seed: SeedLike[], rows: ProspectLogRow[]): Prospect[] {
+  const byKey = new Map<string, Prospect>(seed.map((s) => [s.key, fromSeed(s)]));
+  const ordered = [...rows].sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id));
+  for (const row of ordered) {
+    const data = row.event_data ?? {};
+    const key = typeof data.prospect_key === "string" ? data.prospect_key : "";
+    if (!PROSPECT_KEY.test(key)) continue;
+    if (row.event_type === PROSPECT_EVENT_ADDED) {
+      const name = str(data.name, 160);
+      if (!name || byKey.has(key)) continue;
+      const status = isProspectStatus(data.status) ? data.status : "A_CONTACTER";
+      byKey.set(key, {
+        id: key, siret: null, name, legal_name: null, category: str(data.category, 80), address: null,
+        city: str(data.city, 120), distance_km: null, headcount: null, contact_name: str(data.contact_name, 120),
+        phone: str(data.phone, 40), email: str(data.email, 200), website: null, priority: null, status,
+        next_follow_up_on: day(data.next_follow_up_on), last_contacted_at: null, contact_count: 0,
+        notes: str(data.notes, 4000), source: str(data.source, 40) ?? "manuel", source_notes: null,
+        history: [{ id: row.id, event_type: "CREATED", from_status: null, to_status: status, note: null, created_at: row.created_at }],
+      });
+      continue;
+    }
+    const p = byKey.get(key);
+    if (!p) continue;
+    if (row.event_type === PROSPECT_EVENT_UPDATED) {
+      const fields = (data.fields ?? {}) as Record<string, unknown>;
+      for (const f of EDITABLE) {
+        if (!(f in fields)) continue;
+        const v = str(fields[f], f === "notes" ? 4000 : 300);
+        if (f === "name") { if (v) p.name = v.slice(0, 160); } else p[f] = v;
+      }
+      if ("next_follow_up_on" in fields) p.next_follow_up_on = day(fields.next_follow_up_on);
+      p.history.push({ id: row.id, event_type: "EDITED", from_status: p.status, to_status: p.status, note: null, created_at: row.created_at });
+    } else if (row.event_type === PROSPECT_EVENT_ACTION) {
+      const type = data.event_type as ProspectEventType;
+      if (!ACTION_TYPES.includes(type)) continue;
+      const from = p.status;
+      if (isProspectStatus(data.status)) p.status = data.status;
+      if (data.clear_follow_up === true) p.next_follow_up_on = null;
+      else if (day(data.next_follow_up_on)) p.next_follow_up_on = day(data.next_follow_up_on);
+      if (data.counts_as_contact === true) { p.contact_count += 1; p.last_contacted_at = row.created_at; }
+      p.history.push({ id: row.id, event_type: type, from_status: from, to_status: p.status, note: str(data.note, 1000), created_at: row.created_at });
+    }
   }
-  return { rows, skipped, errors: [] };
+  const list = [...byKey.values()];
+  for (const p of list) p.history.reverse();
+  return list.sort((a, b) => (a.priority ?? 1e9) - (b.priority ?? 1e9) || a.name.localeCompare(b.name, "fr"));
 }
 
-export function chunk<T>(items: T[], size: number): T[][] {
-  const out: T[][] = [];
-  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
-  return out;
+export function normalizeName(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+export type ProspectFilters = { status?: ProspectStatus; category?: string; city?: string; q?: string };
+
+export function filterProspects(list: Prospect[], f: ProspectFilters) {
+  const q = f.q ? normalizeName(f.q) : "";
+  return list.filter((p) =>
+    (!f.status || p.status === f.status) &&
+    (!f.category || p.category === f.category) &&
+    (!f.city || p.city === f.city) &&
+    (!q || normalizeName([p.name, p.legal_name, p.city, p.phone, p.contact_name].filter(Boolean).join(" ")).includes(q)));
+}
+
+/** Relances arrivées à échéance, de la plus ancienne à la plus récente. */
+export function dueFollowUps(list: Prospect[], today: string) {
+  return list.filter((p) => isFollowUpDue(p, today))
+    .sort((a, b) => (a.next_follow_up_on ?? "").localeCompare(b.next_follow_up_on ?? "") || (a.priority ?? 1e9) - (b.priority ?? 1e9));
 }
