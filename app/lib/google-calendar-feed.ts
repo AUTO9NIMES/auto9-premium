@@ -79,9 +79,19 @@ export function renderGoogleCalendarFeed(entries: PlanningEntry[]) {
       `DTSTAMP:${stamp(new Date(entry.updatedAt))}`,
       start ? `DTSTART:${stamp(start)}` : `DTSTART;VALUE=DATE:${entry.date.replaceAll("-", "")}`,
       `SUMMARY:${escapeText(entry.title)}${start ? "" : " (horaire à définir)"}`,
-      ...(start ? [] : ["TRANSP:TRANSPARENT"]),
-      "END:VEVENT",
     );
+    if (start) {
+      lines.push(
+        "BEGIN:VALARM",
+        "ACTION:DISPLAY",
+        "TRIGGER:-PT1H",
+        "DESCRIPTION:Rendez-vous AUTO 9 dans une heure",
+        "END:VALARM",
+      );
+    } else {
+      lines.push("TRANSP:TRANSPARENT");
+    }
+    lines.push("END:VEVENT");
   }
 
   return [...lines, "END:VCALENDAR", ""].map(fold).join("\r\n");

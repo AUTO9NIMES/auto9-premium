@@ -339,8 +339,8 @@ export default async function CrmV2Calendar({
         <details className="rounded-xl border border-white/10 px-4 py-3 text-sm">
           <summary className="cursor-pointer font-semibold text-cyan-100">Ajouter à Google Agenda</summary>
           <p className="mb-3 mt-3 text-white/60">
-            Copie ce lien privé dans Google Agenda. Les modifications faites dans le CRM
-            apparaissent à la prochaine actualisation de Google. Garde ce lien pour toi.
+            Copie ce lien privé pour ajouter le planning à Google Agenda ou à Calendrier sur ton iPhone.
+            Chaque application actualise le planning à son rythme. Garde ce lien pour toi.
           </p>
           <input
             aria-label="Lien privé du planning AUTO 9"
@@ -356,6 +356,11 @@ export default async function CrmV2Calendar({
           >
             Ouvrir Google Agenda
           </a>
+          <p className="mt-3 text-white/60">
+            Sur iPhone, ajoute ce lien dans Calendrier → Calendriers → Ajouter un calendrier
+            → Ajouter un calendrier avec abonnement. Active les alertes de cet agenda pour
+            recevoir un rappel une heure avant les rendez-vous avec un horaire.
+          </p>
         </details>
       )}
 
