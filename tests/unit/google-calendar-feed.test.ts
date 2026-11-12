@@ -46,6 +46,11 @@ describe("Google Calendar feed", () => {
     expect(feed).toContain("DTSTART:20260715T070315Z");
     expect(feed).toContain("DTSTART;VALUE=DATE:20260715");
     expect(feed).toContain("TRANSP:TRANSPARENT");
+    expect(feed).toContain(
+      "BEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT1H\r\n" +
+      "DESCRIPTION:Rendez-vous AUTO 9 dans une heure\r\nEND:VALARM\r\nEND:VEVENT",
+    );
+    expect(feed.match(/BEGIN:VALARM/g)).toHaveLength(1);
   });
 
   it("escapes injected content and folds long lines at UTF-8 boundaries", () => {
