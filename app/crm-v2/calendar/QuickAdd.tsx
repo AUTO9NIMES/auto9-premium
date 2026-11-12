@@ -2,7 +2,9 @@
 
 import WaitingSubmit from "../../crm/components/WaitingSubmit";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import VoiceInput from "./VoiceInput";
+import { formatSpokenAppointment } from "./voice-appointment";
 import { createCalendarEvent } from "./actions";
 import { listCalendarEventsOnDay, type SameDayEvent } from "./quick-actions";
 import {
@@ -11,6 +13,7 @@ import {
   TIME_TO_DEFINE_PLACEHOLDER,
   findConflicts,
   matchCustomer,
+  normalizeText,
   parseQuickEvent,
   type QuickCustomer,
 } from "./quick-add";
@@ -37,16 +40,23 @@ export default function QuickAdd({ customers, today }: { customers: QuickCustome
   const [draft, setDraft] = useState<Draft | null>(null);
   const [checked, setChecked] = useState<{ date: string; rows: SameDayEvent[] | null } | null>(null);
   const [force, setForce] = useState(false);
+  const draftForm = useRef<HTMLFormElement>(null);
+  const [ambiguousClient, setAmbiguousClient] = useState(false);
 
-  const prepare = () => {
-    const parsed = parseQuickEvent(text, today);
-    const customer = parsed.personal ? null : matchCustomer(parsed, text, customers);
+  const prepare = (input: string, spoken = false) => {
+    const parsed = parseQuickEvent(input, today);
+    const matches = !parsed.personal && parsed.clientName
+      ? customers.filter((entry) => normalizeText(entry.full_name) === normalizeText(parsed.clientName!))
+      : [];
+    const ambiguous = matches.length > 1;
+    const customer = parsed.personal || ambiguous ? null : matches[0] ?? matchCustomer(parsed, input, customers);
+    setAmbiguousClient(ambiguous);
     setForce(false);
     setDraft({
       personal: parsed.personal,
-      date: parsed.date ?? today,
+      date: parsed.date ?? (spoken ? "" : today),
       time: parsed.time ?? "",
-      timeToDefine: parsed.timeToDefine || !parsed.time,
+      timeToDefine: parsed.timeToDefine || (!spoken && !parsed.time),
       customerId: customer?.id ?? "",
       clientName: customer ? "" : parsed.clientName ?? "",
       phone: customer ? "" : parsed.phone ?? "",
@@ -85,13 +95,13 @@ export default function QuickAdd({ customers, today }: { customers: QuickCustome
   const selected = customers.find((c) => c.id === draft?.customerId);
   const finalTitle = draft ? (draft.personal ? PERSONAL_TITLE_PREFIX : "") + draft.title.trim() : "";
   const finalNotes = draft ? [draft.timeToDefine ? TIME_TO_DEFINE_NOTE : "", draft.notes.trim()].filter(Boolean).join(" · ") : "";
-  const ready = Boolean(draft && draft.title.trim() && draft.date && (draft.timeToDefine || draft.time)
+  const ready = Boolean(draft && (!ambiguousClient || draft.personal || draft.customerId) && draft.title.trim() && draft.date && (draft.timeToDefine || draft.time)
     && (draft.personal || draft.customerId || draft.clientName.trim()));
 
   return (
     <section className="crm-glass rounded-[22px] p-4 md:p-5" data-quick-add>
       <form
-        onSubmit={(e) => { e.preventDefault(); if (text.trim()) prepare(); }}
+        onSubmit={(e) => { e.preventDefault(); if (text.trim()) prepare(formatSpokenAppointment(text)); }}
         className="flex flex-col gap-2 sm:flex-row sm:items-center"
       >
         <label htmlFor="quick-add-input" className="crm-eyebrow shrink-0 sm:w-28">+ RDV rapide</label>
@@ -111,8 +121,25 @@ export default function QuickAdd({ customers, today }: { customers: QuickCustome
         Une ligne : jour, heure, client, véhicule, prestation, prix, téléphone. Ajoutez « perso » pour un RDV personnel, ou « horaire à définir ».
       </p>
 
+      <VoiceInput onTranscript={(transcript) => {
+        if (/^je confirme[.!]?$/i.test(transcript.trim())) {
+          const form = draftForm.current;
+          const submit = form?.querySelector<HTMLButtonElement>("[data-confirm-appointment]");
+          if (!form || !submit || submit.disabled || !Array.isArray(sameDay) || conflicts.length > 0) {
+            return "Vérifie les informations et les doublons, puis confirme avec le bouton.";
+          }
+          form.requestSubmit(submit);
+          return "Enregistrement du rendez-vous…";
+        }
+        const input = formatSpokenAppointment(transcript);
+        if (!input.trim()) return "Aucun rendez-vous reconnu. Réessaie.";
+        setText(transcript);
+        prepare(input, true);
+        return "Vérifie le récapitulatif. Tu peux ensuite dicter « Je confirme ».";
+      }} />
+
       {draft && (
-        <form action={createCalendarEvent} className="mt-4 grid gap-3 border-t pt-4 md:grid-cols-2" style={{ borderColor: "var(--crm-line)" }} data-quick-add-draft>
+        <form ref={draftForm} action={createCalendarEvent} className="mt-4 grid gap-3 border-t pt-4 md:grid-cols-2" style={{ borderColor: "var(--crm-line)" }} data-quick-add-draft>
           <div className="flex flex-wrap gap-2 md:col-span-2" role="radiogroup" aria-label="Type de rendez-vous">
             {([false, true] as const).map((personal) => (
               <button
@@ -132,10 +159,10 @@ export default function QuickAdd({ customers, today }: { customers: QuickCustome
           {!draft.personal && (
             <>
               <label className={label}>
-                Client existant
+                {ambiguousClient ? "Plusieurs clients portent ce nom. Choisis le bon dossier." : "Client existant"}
                 <select className={field} value={draft.customerId} onChange={(e) => set("customerId", e.target.value)} name="customerId">
                   <option value="">Nouveau client</option>
-                  {customers.map((c) => <option key={c.id} value={c.id}>{c.full_name}</option>)}
+                  {customers.map((c) => <option key={c.id} value={c.id}>{c.full_name}{ambiguousClient && c.phone ? " · " + c.phone : ""}</option>)}
                 </select>
               </label>
               {selected ? (
@@ -188,7 +215,7 @@ export default function QuickAdd({ customers, today }: { customers: QuickCustome
           </div>
 
           <div className="flex flex-wrap gap-2 md:col-span-2">
-            <WaitingSubmit className="crm-btn" data-variant="primary" disabled={!ready || (conflicts.length > 0 && !force)}>
+            <WaitingSubmit data-confirm-appointment className="crm-btn" data-variant="primary" disabled={!ready || sameDay === "loading" || (conflicts.length > 0 && !force)}>
               Confirmer le rendez-vous
             </WaitingSubmit>
             <button type="button" className="crm-btn" onClick={() => setDraft(null)}>Annuler</button>
