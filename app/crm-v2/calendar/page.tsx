@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { canAccessAutomation } from "../../lib/auth/roles";
+import { googleCalendarFeedKey } from "../../lib/google-calendar-feed";
 import { ensureCrmV2Access } from "../access";
 import {
   getCalendarMonth,
@@ -168,7 +170,11 @@ export default async function CrmV2Calendar({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await ensureCrmV2Access("/crm-v2/calendar");
+  const access = await ensureCrmV2Access("/crm-v2/calendar");
+  const feedKey = canAccessAutomation(access.role) ? googleCalendarFeedKey(access.businessId) : null;
+  const feedUrl = feedKey
+    ? `https://www.auto9nimes.com/api/integrations/google-calendar?key=${feedKey}`
+    : null;
 
   const params = await searchParams;
   const rawMonth = Array.isArray(params.month) ? params.month[0] : params.month;
@@ -328,6 +334,30 @@ export default async function CrmV2Calendar({
           </Link>
         </div>
       </header>
+
+      {feedUrl && (
+        <details className="rounded-xl border border-white/10 px-4 py-3 text-sm">
+          <summary className="cursor-pointer font-semibold text-cyan-100">Ajouter à Google Agenda</summary>
+          <p className="mb-3 mt-3 text-white/60">
+            Copie ce lien privé dans Google Agenda. Les modifications faites dans le CRM
+            apparaissent à la prochaine actualisation de Google. Garde ce lien pour toi.
+          </p>
+          <input
+            aria-label="Lien privé du planning AUTO 9"
+            className="w-full max-w-2xl rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-white"
+            readOnly
+            value={feedUrl}
+          />
+          <a
+            className="mt-3 block w-fit text-cyan-100 underline"
+            href="https://calendar.google.com/calendar/u/0/r/settings/addbyurl"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Ouvrir Google Agenda
+          </a>
+        </details>
+      )}
 
       <QuickAdd
         customers={customers.map(({ id, full_name, phone }) => ({ id, full_name, phone: phone ?? null }))}

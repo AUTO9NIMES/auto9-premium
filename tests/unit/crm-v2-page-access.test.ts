@@ -58,7 +58,7 @@ describe("CRM V2 : contrôle d'accès dans chaque page", () => {
         .find((line) => line.length > 0);
 
       expect(firstStatement).toMatch(
-        /^await (ensureCrmV2Access|ensureCrmAccess|requireCrmAccess)\(/,
+        /^(?:const [A-Za-z_$][\w$]* = )?await (ensureCrmV2Access|ensureCrmAccess|requireCrmAccess)\(/,
       );
     },
   );
