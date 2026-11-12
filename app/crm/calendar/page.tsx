@@ -10,6 +10,7 @@ import {
   getCalendarMonth,
   type CalendarAppointmentItem,
 } from "../../lib/crm";
+import { parisDateKey } from "../../lib/paris-business-calendar";
 import { resolveCurrentBusinessContext } from "../../lib/business";
 import { supabaseRest } from "../../lib/supabase";
 import {
@@ -24,6 +25,12 @@ const dayNames = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 const monthLabel = new Intl.DateTimeFormat("fr-FR", {
   month: "long",
   year: "numeric",
+});
+const dayLabel = new Intl.DateTimeFormat("fr-FR", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  timeZone: "UTC",
 });
 const time = new Intl.DateTimeFormat("fr-FR", {
   hour: "2-digit",
@@ -348,9 +355,10 @@ export default async function CrmCalendar({
 
   const formEvent = editing;
   const formOpen = showNew || Boolean(formEvent);
+  const todayKey = parisDateKey(new Date());
 
   return (
-    <div className="space-y-7">
+    <div className="space-y-4 md:space-y-7">
       <header className="flex flex-col justify-between gap-5 xl:flex-row xl:items-end">
         <div>
           <p className="text-[11px] uppercase tracking-[0.28em] text-cyan-200/55">
@@ -364,7 +372,7 @@ export default async function CrmCalendar({
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           <Link
             href={`/crm/calendar?month=${result.previousMonth}`}
             className="rounded-xl border border-white/10 px-4 py-3 text-xs text-white/60"
@@ -382,6 +390,12 @@ export default async function CrmCalendar({
             className="rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-3 text-xs font-semibold text-cyan-100"
           >
             + Ajouter au planning
+          </Link>
+          <Link
+            href="/crm/calendar/subscription"
+            className="rounded-xl border border-white/15 px-4 py-3 text-xs font-semibold text-white/85"
+          >
+            Ajouter à Google Agenda
           </Link>
         </div>
       </header>
@@ -651,7 +665,7 @@ export default async function CrmCalendar({
       )}
 
       <section className="overflow-hidden rounded-3xl border border-white/8 bg-[#0b121b]">
-        <div className="grid grid-cols-7 border-b border-white/8 bg-white/[0.015]">
+        <div className="hidden grid-cols-7 border-b border-white/8 bg-white/[0.015] md:grid">
           {dayNames.map((d) => (
             <div
               key={d}
@@ -662,11 +676,11 @@ export default async function CrmCalendar({
           ))}
         </div>
 
-        <div className="grid grid-cols-7">
+        <div className="grid md:grid-cols-7">
           {Array.from({ length: offset }).map((_, i) => (
             <div
               key={`blank-${i}`}
-              className="min-h-28 border-b border-r border-white/6 bg-white/[0.008] md:min-h-40"
+              className="hidden border-b border-r border-white/6 bg-white/[0.008] md:block md:min-h-40"
             />
           ))}
 
@@ -675,21 +689,21 @@ export default async function CrmCalendar({
             const customs = customByDay.get(n) || [];
             const count = appointments.length + customs.length;
             const dateKey = `${selectedMonth}-${String(n).padStart(2, "0")}`;
-            const today =
-              new Date().getFullYear() === year &&
-              new Date().getMonth() + 1 === month &&
-              new Date().getDate() === n;
+            const today = dateKey === todayKey;
+            const showOnMobile = count > 0 || today || dateKey === rawDay;
+            const desktopCount = Math.min(2, appointments.length) + Math.min(2, customs.length);
 
             return (
               <div
                 key={n}
-                className={`min-h-28 border-b border-r border-white/6 p-2 md:min-h-40 ${today ? "bg-[#d8b477]/[0.035]" : ""}`}
+                className={`min-w-0 border-b border-white/6 p-3 md:min-h-40 md:border-r md:p-2 ${showOnMobile ? "" : "hidden md:block"} ${today ? "bg-[#d8b477]/[0.035]" : ""}`}
               >
                 <div className="flex items-center justify-between gap-2">
                   <span
-                    className={`text-xs ${today ? "font-bold text-[#f0ce91]" : "text-white/45"}`}
+                    className={`text-sm md:text-xs ${today ? "font-bold text-[#f0ce91]" : "text-white/45"}`}
                   >
-                    {n}
+                    <span className="capitalize md:hidden">{dayLabel.format(new Date(dateKey + "T00:00:00Z"))}</span>
+                    <span className="hidden md:inline">{n}</span>
                   </span>
 
                   <div className="flex items-center gap-1.5">
@@ -701,7 +715,7 @@ export default async function CrmCalendar({
 
                     <Link
                       href={`/crm/calendar?month=${selectedMonth}&new=1&day=${dateKey}`}
-                      className="flex h-5 w-5 items-center justify-center rounded-md border border-cyan-300/10 text-[11px] text-cyan-100/45 transition hover:border-cyan-300/35 hover:bg-cyan-300/[0.06] hover:text-cyan-50"
+                      className="flex h-11 w-11 items-center justify-center rounded-md border border-cyan-300/10 text-base md:h-5 md:w-5 md:text-[11px] text-cyan-100/45 transition hover:border-cyan-300/35 hover:bg-cyan-300/[0.06] hover:text-cyan-50"
                       title={`Ajouter un événement planning le ${dateKey}`}
                       aria-label={`Ajouter un événement planning le ${dateKey}`}
                     >
@@ -711,39 +725,36 @@ export default async function CrmCalendar({
                 </div>
 
                 <div className="mt-2 space-y-1.5">
-                  {appointments.slice(0, 2).map((item) => (
-                    <AppointmentEvent
-                      key={item.appointment.id}
-                      item={item}
-                    />
+                  {appointments.map((item, index) => (
+                    <div key={item.appointment.id} className={index >= 2 ? "md:hidden" : undefined}>
+                      <AppointmentEvent item={item} />
+                    </div>
                   ))}
-                  {customs.slice(0, 2).map((item) => (
-                    <CustomEvent
-                      key={item.id}
-                      item={item}
-                      customer={
-                        item.customer_id
-                          ? customerById.get(item.customer_id)
-                          : undefined
-                      }
-                      vehicle={
-                        item.vehicle_id
-                          ? vehicleById.get(item.vehicle_id)
-                          : undefined
-                      }
-                      selectedMonth={selectedMonth}
-                    />
+                  {customs.map((item, index) => (
+                    <div key={item.id} className={index >= 2 ? "md:hidden" : undefined}>
+                      <CustomEvent
+                        item={item}
+                        customer={item.customer_id ? customerById.get(item.customer_id) : undefined}
+                        vehicle={item.vehicle_id ? vehicleById.get(item.vehicle_id) : undefined}
+                        selectedMonth={selectedMonth}
+                      />
+                    </div>
                   ))}
-                  {count > 4 && (
-                    <p className="text-[9px] text-white/25">
-                      + {count - 4} autre(s)
-                    </p>
+                  {count > desktopCount && (
+                    <p className="hidden text-[9px] text-white/25 md:block">+ {count - desktopCount} autre(s)</p>
+                  )}
+                  {showOnMobile && count === 0 && (
+                    <p className="text-xs text-white/60 md:hidden">Aucun rendez-vous</p>
                   )}
                 </div>
               </div>
             );
           })}
         </div>
+        {appointmentsByDay.size + customByDay.size === 0 &&
+          !todayKey.startsWith(selectedMonth) && !rawDay?.startsWith(selectedMonth) && (
+            <p className="p-4 text-sm text-white/60 md:hidden">Aucun rendez-vous ce mois-ci</p>
+          )}
       </section>
 
       <div className="grid gap-3 rounded-2xl border border-white/8 bg-white/[0.02] p-4 text-xs leading-5 text-white/45 md:grid-cols-2">
