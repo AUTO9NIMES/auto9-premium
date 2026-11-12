@@ -668,16 +668,16 @@ function BoardCard({ entry, href, selected }: { entry: BoardEntry; href: string;
       href={href}
       aria-current={selected ? "true" : undefined}
       data-board-card={entry.id}
-      className="crm-glass crm-lift grid gap-2 !rounded-[16px] p-3"
+      className="crm-glass crm-lift grid min-w-0 grid-cols-[minmax(0,1fr)] gap-2 !rounded-[16px] p-3"
       style={selected ? { borderColor: "var(--crm-accent)", boxShadow: "0 0 0 3px rgba(var(--crm-accent-rgb), .18), var(--crm-shadow)" } : undefined}
     >
-      <span className="flex items-start justify-between gap-2">
-        <span className="min-w-0 truncate text-[13.5px] font-extrabold leading-tight">{name(item)}</span>
+      <span className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
+        <span className="min-w-0 flex-[1_1_6rem] text-[13.5px] font-extrabold leading-tight [overflow-wrap:anywhere]">{name(item)}</span>
         {entry.amount !== null && (
-          <span className="crm-display crm-num crm-accent-text shrink-0 text-[14px]">{money(entry.amount)}</span>
+          <span className="crm-display crm-num crm-accent-text ml-auto shrink-0 whitespace-nowrap text-[14px]">{money(entry.amount)}</span>
         )}
       </span>
-      <span className="crm-muted grid text-[11.5px] leading-snug">
+      <span className="crm-muted grid grid-cols-[minmax(0,1fr)] text-[11.5px] leading-snug">
         <span className="truncate">{item.vehicle ? vehicle(item) : "Véhicule non renseigné"}</span>
         <span className="truncate">{serviceName(item)}</span>
       </span>
@@ -1056,18 +1056,18 @@ export default async function CrmV2Pipeline({
       </div>
 
       {view === "board" ? (
-        <div className="grid gap-6" data-pipeline-view="board">
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6" data-pipeline-view="board">
           <div className="min-w-0">
-            <div className="overflow-x-auto pb-2 [scrollbar-width:thin]">
+            <div className="overflow-x-auto px-1 pt-1 pb-2 [scrollbar-width:thin]" tabIndex={0} role="region" aria-label="Tableau des dossiers par étape">
               <div className="grid auto-cols-[minmax(170px,1fr)] grid-flow-col gap-2.5">
                 {BOARD_COLUMNS.map((column) => {
                   const columnEntries = boardEntries.filter((entry) => entry.stage === column.key);
                   const total = columnEntries.reduce((sum, entry) => sum + (entry.amount ?? 0), 0);
                   return (
-                    <section key={column.key} className="grid content-start gap-2.5" aria-label={column.title} data-board-column={column.key}>
-                      <header className="flex items-baseline justify-between gap-2 px-1">
-                        <h2 className="text-[13px] font-extrabold">{column.title}</h2>
-                        <span className="crm-muted crm-num text-[12px]">{columnEntries.length} · {money(total)}</span>
+                    <section key={column.key} className="grid min-w-0 grid-cols-[minmax(0,1fr)] content-start gap-2.5" aria-label={column.title} data-board-column={column.key}>
+                      <header className="flex min-h-9 flex-wrap content-start items-baseline justify-between gap-x-2 gap-y-0 px-1">
+                        <h2 className="text-[13px] leading-[18px] font-extrabold">{column.title}</h2>
+                        <span className="crm-muted crm-num ml-auto whitespace-nowrap text-[12px] leading-[18px]">{columnEntries.length} · {money(total)}</span>
                       </header>
                       {columnEntries.length ? columnEntries.map((entry) => (
                         <BoardCard
