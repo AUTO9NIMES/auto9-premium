@@ -1,5 +1,7 @@
 "use client";
 
+import WaitingSubmit from "../../crm/components/WaitingSubmit";
+
 import { useEffect, useMemo, useState } from "react";
 import { createCalendarEvent } from "./actions";
 import { listCalendarEventsOnDay, type SameDayEvent } from "./quick-actions";
@@ -186,9 +188,9 @@ export default function QuickAdd({ customers, today }: { customers: QuickCustome
           </div>
 
           <div className="flex flex-wrap gap-2 md:col-span-2">
-            <button type="submit" className="crm-btn" data-variant="primary" disabled={!ready || (conflicts.length > 0 && !force)}>
+            <WaitingSubmit className="crm-btn" data-variant="primary" disabled={!ready || (conflicts.length > 0 && !force)}>
               Confirmer le rendez-vous
-            </button>
+            </WaitingSubmit>
             <button type="button" className="crm-btn" onClick={() => setDraft(null)}>Annuler</button>
             {!draft.personal && (
               <p className="crm-muted self-center text-xs">Un RDV client crée aussi son dossier, comme le formulaire habituel.</p>

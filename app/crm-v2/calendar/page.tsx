@@ -1,4 +1,5 @@
-import Link from "next/link";
+import Link from "../../crm/components/CalendarLink";
+import WaitingSubmit from "../../crm/components/WaitingSubmit";
 import { ensureCrmV2Access } from "../access";
 import {
   getCalendarMonth,
@@ -533,18 +534,18 @@ export default async function CrmV2Calendar({
               />
             </label>
 
-            <button className="rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-3 text-sm font-semibold text-cyan-100 md:col-span-2">
+            <WaitingSubmit className="rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-3 text-sm font-semibold text-cyan-100 md:col-span-2">
               {formEvent ? "Enregistrer les modifications" : "Ajouter au calendrier"}
-            </button>
+            </WaitingSubmit>
           </form>
 
           {formEvent && (
             <form action={deleteCalendarEvent} className="mt-3">
               <input type="hidden" name="eventId" value={formEvent.id} />
               <input type="hidden" name="month" value={selectedMonth} />
-              <button className="rounded-xl border border-red-300/15 px-4 py-2.5 text-xs text-red-100/60 hover:border-red-300/30 hover:text-red-100">
+              <WaitingSubmit className="rounded-xl border border-red-300/15 px-4 py-2.5 text-xs text-red-100/60 hover:border-red-300/30 hover:text-red-100">
                 Supprimer cet événement
-              </button>
+              </WaitingSubmit>
             </form>
           )}
         </section>
