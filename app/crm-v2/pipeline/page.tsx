@@ -668,7 +668,7 @@ function BoardCard({ entry, href, selected }: { entry: BoardEntry; href: string;
       href={href}
       aria-current={selected ? "true" : undefined}
       data-board-card={entry.id}
-      className="crm-glass crm-lift grid gap-2 !rounded-[16px] p-3"
+      className="crm-glass crm-lift grid min-w-0 gap-2 !rounded-[16px] p-3"
       style={selected ? { borderColor: "var(--crm-accent)", boxShadow: "0 0 0 3px rgba(var(--crm-accent-rgb), .18), var(--crm-shadow)" } : undefined}
     >
       <span className="flex items-start justify-between gap-2">
@@ -1064,7 +1064,7 @@ export default async function CrmV2Pipeline({
                   const columnEntries = boardEntries.filter((entry) => entry.stage === column.key);
                   const total = columnEntries.reduce((sum, entry) => sum + (entry.amount ?? 0), 0);
                   return (
-                    <section key={column.key} className="grid content-start gap-2.5" aria-label={column.title} data-board-column={column.key}>
+                    <section key={column.key} className="grid min-w-0 grid-cols-[minmax(0,1fr)] content-start gap-2.5" aria-label={column.title} data-board-column={column.key}>
                       <header className="flex items-baseline justify-between gap-2 px-1">
                         <h2 className="text-[13px] font-extrabold">{column.title}</h2>
                         <span className="crm-muted crm-num text-[12px]">{columnEntries.length} · {money(total)}</span>
