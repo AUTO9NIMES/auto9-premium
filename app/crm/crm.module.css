@@ -425,3 +425,14 @@
     scroll-behavior: auto !important;
   }
 }
+
+
+.root :is(a[href], button:not(:disabled), summary):active {
+  filter: brightness(.85);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .root :is(a[href], button:not(:disabled), summary):active {
+    scale: .98;
+  }
+}

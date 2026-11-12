@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import styles from "../crm.module.css";
 
@@ -20,12 +21,12 @@ export default function CrmNavigation({ items }: {
             : undefined;
 
         return (
-          <a key={href} href={href} aria-current={current} className={styles.navLink}>
+          <Link key={href} href={href} aria-current={current} className={styles.navLink}>
             <span className={styles.navIndex} aria-hidden="true">
               {String(itemIndex + 1).padStart(2, "0")}
             </span>
             <span className={styles.navLabel}>{label}</span>
-          </a>
+          </Link>
         );
       })}
     </nav>

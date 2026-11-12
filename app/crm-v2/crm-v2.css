@@ -361,3 +361,14 @@
 }
 .crm-v2-root .crm-field:disabled { opacity: 0.55; }
 .crm-v2-root .crm-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+
+.crm-v2-root :is(a[href], button:not(:disabled), summary):active {
+  filter: brightness(.85);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .crm-v2-root :is(a[href], button:not(:disabled), summary):active {
+    scale: .98;
+  }
+}

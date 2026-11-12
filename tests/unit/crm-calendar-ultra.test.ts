@@ -26,7 +26,7 @@ describe("CRM Calendar Ultra architecture", () => {
     );
 
     const authIndex = component.indexOf("await requireCrmAccess()");
-    const calendarReadIndex = component.indexOf("await getCalendarMonth(");
+    const calendarReadIndex = component.indexOf("getCalendarMonth(");
 
     expect(authIndex).toBeGreaterThan(-1);
     expect(calendarReadIndex).toBeGreaterThan(authIndex);

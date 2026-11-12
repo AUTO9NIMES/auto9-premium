@@ -207,56 +207,36 @@ export default async function CrmV2Calendar({
   const leadError =
     (Array.isArray(params.lead_error) ? params.lead_error[0] : params.lead_error) === "1";
 
-  const result = await getCalendarMonth({ month: selectedMonth });
-  const { businessId } = await resolveCurrentBusinessContext();
-  let historicalEvents: HistoricalCalendarEntry[] = [];
-
-  try {
-    historicalEvents = await getHistoricalCalendarEntries(businessId, selectedMonth);
-  } catch {
-    historicalEvents = [];
-  }
-
-  let customEvents: CalendarEventRow[] = [];
-  let customers: CustomerRow[] = [];
-  let vehicles: VehicleRow[] = [];
-  let eventStorageUnavailable = false;
-
-  try {
-    const eventRows = await supabaseRest<CalendarEventRow[]>(
+  const [result, { businessId }] = await Promise.all([
+    getCalendarMonth({ month: selectedMonth }),
+    resolveCurrentBusinessContext(),
+  ]);
+  const [events, people, fleet, history] = await Promise.allSettled([
+    supabaseRest<CalendarEventRow[]>(
       "crm_calendar_events",
       "GET",
       null,
       `business_id=eq.${businessId}&event_date=gte.${selectedMonth}-01&event_date=lt.${result.nextMonth}-01&order=event_date.asc,event_time.asc&select=*`,
-    );
-    customEvents = (eventRows as CalendarEventRow[] | null) ?? [];
-  } catch {
-    eventStorageUnavailable = true;
-  }
-
-  try {
-    const customerRows = await supabaseRest<CustomerRow[]>(
+    ),
+    supabaseRest<CustomerRow[]>(
       "customers",
       "GET",
       null,
       `business_id=eq.${businessId}&order=full_name.asc&select=id,full_name,phone`,
-    );
-    customers = (customerRows as CustomerRow[] | null) ?? [];
-  } catch {
-    customers = [];
-  }
-
-  try {
-    const vehicleRows = await supabaseRest<VehicleRow[]>(
+    ),
+    supabaseRest<VehicleRow[]>(
       "vehicles",
       "GET",
       null,
       `business_id=eq.${businessId}&order=created_at.desc&select=id,customer_id,brand,model,plate`,
-    );
-    vehicles = (vehicleRows as VehicleRow[] | null) ?? [];
-  } catch {
-    vehicles = [];
-  }
+    ),
+    getHistoricalCalendarEntries(businessId, selectedMonth),
+  ]);
+  const customEvents = (events.status === "fulfilled" ? events.value as CalendarEventRow[] | null : null) ?? [];
+  const customers = (people.status === "fulfilled" ? people.value as CustomerRow[] | null : null) ?? [];
+  const vehicles = (fleet.status === "fulfilled" ? fleet.value as VehicleRow[] | null : null) ?? [];
+  const eventStorageUnavailable = events.status === "rejected";
+  const historicalEvents = history.status === "fulfilled" ? history.value : [];
 
   const customerById = new Map(customers.map((customer) => [customer.id, customer]));
   const vehicleById = new Map(vehicles.map((vehicle) => [vehicle.id, vehicle]));
