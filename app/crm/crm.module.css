@@ -436,3 +436,10 @@
     scale: .98;
   }
 }
+
+@media (any-pointer: fine) {
+  .root:has([data-wait-cursor="true"]),
+  .root:has([data-wait-cursor="true"]) * {
+    cursor: wait !important;
+  }
+}

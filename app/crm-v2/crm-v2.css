@@ -372,3 +372,10 @@
     scale: .98;
   }
 }
+
+@media (any-pointer: fine) {
+  .crm-v2-root:has([data-wait-cursor="true"]),
+  .crm-v2-root:has([data-wait-cursor="true"]) * {
+    cursor: wait !important;
+  }
+}

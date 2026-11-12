@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
-import Link from "next/link";
+import Link from "../components/CalendarLink";
+import WaitingSubmit from "../components/WaitingSubmit";
 import { redirect } from "next/navigation";
 
 import {
@@ -627,18 +628,18 @@ export default async function CrmCalendar({
               </div>
             )}
 
-            <button className="rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-3 text-sm font-semibold text-cyan-100 md:col-span-2">
+            <WaitingSubmit className="rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-3 text-sm font-semibold text-cyan-100 md:col-span-2">
               {formEvent ? "Enregistrer les modifications" : "Ajouter au calendrier"}
-            </button>
+            </WaitingSubmit>
           </form>
 
           {formEvent && (
             <form action={deleteCalendarEvent} className="mt-3">
               <input type="hidden" name="eventId" value={formEvent.id} />
               <input type="hidden" name="month" value={selectedMonth} />
-              <button className="rounded-xl border border-red-300/15 px-4 py-2.5 text-xs text-red-100/60 hover:border-red-300/30 hover:text-red-100">
+              <WaitingSubmit className="rounded-xl border border-red-300/15 px-4 py-2.5 text-xs text-red-100/60 hover:border-red-300/30 hover:text-red-100">
                 Supprimer cet événement planning
-              </button>
+              </WaitingSubmit>
               {formEvent.lead_id && (
                 <p className="mt-2 text-[10px] leading-5 text-white/30">
                   Le lead Pipeline associé ne sera pas supprimé.

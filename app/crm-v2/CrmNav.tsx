@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import LinkWaiting from "../crm/components/LinkWaiting";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
@@ -62,7 +63,7 @@ export function CrmSideNav() {
               aria-current={isActive(pathname, item.href) ? "page" : undefined}
             >
               {item.icon}
-              {item.label}
+              {item.label}<LinkWaiting />
             </Link>
           ))}
         </div>
@@ -84,7 +85,7 @@ export function CrmMobileNav() {
           aria-current={isActive(pathname, item.href) ? "page" : undefined}
         >
           {item.icon}
-          {item.label}
+          {item.label}<LinkWaiting />
         </Link>
       ))}
     </nav>
