@@ -122,8 +122,8 @@ export default function GoogleAnalytics() {
                     </h2>
 
                     <p className="mt-1.5 text-[12.5px] leading-5 text-white/60">
-                      Nous utilisons Google Analytics uniquement
-                      avec votre accord afin de comprendre comment
+                      Nous utilisons Google Analytics et Google Tag Manager
+                      uniquement avec votre accord afin de comprendre comment
                       le site est utilisé et d’améliorer nos services.
                     </p>
 
@@ -201,6 +201,11 @@ export default function GoogleAnalytics() {
               };
             `}
           </Script>
+          <Script
+            id="auto9-google-tag-manager"
+            strategy="afterInteractive"
+            src="https://www.googletagmanager.com/gtm.js?id=GTM-KDH63B6V"
+          />
           <Script
             id="auto9-google-analytics"
             src={`https://www.googletagmanager.com/gtag/js?id=${GOOGLE_ANALYTICS_ID}`}
